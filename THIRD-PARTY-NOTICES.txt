@@ -1,0 +1,71 @@
+Arberia Deathmatch - third-party notices and credits
+=====================================================
+
+Arberia Deathmatch itself is MIT licensed (see LICENSE). It uses or loads the
+following third-party work. Each item keeps its own license.
+
+
+Shipped inside the game
+-----------------------
+
+Orchestral instrument samples (game/orch/*.js)
+  Source:  Musyng Kite soundfont, as packaged by the midi-js-soundfonts project
+           https://github.com/gleitz/midi-js-soundfonts
+  License: Creative Commons Attribution-ShareAlike 3.0 Unported
+           https://creativecommons.org/licenses/by-sa/3.0/
+  Changes: notes were resampled and trimmed for size.
+  The samples (not the game code) are covered by CC BY-SA 3.0. If you share
+  them, or something adapted from them, you must credit the source above and
+  share it under the same license.
+
+ws (WebSocket library, used for multiplayer)
+  https://github.com/websockets/ws
+  MIT License, Copyright (c) Einar Otto Stangvik and contributors.
+
+steamworks.js (optional, Steam integration)
+  https://github.com/ceifa/steamworks.js
+  MIT License, Copyright (c) the steamworks.js authors.
+
+Electron (the desktop shell; includes Chromium and Node.js)
+  https://www.electronjs.org
+  MIT License, Copyright (c) Electron contributors / OpenJS Foundation and
+  others. Chromium, Node.js and their dependencies carry their own licenses;
+  Electron builds include them (LICENSE and LICENSES.chromium.html next to the
+  game executable).
+
+electron-builder (build tool only, not shipped)
+  https://github.com/electron-userland/electron-builder
+  MIT License.
+
+
+Loaded from the internet at run time
+------------------------------------
+
+DotGothic16 (the game's font), loaded from Google Fonts
+  https://fonts.google.com/specimen/DotGothic16
+  SIL Open Font License 1.1, Copyright The DotGothic16 Project Authors
+  (https://github.com/fontworks-fonts/DotGothic16).
+
+YouTube embedded player (only for the optional background music feature)
+  Playback is done by YouTube's own player and is subject to the YouTube Terms
+  of Service. No music is included with or copied by the game.
+
+api.ipify.org
+  Used for one request to look up your public IP, only when you host a
+  multiplayer game.
+
+
+Trademarks and other people's content
+-------------------------------------
+
+Arberia Deathmatch is an independent fan project. It is not affiliated with,
+endorsed by or sponsored by Mojang, Microsoft, Valve, Discord or Steam.
+
+Minecraft is a trademark of Mojang Synergies AB / Microsoft. Team Fortress 2,
+Half-Life 2, Source and Steam are trademarks of Valve Corporation. Discord is a
+trademark of Discord Inc.
+
+The game can read your own copies of Minecraft worlds and game files, and
+Source-engine maps (.bsp) and textures (.vpk), so you can play on them. None of
+that content is included in this project and none of it is uploaded anywhere.
+Use only content you own or have the right to use.
