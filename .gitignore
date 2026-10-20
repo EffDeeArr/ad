@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.node/
+tools/history/
+patch-*.exe
+Patch-to-*.exe
+Updater.exe
+game-files.zip
+*.zip
+*.log
+.publish-token
