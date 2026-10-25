@@ -1,0 +1,92 @@
+{
+  "name": "arberia-deathmatch",
+  "productName": "Arberia Deathmatch",
+  "version": "0.9.58",
+  "description": "Procedurally generated raycasting FPS",
+  "main": "main.js",
+  "author": "EffDeeArr",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64",
+    "dist:win": "electron-builder --win portable --x64",
+    "dist:folder": "electron-builder --win dir --x64 -c.asar=false",
+    "dist:linux": "electron-builder --linux AppImage --x64",
+    "dist:linux-folder": "electron-builder --linux dir --x64 -c.asar=false"
+  },
+  "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.example.arberiadeathmatch",
+    "productName": "Arberia Deathmatch",
+    "files": [
+      "main.js",
+      "preload.js",
+      "server.js",
+      "texvpk.js",
+      "mcjar.js",
+      "profile.js",
+      "game/**/*",
+      "build/icon.png",
+      "steam.js",
+      "update.js",
+      "arena.js",
+      "arena-worker.js",
+      "discord.js",
+      "LICENSE",
+      "THIRD-PARTY-NOTICES.txt"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "ArberiaDeathmatch.exe",
+      "icon": "build/icon.ico"
+    },
+    "portable": {
+      "artifactName": "ArberiaDeathmatch.exe"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "artifactName": "ArberiaDeathmatch.AppImage",
+      "icon": "build/icon.png"
+    },
+    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/steamworks.js/**"
+    ]
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "steamworks.js": "^0.4.0"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/EffDeeArr/ad",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EffDeeArr/ad.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EffDeeArr/ad/issues"
+  }
+}
