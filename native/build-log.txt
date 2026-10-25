@@ -1,0 +1,39 @@
+C:\Users\fantr\scoop\shims\git.exe
+C:\Program Files\CMake\bin\cmake.exe
+Cloning into 'third_party\Vulkan-Headers'...
+Cloning into 'third_party\DLSS'...
+Updating files:  35% (39/110)Updating files:  36% (40/110)Updating files:  37% (41/110)Updating files:  38% (42/110)Updating files:  39% (43/110)Updating files:  40% (44/110)Updating files:  41% (46/110)Updating files:  42% (47/110)Updating files:  43% (48/110)Updating files:  44% (49/110)Updating files:  45% (50/110)Updating files:  46% (51/110)Updating files:  47% (52/110)Updating files:  48% (53/110)Updating files:  49% (54/110)Updating files:  50% (55/110)Updating files:  50% (56/110)Updating files:  51% (57/110)Updating files:  52% (58/110)Updating files:  53% (59/110)Updating files:  54% (60/110)Updating files:  55% (61/110)Updating files:  56% (62/110)Updating files:  57% (63/110)Updating files:  58% (64/110)Updating files:  59% (65/110)Updating files:  60% (66/110)Updating files:  61% (68/110)Updating files:  62% (69/110)Updating files:  63% (70/110)Updating files:  64% (71/110)Updating files:  65% (72/110)Updating files:  66% (73/110)Updating files:  67% (74/110)Updating files:  68% (75/110)Updating files:  69% (76/110)Updating files:  70% (77/110)Updating files:  70% (78/110)Updating files:  71% (79/110)Updating files:  72% (80/110)Updating files:  73% (81/110)Updating files:  74% (82/110)Updating files:  75% (83/110)Updating files:  76% (84/110)Updating files:  77% (85/110)Updating files:  78% (86/110)Updating files:  79% (87/110)Updating files:  80% (88/110)Updating files:  81% (90/110)Updating files:  82% (91/110)Updating files:  83% (92/110)Updating files:  84% (93/110)Updating files:  85% (94/110)Updating files:  86% (95/110)Updating files:  87% (96/110)Updating files:  88% (97/110)Updating files:  89% (98/110)Updating files:  90% (99/110)Updating files:  91% (101/110)Updating files:  92% (102/110)Updating files:  93% (103/110)Updating files:  94% (104/110)Updating files:  95% (105/110)Updating files:  96% (106/110)Updating files:  97% (107/110)Updating files:  98% (108/110)Updating files:  99% (109/110)Updating files: 100% (110/110)Updating files: 100% (110/110), done.
+-- Building for: Visual Studio 18 2026
+-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- The CXX compiler identification is MSVC 19.51.36260.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- DLSS SDK found: building with DLSS
+-- Configuring done (1.3s)
+-- Generating done (0.0s)
+-- Build files have been written to: E:/Download/ArberiaDeathmatch-Desktop-v0.9.79/ArberiaDeathmatch-Desktop/native/build
+MSBuild version 18.10.1-1.26427.6+3cd27c13e for .NET Framework
+
+  1>Checking Build System
+  Building Custom Rule E:/Download/ArberiaDeathmatch-Desktop-v0.9.79/ArberiaDeathmatch-Desktop/native/CMakeLists.txt
+  main_rt.cpp
+  probe.cpp
+  vk_min.cpp
+  glvk.cpp
+  replay.cpp
+  serve.cpp
+  present.cpp
+  dlss.cpp
+  Generating Code...
+  arb-rt.vcxproj -> E:\Download\ArberiaDeathmatch-Desktop-v0.9.79\ArberiaDeathmatch-Desktop\native\build\Release\arb-rt.exe
+  Building Custom Rule E:/Download/ArberiaDeathmatch-Desktop-v0.9.79/ArberiaDeathmatch-Desktop/native/CMakeLists.txt
+build\Release\arb-rt.exe
+        1 file(s) copied.
+build\Release\nvngx_dlss.dll
+        1 file(s) copied.
+        1 file(s) copied.
+
+SUCCESS: native\bin\arb-rt.exe was built. Publish with PUBLISH.bat (it builds this by itself, you do not need to run this first), or to try it here: start the game, Settings, Native renderer On, restart, then DLSS. (RUN-PROBE.bat tests your card for DLSS and ray tracing.)
