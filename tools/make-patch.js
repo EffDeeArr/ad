@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+// Usage: node tools/make-patch.js   - writes game-files.zip (attach it to the GitHub release) and Updater.exe
+// Needs Go (https://go.dev/dl) and the 'zip' command OR Node only for the zip step (pure node used here).
+const fs=require('fs'),path=require('path'),cp=require('child_process'),crypto=require('crypto'),zlib=require('zlib');
+const norm=v=>/^0\.\d+\.0$/.test(v)?v.slice(0,-2):v,/* package.json must hold a three-part version (0.30.0) for the build tools, but the game's own version style stays 0.30 */vkey=v=>v=='0.9.137'?'9.137':v=='0.9.136'?'9.136':v=='0.9.135'?'9.135':v=='0.9.134'?'9.134':v=='0.9.133'?'9.133':v=='0.9.132'?'9.132':v=='0.9.131'?'9.131':v=='0.9.130'?'9.130':v=='0.9.129'?'9.129':v=='0.9.128'?'9.128':v=='0.9.127'?'9.127':v=='0.9.126'?'9.126':v=='0.9.125'?'9.125':v=='0.9.124'?'9.124':v=='0.9.123'?'9.123':v=='0.9.122'?'9.122':v=='0.9.121'?'9.121':v=='0.9.120'?'9.120':v=='0.9.119'?'9.119':v=='0.9.118'?'9.118':v=='0.9.117'?'9.117':v=='0.9.116'?'9.116':v=='0.9.115'?'9.115':v=='0.9.114'?'9.114':v=='0.9.113'?'9.113':v=='0.9.112'?'9.112':v=='0.9.111'?'9.111':v=='0.9.110'?'9.110':v=='0.9.109'?'9.109':v=='0.9.108'?'9.108':v=='0.9.107'?'9.107':v=='0.9.106'?'9.106':v=='0.9.105'?'9.105':v=='0.9.104'?'9.104':v=='0.9.103'?'9.103':v=='0.9.102'?'9.102':v=='0.9.101'?'9.101':v=='0.9.100'?'9.100':v=='0.9.99'?'9.99':v=='0.9.98'?'9.98':v=='0.9.97'?'9.97':v=='0.9.96'?'9.96':v=='0.9.95'?'9.95':v=='0.9.94'?'9.94':v=='0.9.93'?'9.93':v=='0.9.92'?'9.92':v=='0.9.91'?'9.91':v=='0.9.90'?'9.90':v=='0.9.89'?'9.89':v=='0.9.88'?'9.88':v=='0.9.87'?'9.87':v=='0.9.86'?'9.86':v=='0.9.85'?'9.85':v=='0.9.84'?'9.84':v=='0.9.83'?'9.83':v=='0.9.82'?'9.82':v=='0.9.81'?'9.81':v=='0.9.80'?'9.80':v=='0.9.79'?'9.79':v=='0.9.78'?'9.78':v=='0.9.77'?'9.77':v=='0.9.76'?'9.76':v=='0.9.75'?'9.75':v=='0.9.74'?'9.74':v=='0.9.73'?'9.73':v=='0.9.72'?'9.72':v=='0.9.71'?'9.71':v=='0.9.70'?'9.70':v=='0.9.69'?'9.69':v=='0.9.68'?'9.68':v=='0.9.67'?'9.67':v=='0.9.66'?'9.66':v=='0.9.65'?'9.65':v=='0.9.64'?'9.64':v=='0.9.63'?'9.63':v=='0.9.62'?'9.62':v=='0.9.61'?'9.61':v=='0.9.60'?'9.60':v=='0.9.59'?'9.59':v=='0.9.58'?'9.58':v=='0.9.57'?'9.57':v=='0.9.56'?'9.56':v=='0.9.55'?'9.55':v=='0.9.54'?'9.54':v=='0.9.53'?'9.53':v=='0.9.52'?'9.52':v=='0.9.51'?'9.51':v=='0.9.50'?'9.50':v=='0.9.49'?'9.49':v=='0.9.48'?'9.48':v=='0.9.47'?'9.47':v=='0.9.46'?'9.46':v=='0.9.45'?'9.45':v=='0.9.44'?'9.44':v=='0.9.43'?'9.43':v=='0.9.42'?'9.42':v=='0.9.41'?'9.41':v=='0.9.40'?'9.40':v=='0.9.39'?'9.39':v=='0.9.38'?'9.37':v=='0.9.37'?'9.36':v=='0.9.36'?'9.35':v=='0.9.35'?'9.34':v=='0.9.34'?'9.33':v=='0.9.33'?'9.32':v=='0.9.32'?'9.31':v=='0.9.31'?'9.30':v=='0.9.30'?'9.29':v=='0.9.29'?'9.28':v=='0.9.28'?'9.27':v=='0.9.27'?'9.26':v=='0.9.26'?'9.25':v=='0.9.25'?'9.24':v=='0.9.25'?'9.24':v=='0.9.24'?'9.23':v=='0.9.23'?'9.22':v=='0.9.22'?'9.21':v=='0.9.21'?'9.20':v=='0.9.20'?'9.19':v=='0.9.20'?'9.19':v=='0.9.19'?'9.18':v=='0.9.18'?'9.17':v=='0.9.17'?'9.16':v=='0.9.16'?'9.15':v=='0.9.15'?'9.14':v=='0.9.14'?'9.13':v=='0.9.13'?'9.12':v=='0.9.12'?'9.11':v=='0.9.11'?'9.10':v=='0.9.10'?'9.9':v=='0.9.9'?'9.8':v=='0.9.8'?'9.7':v=='0.9.7'?'9.6':v=='0.9.6'?'9.5':v=='0.9.5'?'9.4':v=='0.9.4'?'9.3':v=='0.9.3'?'9.2':v=='0.9.2'?'9.1':v=='0.9.1'?'9.0':v.replace(/^0\./,'3.'),vcmp=(a,b)=>vkey(a).localeCompare(vkey(b),undefined,{numeric:true});/* versions restarted at 0.x after 2.80.10, so 0.x counts as newest */
+{ // keep the title-screen version (GAME_VER in game/index.html) in step with package.json
+ const pj=norm(JSON.parse(fs.readFileSync(path.join(__dirname,'..','package.json'),'utf8')).version),gf=path.join(__dirname,'..','game','index.html');let h=fs.readFileSync(gf,'utf8');
+ const h2=h.replace(/const GAME_VER='[^']*';/,"const GAME_VER='"+pj+"';");if(h2===h&&!h.includes("const GAME_VER='"+pj+"'")){console.error('GAME_VER not found in game/index.html');process.exit(1)}if(h2!==h)fs.writeFileSync(gf,h2)}
+const root=path.resolve(__dirname,'..');
+{ // the title-screen patch notes: game/notes.js is generated from the 0.N entries of README.txt
+ const t=fs.readFileSync(path.join(root,'README.txt'),'utf8').replace(/\r/g,''),L=[];
+ // an entry starts at a line "0.N.N - ..." (even without a blank line before it) and runs until the next entry or a blank line
+ {let cur=null;for(const ln of t.split('\n')){const m=/^(0\.\d+(?:\.\d+)?) - (.*)$/.exec(ln);if(m){cur=[m[1],m[2].trim()];L.push(cur)}else if(!ln.trim())cur=null;else if(cur)cur[1]+=' '+ln.trim()}}
+ // every version gets a release time the first time it is built (tools/note-dates.json); the list is sorted by that time, newest first. Versions without one (the oldest) follow, newest version first.
+ const dp=path.join(root,'tools','note-dates.json');let D={};try{D=JSON.parse(fs.readFileSync(dp,'utf8'))||{}}catch(e){}
+ const cur0=String(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version).replace(/\.0$/,'');
+ if(!D[cur0]){D[cur0]=new Date().toISOString();try{fs.writeFileSync(dp,JSON.stringify(D,null,1))}catch(e){}}
+ const vn=v=>{const p=String(v).split('.').map(x=>parseInt(x,10)||0);return p.length>=3?1e7+p[1]*1e4+p[2]:p[1]||0};/* 0.9.113 is newer than the old two-part 0.103 */
+ for(const e of L)e.push(D[e[0]]||'');
+ L.sort((x,y)=>x[2]&&y[2]?(x[2]<y[2]?1:x[2]>y[2]?-1:vn(y[0])-vn(x[0])):x[2]?-1:y[2]?1:vn(y[0])-vn(x[0]));
+ fs.writeFileSync(path.join(root,'game','notes.js'),'// generated by tools/make-patch.js from README.txt - do not edit\nconst PATCHNOTES='+JSON.stringify(L)+';\n')}
+const to=norm(JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version);
+const TOP=['main.js','preload.js','server.js','texvpk.js','mcjar.js','profile.js','steam.js','discord.js','update.js','arena.js','arena-worker.js','package.json','build/icon.png','LICENSE','THIRD-PARTY-NOTICES.txt'];
+const files=[];for(const f of TOP)if(fs.existsSync(path.join(root,f)))files.push(f);
+(function w(p){for(const e of fs.readdirSync(path.join(root,p),{withFileTypes:true})){const q=p+'/'+e.name;e.isDirectory()?w(q):files.push(q)}})('game');
+// the optional native renderer travels with the update too, so players never have to build or copy anything (publish builds native/bin first)
+for(const f of ['native/shaders.pack','native/bin/arb-rt.exe','native/bin/nvngx_dlss.dll','native/bin/NVIDIA-DLSS-LICENSE.txt'])if(fs.existsSync(path.join(root,f)))files.push(f);
+const h=f=>crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex');
+const hashes={};for(const f of files)hashes[f]=h(path.join(root,f));
+// files that earlier versions had and this one no longer has (read from the last saved list, if any)
+const listF=path.join(__dirname,'files-last.json');let prev=[];try{prev=JSON.parse(fs.readFileSync(listF,'utf8'))}catch(e){}
+const deleted=prev.filter(f=>!files.includes(f));
+// minimal zip writer (deflate)
+function crc32(b){let c,t=crc32.t;if(!t){t=crc32.t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}}c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=t[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+const ents=[...files.map(f=>[f,fs.readFileSync(path.join(root,f))]),['patch.json',Buffer.from(JSON.stringify({to,deleted,hashes}))]];
+const parts=[],cen=[];let off=0;
+for(const[n,d]of ents){const nb=Buffer.from(n),z=zlib.deflateRawSync(d),c=crc32(d);
+ const lh=Buffer.alloc(30);lh.writeUInt32LE(0x04034b50,0);lh.writeUInt16LE(20,4);lh.writeUInt16LE(0x800,6);lh.writeUInt16LE(8,8);lh.writeUInt32LE(c,14);lh.writeUInt32LE(z.length,18);lh.writeUInt32LE(d.length,22);lh.writeUInt16LE(nb.length,26);
+ parts.push(lh,nb,z);
+ const ch=Buffer.alloc(46);ch.writeUInt32LE(0x02014b50,0);ch.writeUInt16LE(20,4);ch.writeUInt16LE(20,6);ch.writeUInt16LE(0x800,8);ch.writeUInt16LE(8,10);ch.writeUInt32LE(c,16);ch.writeUInt32LE(z.length,20);ch.writeUInt32LE(d.length,24);ch.writeUInt16LE(nb.length,28);ch.writeUInt32LE(off,42);
+ cen.push(ch,nb);off+=30+nb.length+z.length}
+const cd=Buffer.concat(cen),eo=Buffer.alloc(22);eo.writeUInt32LE(0x06054b50,0);eo.writeUInt16LE(ents.length,8);eo.writeUInt16LE(ents.length,10);eo.writeUInt32LE(cd.length,12);eo.writeUInt32LE(off,16);
+const zipOut=path.join(root,'game-files.zip');fs.writeFileSync(zipOut,Buffer.concat([...parts,cd,eo]));
+fs.writeFileSync(listF,JSON.stringify(files));
+console.log('game-files.zip for version '+to+': '+files.length+' files, '+deleted.length+' removed since the last release ('+(fs.statSync(zipOut).size/1024|0)+' KB)');
+// the updater (same program for every version): downloads game-files.zip from the repository's latest release
+const out=path.join(root,'Updater.exe'),gdir=path.join(require('os').tmpdir(),'arb-updater-'+process.pid);fs.mkdirSync(gdir,{recursive:true});
+fs.copyFileSync(path.join(root,'tools','patcher','main.go'),path.join(gdir,'main.go'));
+fs.writeFileSync(path.join(gdir,'go.mod'),'module arbupdater\n\ngo 1.21\n');
+const env=Object.assign({},process.env,{GOOS:'windows',GOARCH:'amd64',CGO_ENABLED:'0',GOFLAGS:'-mod=mod'});
+if(process.env.PATCH_OS)env.GOOS=process.env.PATCH_OS;
+if(process.env.PATCH_SKIP_UPDATER_IF_NO_GO&&cp.spawnSync('go',['version'],{stdio:'ignore'}).status!==0){fs.rmSync(gdir,{recursive:true,force:true});console.log('Go is not installed - keeping the existing Updater.exe (it works for every version).');process.exit(0)}
+const r=cp.spawnSync('go',['build','-ldflags','-s -w','-o',process.env.PATCH_OUT||out,'.'],{cwd:gdir,env,stdio:'inherit'});
+fs.rmSync(gdir,{recursive:true,force:true});
+if(r.status!==0){console.error('go build failed');process.exit(1)}
+console.log('Updater written: '+(process.env.PATCH_OUT||out));
