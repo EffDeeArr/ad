@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="18.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\Download\ArberiaDeathmatch-Desktop-v0.9.63\ArberiaDeathmatch-Desktop\native\build\CMakeFiles\0848d1f377d92bdc24d57360fa5acb62\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{93BA6C49-3D85-31A0-8CEE-A0BFD40AFA22}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
