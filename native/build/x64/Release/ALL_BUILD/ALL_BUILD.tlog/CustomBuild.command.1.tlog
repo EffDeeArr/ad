@@ -1,0 +1,10 @@
+^E:\DOWNLOAD\ARBERIADEATHMATCH-DESKTOP-V0.9.63\ARBERIADEATHMATCH-DESKTOP\NATIVE\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SE:/Download/ArberiaDeathmatch-Desktop-v0.9.63/ArberiaDeathmatch-Desktop/native -BE:/Download/ArberiaDeathmatch-Desktop-v0.9.63/ArberiaDeathmatch-Desktop/native/build --check-stamp-file E:/Download/ArberiaDeathmatch-Desktop-v0.9.63/ArberiaDeathmatch-Desktop/native/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
