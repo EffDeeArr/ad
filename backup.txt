@@ -1,0 +1,15 @@
+# Arberia Deathmatch - backup.txt
+#
+# If a multiplayer match asks you for a map file, the game looks here first. When the map is listed below it is
+# loaded from the path you wrote, and you are not asked to pick a file.
+#
+# Format:   mapname = full path to the file        (lines starting with # are ignored)
+# The map name is the file name without ".bsp". Quotes around the path are fine.
+#
+# Examples (remove the # and fix the path):
+# ctf_2fort = C:\Program Files (x86)\Steam\steamapps\common\Team Fortress 2\tf\maps\ctf_2fort.bsp
+# de_dust2  = C:\Program Files (x86)\Steam\steamapps\common\Counter-Strike Global Offensive\game\csgo\maps\de_dust2.bsp
+# Linux:   ctf_2fort = ~/.steam/steam/steamapps/common/Team Fortress 2/tf/maps/ctf_2fort.bsp
+
+ctf_2fort = 
+de_dust2 = 
