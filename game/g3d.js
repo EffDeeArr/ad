@@ -4,7 +4,7 @@
    Everything then runs through the one 3D path (physics, bullets, ragdolls, killcams) instead of a second grid path. */
 var G3D={on:true,err:null,last:null};try{if(localStorage.getItem('ld_g3d')=='0')G3D.on=false}catch(e){}
 /* which floors are converted; the others keep the old grid path until their features are ported */
-function g3Can(){return g3dCan()}
+
 function g3dCan(){
   if(!G3D.on)return false;
   if(typeof CASF!='undefined'&&CASF||typeof SPCF!='undefined'&&SPCF)return false;

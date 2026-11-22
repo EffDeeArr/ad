@@ -1,10 +1,8 @@
 # Arberia Deathmatch
 
 A procedurally generated first-person shooter that runs as a desktop app (Electron) or in a browser.
-Software raycaster with an optional WebGL renderer, campaign floors with bosses, shops, powers, and online/LAN
+Rendered on the graphics card (WebGL 2, with an optional native Vulkan renderer). Campaign floors with bosses, shops, powers, and online/LAN
 multiplayer.
-
-The full manual and change log are in [README.txt](README.txt).
 
 ## Play
 
@@ -25,23 +23,6 @@ npm install
 npm start          # run it
 npm run dist       # Windows portable build (see BUILD.bat / BUILD.sh)
 ```
-
-## Making a release (maintainers)
-
-Run `PUBLISH.bat` (Windows) or `PUBLISH.sh`. It needs [Node.js](https://nodejs.org) and [Git](https://git-scm.com/downloads).
-The first time it asks for a GitHub token (it explains how to make one) and saves it in your user folder (`.arberia-publish-token`), so it survives re-downloading the game folder and is never
-uploaded. Each run builds `game-files.zip` and the full game zip, uploads the source files, and creates the release
-`v<version>` (from `package.json`) with the files attached. Keep `Updater.exe` in the project folder so it is attached too.
-
-To release a new version: bump `version` in `package.json`, add a line for it to the end of `README.txt`
-(`0.47 - what changed`), and run `PUBLISH.bat`.
-
-## The Elder Scrolls: Arena in the arcade
-
-If The Elder Scrolls: Arena is installed in your Steam library, one machine in the shop arcade is switched on and plays it
-(DOSBox runs inside the game window; saved games go to a file in the app's user data folder, `arena-saves.zip`). The
-game files are only read from your own Steam folder, nothing is copied or shipped. The DOSBox build in `game/emu` is
-GPL-2.0, see `game/emu/README.txt`.
 
 ## License and credits
 

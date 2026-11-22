@@ -1,5 +1,0 @@
-Arberia native renderer probe
-----------------------------
-DLSS code in this build: no (built without the NVIDIA SDK)
-Program folder: /tmp
-RESULT: could not create a Vulkan instance: INCOMPATIBLE_DRIVER

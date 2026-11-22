@@ -357,7 +357,7 @@ if(BS.wa.length){gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_
 function bspWet(){if(!window.bwWet||!SW||!SW.nWB||!bwWet(P.x,P.y,EZ))return;const pr=P_.flat;gl.useProgram(pr.p);gl.disable(gl.DEPTH_TEST);gl.enable(gl.BLEND);gl.blendFunc(gl.DST_COLOR,gl.ZERO);gl.uniform3f(pr.u.uC,.45,.72,.9);gl.drawArrays(gl.TRIANGLES,0,3);gl.blendFunc(gl.ONE,gl.ONE);gl.uniform3f(pr.u.uC,0,0,40/255);gl.drawArrays(gl.TRIANGLES,0,3);gl.disable(gl.BLEND);gl.enable(gl.DEPTH_TEST)}
 /* ---------- dynamic geometry buffers ---------- */
 let mV=new Float32Array(1<<16),mN=0,mBV=new Float32Array(1<<14),mBN=0;const mBuf=null;let mGl=null,sGl=null,tGl=null;
-function pushV(arr,n,vals){return arr}
+
 function grow(a,need){if(a.length>=need)return a;let l=a.length;while(l<need)l*=2;const b=new Float32Array(l);b.set(a);return b}
 function meshFaces(faces,ox,oy,base,k,yaw,col,fl){const MX=TSZ==256,AFOG=animeOn()?animeFog():null;if(MX)matPrep(faces);if(AFOG&&window.ANIME)faces=ANIME.lineArt(faces);const dd0=(ox-P.x)**2+(oy-P.y)**2,fog=Math.max(30,256/(1+Math.sqrt(dd0)*FKU)|0),Lx=-.4,Ly=-.3,Lz=.86,yc=Math.cos(yaw),ys=Math.sin(yaw);
 for(const f of faces){const n0=f.n[0],n2=f.n[2],nx=n0*yc+n2*ys,ny=-n0*ys+n2*yc,nz=f.n[1];const q=f.p[0],wx=ox+(q[0]*yc+q[2]*ys)*k,wy=oy+(-q[0]*ys+q[2]*yc)*k,wz=base+q[1]*k;

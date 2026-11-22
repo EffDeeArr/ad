@@ -57,13 +57,7 @@ function epx(L,w,h,wrap){const W=w*2,o=new Int16Array(W*h*2);const g=(x,y)=>{if(
   o[(2*y)*W+2*x]=e0;o[(2*y)*W+2*x+1]=e1;o[(2*y+1)*W+2*x]=e2;o[(2*y+1)*W+2*x+1]=e3}return o}
 function upEpx(lab,w,h,S,wrap,K){let L=lab,ww=w,hh=h;while(ww<w*S){L=epx(L,ww,hh,wrap);ww*=2;hh*=2}return majority(L,ww,hh,wrap,K)}
 /* the area map drawn S times bigger with smooth, rounded edges: each area's mask is softened and the biggest one wins at every new pixel */
-function upLabels(lab,w,h,S,wrap,K){const W=w*S,H=h*S,soft=[];const T=lab.length;
- for(let k=-1;k<K;k++){const m=new Float32Array(T);for(let i=0;i<T;i++)m[i]=lab[i]==k?1:0;const b=new Float32Array(T);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){let s=0,sw=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){let xx=x+dx,yy=y+dy;if(wrap){xx=(xx+w)%w;yy=(yy+h)%h}else if(xx<0||yy<0||xx>=w||yy>=h)continue;const kw=(dx?1:2)*(dy?1:2);s+=m[yy*w+xx]*kw;sw+=kw}b[y*w+x]=s/sw}soft.push(b)}
- const out=new Int16Array(W*H);const at=(m,x,y)=>{if(wrap){x=(x%w+w)%w;y=(y%h+h)%h}else{x=clamp(x,0,w-1);y=clamp(y,0,h-1)}return m[y*w+x]};
- for(let Y=0;Y<H;Y++){const v=(Y+.5)/S-.5,y0=Math.floor(v),fy=v-y0;for(let X=0;X<W;X++){const u=(X+.5)/S-.5,x0=Math.floor(u),fx=u-x0;let bk=-1,bv=-1;
-  for(let k=0;k<soft.length;k++){const m=soft[k];const s=(at(m,x0,y0)*(1-fx)+at(m,x0+1,y0)*fx)*(1-fy)+(at(m,x0,y0+1)*(1-fx)+at(m,x0+1,y0+1)*fx)*fy;if(s>bv){bv=s;bk=k-1}}out[Y*W+X]=bk}}
- return out}
+
 
 /* ---- level textures: a hand-painted anime background ---- */
 function tex(src,w,h,o){o=o||{};const n=w*h,R=new Float32Array(n),G=new Float32Array(n),B=new Float32Array(n),Al=new Float32Array(n);
