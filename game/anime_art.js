@@ -602,8 +602,17 @@ function hangSign(g,cx,cy,txt){const w=txt.length>4?50:42,h=19,x=cx-w/2,y=cy-h/2
  g.fillStyle='#c9a040';g.beginPath();g.arc(cx,y-12,2.2,0,7);g.fill();g.fillStyle='rgba(30,30,50,.25)';g.fillRect(x+2,y+2,w,h);
  g.fillStyle='#f7f5ec';g.strokeStyle='#262a40';g.lineWidth=2;g.beginPath();g.rect(x,y,w,h);g.fill();g.stroke();
  g.fillStyle='#22263a';g.textAlign='center';g.textBaseline='middle';let fs=13;g.font=`bold ${fs}px "DejaVu Sans",Verdana,Arial,sans-serif`;while(g.measureText(txt).width>w-7&&fs>6){fs-=.5;g.font=`bold ${fs}px "DejaVu Sans",Verdana,Arial,sans-serif`}g.fillText(txt,cx,cy+.5);g.restore()}
+/* 0.9.275: the shop-front storey is drawn 50% taller on city floors (g3d.js), and the door is widened 20% to keep it in proportion. Where the door is
+   comes from the wall mask: the wide gap in the wall at row 200 on the right half, up to where the gap opens into the awning or sign */
+UC.door={};
+function ucDoorRect(key){if(key in UC.door)return UC.door[key];const m=ucMask(key);let r=null;if(m){const nw=(x,y)=>m[y*256+x]<.5,run=(y,cx)=>{if(!nw(cx,y))return 0;let a=cx,b=cx;while(a>0&&nw(a-1,y))a--;while(b<255&&nw(b+1,y))b++;return b-a+1};
+ let x0=-1,best=null;for(let x=128;x<=256;x++){const n=x<256&&nw(x,200);if(n&&x0<0)x0=x;if((!n||x==256)&&x0>=0){if(x-x0>=35&&!best)best=[x0,x-1];x0=-1}}
+ if(best){const cx=(best[0]+best[1])>>1,w=best[1]-best[0]+1;let y0=200,y1=200;while(y0>0&&nw(cx,y0-1)&&run(y0-1,cx)<=w+8)y0--;while(y1<255&&nw(cx,y1+1)&&run(y1+1,cx)<=w+8)y1++;r=[best[0],y0,w,y1-y0+1]}}
+ return UC.door[key]=r}
+function ucWideDoor(g,key){const r=ucDoorRect(key);if(!r)return;const[x,y,w,h]=r,cx=x+w/2,nw=Math.round(w*1.2);let nx=Math.round(cx-nw/2);nx=Math.max(0,Math.min(256-nw,nx));
+ const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(g.canvas,x,y,w,h,0,0,w,h);g.drawImage(c,0,0,w,h,nx,y,nw,h)}
 function ucFacade(name,showOpen,hue){const M=window.ANIMECITY_META,shop=name=='SHOP'||name=='SHOP+',key=shop?(name=='SHOP+'?'SHOPP':'SHOP'):name=='~'?'PLAIN':name=='~2'?'PLAIN2':name&&UC.img[name]?name:'NONE';
- return ucPaint(g=>{g.drawImage(UC.img[key],0,0,256,256);ucWall(g,key,hue);const sp=M.sign[key];if(shop&&sp)hangSign(g,sp[0],sp[1],name=='SHOP+'?'OPEN':'CLOSED');else if(showOpen&&sp)hangSign(g,sp[0],sp[1],'OPEN')})}
+ return ucPaint(g=>{g.drawImage(UC.img[key],0,0,256,256);ucWall(g,key,hue);ucWideDoor(g,key);const sp=M.sign[key];if(shop&&sp)hangSign(g,sp[0],sp[1],name=='SHOP+'?'OPEN':'CLOSED');else if(showOpen&&sp)hangSign(g,sp[0],sp[1],'OPEN')})}
 function ucUpper(base,L,hue){const M=window.ANIMECITY_META;return ucPaint(g=>{g.drawImage(UC.img[base],0,0,256,256);ucWall(g,base,hue);
  for(let i=0;i<6;i++){if(!!M.lit[base][i]===!!L[i])continue;let src=null;for(const t of[base,base=='UP1'?'UP2':'UP1']){const j=M.lit[t].findIndex((v,k)=>!!v===!!L[i]&&(k%3)==(i%3));const j2=j>=0?j:M.lit[t].findIndex(v=>!!v===!!L[i]);if(j2>=0){src=[t,j2];break}}
   if(!src)continue;const s=M.glass[src[0]][src[1]],d=M.glass[base][i],im=UC.img[src[0]],k=im.naturalWidth/256;g.drawImage(im,s[0]*k,s[1]*k,(s[2]-s[0])*k,(s[3]-s[1])*k,d[0],d[1],d[2]-d[0],d[3]-d[1])}})}

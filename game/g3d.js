@@ -16,6 +16,8 @@ function g3dTex(t){
 function g3dBuild(){
   const n=N,ZB=-8,ZT=40,top=WHT,G=(x,y)=>x<0||y<0||x>=n||y>=n?1:g[y*n+x];
   /* 0.9.270 the railway floor: only the tunnel has a roof (CMASK), every wall has its own height (WHM) and the rock over the tunnel its own (RFH) */
+  /* 0.9.275: on city floors the shop-front storey (doors, windows, signs) is 1.5 units tall instead of 1, so doors are 50% taller */
+  const SPL=typeof GR!='undefined'&&GR&&GR.city&&top>=2?1.5:1;
   const RLM=typeof GR!='undefined'&&GR&&GR.rail&&typeof CMASK!='undefined'&&CMASK&&WHM&&RFH&&CMASK.length==n*n;
   const MT=[],mi=new Map();
   const mat=t=>{if(!t)t=RT;let k=mi.get(t);if(k===undefined){const u=g3dTex(t)||g3dTex(RT);k=MT.length;MT.push(u);mi.set(t,k)}return k};
@@ -60,8 +62,8 @@ function g3dBuild(){
     }else{
       const t0=TX[g[i]-1],t1=TU?TU[g[i]-1]:t0,tw=RLM?WHM[i]:top;let open=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(G(nx,ny))continue;open=1;const z0=FH[ny*n+nx],tq=RLM&&CMASK[ny*n+nx]?top:tw;
-        if(z0<1||tq<=1){const zt=Math.min(1,tq);const f=bnd(x,y,d,z0,zt,1-z0,1-zt,flipOf(d));quad(f.p,f.u,mat(t0),sideX(d)?1:.7,[DX[d],DY[d],0])}
-        if(tq>1){const za=Math.max(1,z0);const f=bnd(x,y,d,za,tq,1-za,1-tq,flipOf(d));quad(f.p,f.u,mat(t1),sideX(d)?1:.7,[DX[d],DY[d],0])}
+        if(z0<SPL||tq<=SPL){const zt=Math.min(SPL,tq);const f=bnd(x,y,d,z0,zt,(SPL-z0)/SPL,(SPL-zt)/SPL,flipOf(d));quad(f.p,f.u,mat(t0),sideX(d)?1:.7,[DX[d],DY[d],0])}
+        if(tq>SPL){const za=Math.max(SPL,z0);const f=bnd(x,y,d,za,tq,1-za,1-tq,flipOf(d));quad(f.p,f.u,mat(t1),sideX(d)?1:.7,[DX[d],DY[d],0])}
         /* tall pointed gables over each building face (the alien levels) */
         if(typeof ROOFH!='undefined'&&ROOFH>0&&typeof BLD!='undefined'&&BLD){const sp=roofSpan(i,d>=2?1:0);if(sp){const c0=d<2?y:x,xf=d==1?x+1:x,yf=d==3?y+1:y,fp=flipOf(d),bp=[c0,c0+1],m=(sp[0]+sp[1])/2;if(m>c0&&m<c0+1)bp.splice(1,0,m);
           for(let k=0;k<bp.length-1;k++){const s0=bp[k],s1=bp[k+1],h0=roofH(sp[0],sp[1],s0),h1=roofH(sp[0],sp[1],s1);if(h0+h1<.01)continue;const P3=(s,z)=>d<2?[xf,s,z]:[s,yf,z],u0=fp?1-(s0-c0):s0-c0,u1=fp?1-(s1-c0):s1-c0;
