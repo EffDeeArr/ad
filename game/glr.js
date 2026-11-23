@@ -383,7 +383,7 @@ const pt=(ri,i)=>{const R=OCR[ri],a=i/NS*6.2832;return[x+Math.cos(a)*r*R[1],y+Ma
 for(let ri=0;ri<OCR.length-1;ri++)for(let i=0;i<NS;i++){const a=pt(ri,i),b=pt(ri,i+1),c=pt(ri+1,i),d=pt(ri+1,i+1);tr(a,b,c);tr(b,d,c)}}
 function occPass(dX,dY,plX,plY,inv,hH){occN=0;const prev=window.__glMesh;window.__glMesh=occCollect;
 try{const L0=buildL();for(const s of L0){const q=s.q;if(!q||q==1||q==3||q==4||q==8||q==9||q==10)continue;const dd=(s.x-P.x)**2+(s.y-P.y)**2;if(dd>900)continue;
-try{q==11?drawHum(s,dX,dY,plX,plY,inv,hH,null):q==5?drawProp(s.pm,dX,dY,plX,plY,inv,hH,null):q==6?drawTurret(s.tu,s.hs,dX,dY,plX,plY,inv,hH,null):q==7?drawChest(s.ch,dX,dY,plX,plY,inv,hH,null):q==2?drawDsp(s.dsp,dX,dY,plX,plY,inv,hH,null):0}catch(e){}
+try{q==14?(typeof drawFlag3=='function'&&drawFlag3(s,dX,dY,plX,plY,inv,hH,null)):q==11?drawHum(s,dX,dY,plX,plY,inv,hH,null):q==5?drawProp(s.pm,dX,dY,plX,plY,inv,hH,null):q==6?drawTurret(s.tu,s.hs,dX,dY,plX,plY,inv,hH,null):q==7?drawChest(s.ch,dX,dY,plX,plY,inv,hH,null):q==2?drawDsp(s.dsp,dX,dY,plX,plY,inv,hH,null):0}catch(e){}
 if(occN>3000000)break}}finally{window.__glMesh=prev}
 try{const E0=entOccList();if(E0&&E0.prox)for(const b of E0.prox){if(occN>3000000)break;occBody(b[0],b[1],b[2],b[3],b[4])}}catch(e){}
 if(occN<9){for(let i=0;i<9;i++)occArr[i]=0;occN=9}
@@ -558,7 +558,7 @@ mN=0;mBN=0;const L=buildL();for(const s of L){s.d=(s.x-P.x)**2+(s.y-P.y)**2;if(s
 const sb=new Map(),sblend=[];const shields=[];const cull=[];
 const prevMesh=window.__glMesh;window.__glMesh=meshFaces;
 try{for(const s of L){if(s.q){if(s.q==1){shields.push(s);continue}
-try{s.q==12?drawCrate(s.cr,dX,dY,plX,plY,inv,hH,null):s.q==11?drawHum(s,dX,dY,plX,plY,inv,hH,null):s.q==10?drawRoof(s.rf,dX,dY,plX,plY,inv,hH,null):s.q==5?drawProp(s.pm,dX,dY,plX,plY,inv,hH,null):s.q==6?drawTurret(s.tu,s.hs,dX,dY,plX,plY,inv,hH,null):s.q==4?drawGate(s,dX,dY,plX,plY,inv,hH,null):s.q==3?drawMed(s.mk,dX,dY,plX,plY,inv,hH,null):s.q==7?drawChest(s.ch,dX,dY,plX,plY,inv,hH,null):s.q==8?drawPortal(s,dX,dY,plX,plY,inv,hH,null):s.q==9?drawShopObj(s.o,dX,dY,plX,plY,inv,hH,null):s.q==2?drawDsp(s.dsp,dX,dY,plX,plY,inv,hH,null):0}catch(e){if(!window.__glErr){window.__glErr=1;console.error('GL item',e)}};continue}
+try{s.q==14?(typeof drawFlag3=='function'&&drawFlag3(s,dX,dY,plX,plY,inv,hH,null)):s.q==12?drawCrate(s.cr,dX,dY,plX,plY,inv,hH,null):s.q==11?drawHum(s,dX,dY,plX,plY,inv,hH,null):s.q==10?drawRoof(s.rf,dX,dY,plX,plY,inv,hH,null):s.q==5?drawProp(s.pm,dX,dY,plX,plY,inv,hH,null):s.q==6?drawTurret(s.tu,s.hs,dX,dY,plX,plY,inv,hH,null):s.q==4?drawGate(s,dX,dY,plX,plY,inv,hH,null):s.q==3?drawMed(s.mk,dX,dY,plX,plY,inv,hH,null):s.q==7?drawChest(s.ch,dX,dY,plX,plY,inv,hH,null):s.q==8?drawPortal(s,dX,dY,plX,plY,inv,hH,null):s.q==9?drawShopObj(s.o,dX,dY,plX,plY,inv,hH,null):s.q==2?drawDsp(s.dsp,dX,dY,plX,plY,inv,hH,null):0}catch(e){if(!window.__glErr){window.__glErr=1;console.error('GL item',e)}};continue}
 const dx=s.x-P.x,dy=s.y-P.y,ty=dx*dX+dy*dY;if(ty<.15)continue;
 let list=sb.get(s.t);if(!list){list=[];sb.set(s.t,list)}list.push(s)}}
 finally{window.__glMesh=prevMesh}
