@@ -1113,7 +1113,7 @@ function startServer(port, hostToken, opts) {
           // ---- Co-op: the host runs the monsters; everything here is checked and rebuilt before it is relayed ----
           case 'es': { // monster positions + hostile bullets, host only
             if (id !== hostId || !running || cfg.mode !== 'coop' || !Array.isArray(o.e) || !Array.isArray(o.b)) break;
-            const e = o.e.slice(0, 36).filter(r => Array.isArray(r) && r.length >= 7).map(r => [num(r[0], 0, 99999) | 0, +num(r[1], -1, 400).toFixed(2), +num(r[2], -1, 400).toFixed(2), +num(r[3], -400, 800).toFixed(2), Math.round(num(r[4], -1, 99999)), +num(r[5], -10, 10).toFixed(2), num(r[6], 0, 1023) | 0]);
+            const e = o.e.slice(0, 36).filter(r => Array.isArray(r) && r.length >= 7).map(r => [num(r[0], 0, 99999) | 0, +num(r[1], -1, 400).toFixed(2), +num(r[2], -1, 400).toFixed(2), +num(r[3], -400, 800).toFixed(2), Math.round(num(r[4], -1, 99999)), +num(r[5], -10, 10).toFixed(2), num(r[6], 0, 1023) | 0, num(r[7], 0, 65535) | 0]);
             const b = o.b.slice(0, 26).filter(r => Array.isArray(r) && r.length >= 4).map(r => [+num(r[0], -1, 400).toFixed(2), +num(r[1], -1, 400).toFixed(2), +num(r[2], -60, 60).toFixed(1), +num(r[3], -60, 60).toFixed(1), +num(r[4], -400, 800).toFixed(2)]);
             all({ t: 'es', fl: num(o.fl, 0, 9999) | 0, e, b }, id);
             break;
@@ -1139,6 +1139,11 @@ function startServer(port, hostToken, opts) {
           case 'rvp': { // co-op: how far a revive has got, for the player being revived
             if (!running || cfg.mode !== 'coop' || me.dead) break;
             all({ t: 'rvp', fl: num(o.fl, 0, 9999) | 0, to: num(o.to, 0, 1e9) | 0, p: +num(o.p, 0, 1).toFixed(2), p2: id }, id);
+            break;
+          }
+          case 'fp': case 'stp': { // co-op: an Imp's fire on the ground, a Shover's stomp (host only)
+            if (id !== hostId || !running || cfg.mode !== 'coop') break;
+            all({ t: o.t, fl: num(o.fl, 0, 9999) | 0, x: +num(o.x, -1, 400).toFixed(2), y: +num(o.y, -1, 400).toFixed(2), z: +num(o.z, -400, 800).toFixed(2) }, id);
             break;
           }
           case 'ahw': { // co-op: a player's arcade air hockey game (puck, both paddles, score), so the others can watch it on the table; e: it ended
@@ -1193,7 +1198,7 @@ function startServer(port, hostToken, opts) {
           }
           case 'en': { // how to build monsters the others do not have yet (a seed makes the copy identical)
             if (id !== hostId || !running || cfg.mode !== 'coop' || !Array.isArray(o.e)) break;
-            const e = o.e.slice(0, 12).filter(r => r && typeof r === 'object').map(r => ({ n: num(r.n, 0, 99999) | 0, x: +num(r.x, -1, 400).toFixed(2), y: +num(r.y, -1, 400).toFixed(2), z: +num(r.z, -400, 800).toFixed(2), sd: num(r.sd, 0, 2e9) | 0, f: num(r.f, 0, 999) | 0, k: num(r.k, 0, 3) | 0, p: num(r.p, -1, 99999) | 0, hp: Math.round(num(r.hp, 0, 99999)), sc: +num(r.sc, .1, 4).toFixed(2), c: r.c ? 1 : 0 }));
+            const e = o.e.slice(0, 12).filter(r => r && typeof r === 'object').map(r => ({ n: num(r.n, 0, 99999) | 0, x: +num(r.x, -1, 400).toFixed(2), y: +num(r.y, -1, 400).toFixed(2), z: +num(r.z, -400, 800).toFixed(2), sd: num(r.sd, 0, 2e9) | 0, f: num(r.f, 0, 999) | 0, k: num(r.k, 0, 3) | 0, p: num(r.p, -1, 99999) | 0, hp: Math.round(num(r.hp, 0, 99999)), sc: +num(r.sc, .1, 4).toFixed(2), c: r.c ? 1 : 0, kd: num(r.kd, -1, 9, -1) | 0 }));
             all({ t: 'en', fl: num(o.fl, 0, 9999) | 0, e }, id);
             break;
           }

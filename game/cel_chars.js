@@ -169,7 +169,10 @@ function mawcrab(g,P,o,ps){const w=ps.w||0,a=ps.a||0,h=ps.h||0,M=[],by=w*.9+(h?3
   for(const s of[-1,1]){geye(q,32+s*7.6,31+sy,2.9,1.3,s,h?P.deep:o.glow);if(o.n>=3){q.fillStyle=h?P.deep:o.glow;q.beginPath();q.arc(32+s*13.6,33.6+sy,.9,0,7);q.fill()}}
   /* the mouth: a slit that opens sideways, teeth meshing */q.fillStyle=BLK;q.beginPath();poly(q,[[32,29.6+sy],[32+2+mo,37+sy],[32,46.4+sy],[32-2-mo,37+sy]]);q.fill();q.fillStyle=GORE.base;q.beginPath();poly(q,[[32,32.6+sy],[32+.6+mo*.7,37+sy],[32,43.4+sy],[32-.6-mo*.7,37+sy]]);q.fill();
   q.fillStyle='#efe6d2';q.strokeStyle=BLK;q.lineWidth=.3;for(const s of[-1,1])for(let k=0;k<4;k++){const y=32.6+k*3.2+sy,xe=32+s*(1.6+mo*(1-Math.abs(k-1.5)/2.6));q.beginPath();poly(q,[[xe,y-1.1],[xe,y+1.1],[xe-s*(1.6+mo*.36),y]]);q.fill();q.stroke()}
-  if(o.pat){q.fillStyle=P.mark;for(const[x,y]of[[-17,27],[17,27],[-12,22.6],[12,22.6]]){q.beginPath();poly(q,[[32+x-1.2,y+sy],[32+x,y+sy-1.2],[32+x+1.2,y+sy],[32+x,y+sy+1.2]]);q.fill()}}}});
+  if(o.pat){q.fillStyle=P.mark;for(const[x,y]of[[-17,27],[17,27],[-12,22.6],[12,22.6]]){q.beginPath();poly(q,[[32+x-1.2,y+sy],[32+x,y+sy-1.2],[32+x+1.2,y+sy],[32+x,y+sy+1.2]]);q.fill()}}
+  /* the Husk with its shell burst: torn holes showing the meat, and cracks running out of them */
+  if(o.brk){for(const[x,y,r]of[[-14,24,4.6],[15,30,3.8],[-6,41,3]]){q.fillStyle=BLK;q.beginPath();poly(q,[[32+x-r,y+sy],[32+x-r*.3,y+sy-r*1.1],[32+x+r*.8,y+sy-r*.6],[32+x+r,y+sy+r*.4],[32+x+r*.2,y+sy+r],[32+x-r*.9,y+sy+r*.6]]);q.fill();q.fillStyle=GORE.base;q.beginPath();poly(q,[[32+x-r*.6,y+sy],[32+x-r*.1,y+sy-r*.7],[32+x+r*.5,y+sy-r*.3],[32+x+r*.5,y+sy+r*.4],[32+x-r*.4,y+sy+r*.5]]);q.fill()}
+   q.strokeStyle=BLK;q.lineWidth=.6;q.beginPath();for(const[a,b,c,d,e,f]of[[18,24,12,19,9,23],[18,24,22,17,26,19],[47,30,52,26,54,31],[47,30,44,37,46,41],[26,41,22,45,19,43]]){q.moveTo(a,b+sy);q.lineTo(c,d+sy);q.lineTo(e,f+sy)}q.stroke()}}});
  masses(g,M);return[32,23.6+sy]}
 
 /* BOAR-BEAST (the Shover): a mountain of shoulder behind a tusked head, seen coming straight at you */
@@ -190,6 +193,40 @@ function boar(g,P,o,ps){const w=ps.w||0,a=ps.a||0,h=ps.h||0,M=[],hy=(a>0?45:a<0?
  masses(g,M);if(a){g.strokeStyle='#efe6d2';g.lineWidth=.6;g.beginPath();for(const s of[-1,1]){g.moveTo(hx+s*5*k,hy+9*k);g.lineTo(hx+s*10*k,hy+(a>0?14:5)*k)}g.stroke()}
  return[32,24+w*.5]}
 
+/* MAWLING: nothing but a jaw. A great hinged mouth on two stubby legs, the eyes tiny on top of it */
+function mawling(g,P,o,ps){const w=ps.w||0,a=ps.a||0,h=ps.h||0,M=[],by=(a>0?4:a<0?-1.4:0)+h*2+Math.abs(w)*.6,op=h?3:a<0?13:a>0?1.4:6+w*.8,cx=32+h*3;
+ for(const s of[-1,1]){const st=(!a&&!h)?w*s*2.4:0;tube(M,P,[[cx+s*9,44+by],[cx+s*13,52+by*.5-Math.max(0,st)],[cx+s*12+st,59.5]],3.4,2.4,{u:1.5,k:.7});PG(M,DBONE,[[cx+s*8.6+st,58.4],[cx+s*16+st,58.4],[cx+s*17+st,62.4],[cx+s*7.6+st,62.4]],{u:1.2,k:.4})}
+ const jy=31+by,ty=jy-op*.5,ly=jy+op*.5;
+ PG(M,GORE,[[cx-17,ty+1],[cx+17,ty+1],[cx+15,ly+3],[cx-15,ly+3]],{u:1,k:.5,in:q=>{q.fillStyle='#c8566a';q.beginPath();poly(q,[[cx-6,jy+op*.25],[cx,jy-op*.2],[cx+6,jy+op*.25],[cx,ly+1.6]]);q.fill()}});
+ for(let t=0;t<9;t++){const x=cx-17+t*4.25,l=(t%2?3.2:5)+(a>0?.6:0);PG(M,DBONE,[[x-1.5,ty],[x+1.5,ty],[x+(t%2?.5:-.5),ty+l]],{u:.8,k:.3})}
+ for(let t=0;t<8;t++){const x=cx-15+t*4.3,l=(t%2?3.8:2.8);PG(M,DBONE,[[x-1.4,ly+.4],[x+1.4,ly+.4],[x+(t%2?-.4:.4),ly+.4-l]],{u:.8,k:.3})}
+ PG(M,P,[[cx-19,ly],[cx+19,ly],[cx+17.4,ly+7],[cx+9,ly+12.6],[cx-9,ly+12.6],[cx-17.4,ly+7]],{u:1.6,in:q=>scr(q,[[cx-11,ly+7,cx-8,ly+10.4],[cx+11,ly+7,cx+8,ly+10.4],[cx-2,ly+9,cx+2,ly+9]])});
+ PG(M,P,[[cx-21,ty+1],[cx-20,ty-8],[cx-13,ty-16],[cx-3,ty-19],[cx+6,ty-18.4],[cx+15,ty-14],[cx+20.6,ty-7],[cx+21,ty+1]],{hl:1,u:1.8,k:1.2,in:q=>{for(const s of[-1,1])geye(q,cx+s*8,ty-11,2.4,1.05,s,h?P.deep:o.glow);if(o.n>=3){q.fillStyle=h?P.deep:o.glow;q.beginPath();q.arc(cx,ty-14.6,1,0,7);q.fill()}
+  scr(q,[[cx-15,ty-6,cx-12,ty-3],[cx+15,ty-6,cx+12,ty-3],[cx-4,ty-17,cx-2,ty-13.6],[cx+8,ty-4,cx+10,ty-1.6]]);if(o.pat){q.fillStyle=P.mark;for(const x of[-14,-7,7,14]){q.beginPath();poly(q,[[cx+x-1.4,ty-3.4],[cx+x,ty-6.4],[cx+x+1.4,ty-3.4]]);q.fill()}}}});
+ if(o.hn)for(const s of[-1,1])PG(M,DBONE,[[cx+s*10,ty-15],[cx+s*14,ty-13],[cx+s*17,ty-22]],{u:1.1,k:.4});
+ masses(g,M);if(a>0){g.strokeStyle='#efe6d2';g.lineWidth=.7;g.beginPath();for(const s of[-1,1]){g.moveTo(cx+s*22,jy);g.lineTo(cx+s*28,jy+3.6);g.moveTo(cx+s*21,jy-3);g.lineTo(cx+s*26.6,jy-5)}g.stroke()}
+ return[cx,ly+8]}
+
+/* IMP: a small hunched devil, horned, with ragged little wings, a whip of a tail and a fireball in its raised hand */
+function imp(g,P,o,ps){const w=ps.w||0,a=ps.a||0,h=ps.h||0,M=[],by=-Math.abs(w)*1.2+h*2+(a<0?1.5:0),cx=32+h*3,cy=31+by,SK={base:P.shade,shade:P.deep,deep:BLK,light:P.base};
+ tube(M,SK,curve(t=>[cx+6+t*16,cy+15-Math.sin(t*3.4+w)*6-t*4],7),1.6,.5,{dark:1,u:1.2,k:.5});PG(M,SK,[[cx+20.6,cy+6],[cx+25.6,cy+4],[cx+23,cy+9.4]],{dark:1,u:1,k:.3});
+ for(const s of[-1,1]){const fl=a?-.6:w*s*.6;PG(M,SK,[[cx+s*5,cy-4],[cx+s*15,cy-14+fl*4],[cx+s*21,cy-12+fl*4],[cx+s*17.6,cy-6.4+fl*2],[cx+s*20,cy-1+fl*2],[cx+s*15,cy-2],[cx+s*12,cy+3],[cx+s*7,cy+2]],{dark:1,u:1.4,k:.6,in:q=>{q.strokeStyle=P.base;q.lineWidth=.4;q.beginPath();q.moveTo(cx+s*6,cy-2);q.lineTo(cx+s*15,cy-13+fl*4);q.moveTo(cx+s*6,cy-1);q.lineTo(cx+s*17.6,cy-6+fl*2);q.stroke()}})}
+ for(const s of[-1,1]){const st=(!a&&!h)?w*s*2:0;tube(M,P,[[cx+s*5,cy+12],[cx+s*10,cy+19-st*.4],[cx+s*7+st,cy+26.6-Math.max(0,st)]],2.6,1.6,{u:1.4,k:.6});PG(M,DBONE,[[cx+s*4.6+st,cy+26],[cx+s*11+st,cy+26],[cx+s*12+st,cy+29.4],[cx+s*4+st,cy+29.4]],{u:1.1,k:.4})}
+ PG(M,P,[[cx-8,cy-6],[cx+7,cy-7],[cx+11,cy+1],[cx+10,cy+10],[cx+5,cy+15],[cx-5,cy+15],[cx-10,cy+10],[cx-11,cy+1]],{hl:1,u:1.7,in:q=>{scr(q,[[cx-6,cy+8,cx-3,cy+11],[cx+6,cy+8,cx+3,cy+11],[cx-2,cy+3,cx+2,cy+3]]);if(o.pat){q.fillStyle=P.mark;q.beginPath();poly(q,[[cx-3,cy-2],[cx+3,cy-2],[cx,cy+3]]);q.fill()}}});
+ const hx=a<0?cx+14:a>0?cx+7:cx+13,hy=a<0?cy-21:a>0?cy+1:cy-11+w*1.2;
+ tube(M,P,[[cx+8,cy-3],[cx+(a<0?15.6:13.4),a<0?cy-10:cy-6],[hx,hy]],2.3,1.7,{u:1.3,k:.6});
+ tube(M,P,[[cx-8,cy-2],[cx-14,cy+4],[cx-13,cy+10]],2.2,1.6,{u:1.3,k:.6});for(let f=-1;f<=1;f++)PG(M,DBONE,[[cx-14+f*1.4,cy+10],[cx-12.6+f*1.4,cy+10],[cx-13.6+f*2,cy+13.6]],{u:.8,k:.3});
+ const hdx=cx-1,hdy=cy-12;
+ for(const s of[-1,1])PG(M,DBONE,[[hdx+s*4,hdy-5],[hdx+s*7.6,hdy-4],[hdx+s*12,hdy-12],[hdx+s*13,hdy-18.6],[hdx+s*9.4,hdy-11],[hdx+s*5,hdy-8]],{u:1.3,k:.5,in:q=>scr(q,[[hdx+s*9,hdy-8,hdx+s*10.6,hdy-9.6]])});
+ for(const s of[-1,1])PG(M,P,[[hdx+s*6.6,hdy-3],[hdx+s*13,hdy-6],[hdx+s*8,hdy+.6]],{u:1.1,k:.4});
+ PG(M,P,[[hdx-7,hdy-6],[hdx-2,hdy-8.6],[hdx+3,hdy-8.6],[hdx+7.6,hdy-5],[hdx+8,hdy+1],[hdx+4,hdy+6],[hdx-4,hdy+6],[hdx-8,hdy+1]],{hl:1,u:1.6,in:q=>{for(const s of[-1,1])geye(q,hdx+s*3.4,hdy-2,2.2,1,s,h?P.deep:o.glow);q.fillStyle=BLK;q.beginPath();poly(q,[[hdx-5,hdy+1.4],[hdx+5,hdy+1.4],[hdx+3,hdy+4.2+(a?1.4:0)],[hdx-3,hdy+4.2+(a?1.4:0)]]);q.fill();teeth(q,hdx-4.4,hdx+4.4,hdy+1.4,1.4,5);scr(q,[[hdx-6,hdy-3.6,hdx-5,hdy-1],[hdx+6.6,hdy-3.6,hdx+5.6,hdy-1]])}});
+ masses(g,M);
+ if(!h){const r=a>0?2.4:a<0?4.8:3.6;const gr=g.createRadialGradient(hx,hy-1,0,hx,hy-1,r*1.7);gr.addColorStop(0,'#fff6c0');gr.addColorStop(.4,'#ffb040');gr.addColorStop(1,'rgba(255,70,0,0)');g.fillStyle=gr;g.beginPath();g.arc(hx,hy-1,r*1.7,0,7);g.fill();
+  g.fillStyle='#ffd25a';g.beginPath();poly(g,[[hx-r*.75,hy],[hx-r*.3,hy-r*1.1],[hx,hy-r*1.8],[hx+r*.4,hy-r*.9],[hx+r*.75,hy],[hx,hy+r*.55]]);g.fill();g.fillStyle='#fff8d8';g.beginPath();poly(g,[[hx-r*.3,hy],[hx,hy-r*.8],[hx+r*.3,hy],[hx,hy+r*.3]]);g.fill()}
+ return[cx,cy+6]}
+/* CRAWLER: the spider pressed flat, all legs, hugging the floor */
+function crawler(g,P,o,ps){const KX=1.16,KY=.6,Y0=62;g.save();g.translate(32,Y0);g.scale(KX,KY);g.translate(-32,-Y0);const ws=spider(g,P,o,ps);g.restore();return[32+(ws[0]-32)*KX,Y0+(ws[1]-Y0)*KY]}
+
 /* trait extras */
 function traitsUnder(g,tr){if(tr.includes('phaser')){g.strokeStyle='rgba(206,120,255,.95)';g.lineWidth=1.4;g.beginPath();g.arc(32,32,30,0,7);g.stroke();g.strokeStyle='rgba(255,220,255,.85)';g.lineWidth=.55;g.beginPath();g.arc(32,32,28,0,7);g.stroke()}
  if(tr.includes('swift')||tr.includes('charger')){g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=1.2;for(let i=0;i<3;i++){g.beginPath();g.moveTo(0,22+i*10);g.lineTo(9-i*1.5,22+i*10);g.stroke()}}}
@@ -207,7 +244,9 @@ function anim(fn,P,o,tr,rune){const F=[];const D={n:6,ws:null,
  /* where the weak spot is in the resting pose */
  try{const[c,g]=canvas();D.ws=fn(g,P,o,POSES[1])}catch(e){D.ws=[32,32]}
  return D}
-C.monster=function(hue,sp,nEyes,pat,sat,mo,hn,ant,tr){tr=tr||[];return anim(DES[sp%7],opal(hue,sat),{n:nEyes,pat,hn,ant,mo,glow:tr.includes('shooter')?GLOWR:GLOW},tr,null)};
+/* 0.9.302: each kind of monster has its own body: Mawling the jaw, Wretch the centipede, Husk the shelled crab (brk: its shell burst), Gorger the ooze, Shade the mask spirit, Crawler the flattened spider, Imp the little devil, Drone the winged eye */
+const KDES=[mawling,centipede,mawcrab,ooze,maskspirit,crawler,imp,eyefiend];
+C.monster=function(hue,sp,nEyes,pat,sat,mo,hn,ant,tr,kind,brk){tr=tr||[];const fn=kind>=0&&KDES[kind]?KDES[kind]:DES[sp%7];return anim(fn,opal(hue,sat),{n:nEyes,pat,hn,ant,mo,brk:!!brk,glow:tr.includes('shooter')?GLOWR:GLOW},tr,null)};
 C.shover=function(){return anim(boar,opal(16,74),{n:2,pat:1,hn:1,glow:GLOW},[],null)};
 C.SZ=SZ;
 return C})();

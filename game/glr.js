@@ -12,7 +12,7 @@ let texC=new WeakMap();const fin=typeof FinalizationRegistry=='function'?new Fin
 const PROJ=`uniform vec2 uP;uniform vec2 uD;uniform vec4 uK;
 vec4 proj(vec3 p){vec2 d=p.xy-uP;float ty=dot(d,uD);float lat=uD.x*d.y-uD.y*d.x;return vec4(lat/uK.w,uK.z*(-2.*uK.y*ty-2.*(uK.x-p.z)),${PA.toFixed(6)}*ty+(${PB.toFixed(6)}),ty);}`;
 /* Dynamic lights: up to 12 point lights; the nearest few cast ray-traced shadows (the ray walks a 3D grid of solid cells built from the level) */
-const LIGHT=`uniform vec3 uFogC;uniform vec4 uLP[12];uniform vec4 uLC[12];uniform vec4 uLD[12];uniform int uLN;uniform int uSh;uniform float uAmb;uniform vec3 uEyeP;uniform vec4 uOc0;uniform vec3 uOcN;uniform highp sampler3D uOcc;uniform vec4 uEn[24];uniform vec4 uEn2[24];uniform int uNE;uniform float uEx;
+const LIGHT=`uniform vec3 uFogC;uniform vec4 uLP[18];uniform vec4 uLC[18];uniform vec4 uLD[18];uniform int uLN;uniform int uSh;uniform float uAmb;uniform vec3 uEyeP;uniform vec4 uOc0;uniform vec3 uOcN;uniform highp sampler3D uOcc;uniform vec4 uEn[24];uniform vec4 uEn2[24];uniform int uNE;uniform float uEx;
 float tmx(float p0,float d,float nx){return abs(d)<1e-6?1e9:(nx-p0)/d;}
 float shRay(vec3 a,vec3 b){vec3 g0=(a-uOc0.xyz)/uOc0.w,g1=(b-uOc0.xyz)/uOc0.w,d=g1-g0;float L=length(d);if(L<1e-3)return 1.;d/=L;ivec3 c=ivec3(floor(g0)),st=ivec3(d.x>0.?1:-1,d.y>0.?1:-1,d.z>0.?1:-1);ivec3 sz=ivec3(uOcN);
 if(any(lessThan(c,ivec3(0)))||any(greaterThanEqual(c,sz)))return 1.;vec3 td=vec3(abs(d.x)<1e-6?1e9:1./abs(d.x),abs(d.y)<1e-6?1e9:1./abs(d.y),abs(d.z)<1e-6?1e9:1./abs(d.z));
@@ -30,7 +30,7 @@ float dist=length((a+d1*s)-(p0+d2*q));vis*=1.-(1.-smoothstep(r*.7,r*1.5,dist))*.
 return vis;}
 /* cel light: a lamp's light lands in hard-edged steps (lit, half-lit, unlit) the way an animator paints light and shadow */
 vec3 toon(vec3 L){float m=max(L.r,max(L.g,L.b));if(m<1e-4)return L;float w=.025;float q=smoothstep(.07-w,.07+w,m)*.16+smoothstep(.26-w,.26+w,m)*.26+smoothstep(.55-w,.55+w,m)*.3+smoothstep(.9-w,.9+w,m)*.2;return L*(q/m);}
-vec3 lit(vec3 p,vec3 n){vec3 acc=vec3(0.);for(int i=0;i<12;i++){if(i>=uLN)break;vec3 lv=uLP[i].xyz-p;float d2=dot(lv,lv),r=uLP[i].w;if(d2>=r*r)continue;vec3 ld=uLD[i].xyz;if(dot(ld,ld)>.1&&dot(p-uLP[i].xyz,ld)<-.4)continue;float d=sqrt(d2);vec3 l=lv/d;float nl=dot(n,l);if(nl<=.02)continue;float a=1.-d/r;a*=a;float v=1.;if(i<uSh&&a>.02){v=shRay(p+n*.1,uLP[i].xyz);if(v>.001&&uNE>0)v*=entOcc(p+n*.1,uLP[i].xyz);}acc+=uLC[i].rgb*(a*(.3+.7*nl)*v);}return acc;}
+vec3 lit(vec3 p,vec3 n){vec3 acc=vec3(0.);for(int i=0;i<18;i++){if(i>=uLN)break;vec3 lv=uLP[i].xyz-p;float d2=dot(lv,lv),r=uLP[i].w;if(d2>=r*r)continue;vec3 ld=uLD[i].xyz;if(dot(ld,ld)>.1&&dot(p-uLP[i].xyz,ld)<-.4)continue;float d=sqrt(d2);vec3 l=lv/d;float nl=dot(n,l);if(nl<=.02)continue;float a=1.-d/r;a*=a;float v=1.;if(i<uSh&&a>.02){v=shRay(p+n*.1,uLP[i].xyz);if(v>.001&&uNE>0)v*=entOcc(p+n*.1,uLP[i].xyz);}acc+=uLC[i].rgb*(a*(.3+.7*nl)*v);}return acc;}
 `;
 const NRM=`vec3 nrm(vec3 p){vec3 n=cross(dFdx(p),dFdy(p));float l=length(n);if(l<1e-12)return vec3(0.,0.,1.);n/=l;if(dot(n,uEyeP-p)<0.)n=-n;return n;}
 `;
@@ -568,13 +568,13 @@ const bsz=8;const flush=(arr,t,blend)=>{const n=arr.length;if(!n)return;if(sprDa
 for(const s of arr){const ty=(s.x-P.x)*dX+(s.y-P.y)*dY;const f=(s.fb?256:Math.max(30,256/(1+Math.sqrt(s.d)*FKU)|0))/256;let zb=SW?s.zb:(s.nh?0:FHc(s.x,s.y))+s.fl,sx=s.x,sy=s.y,ss=SW?s.s*SW.SS:s.s;
 /* an enemy shot is moved toward the camera along its own line of sight (and shrunk to match, so it looks exactly the same) so it is not hidden inside the body of the enemy that fired it */
 if(s.pj){const ddx=s.x-P.x,ddy=s.y-P.y,dd=Math.hypot(ddx,ddy);if(dd>.05){const off=Math.min(.7,dd*.6),k=(dd-off)/dd;sx=P.x+ddx*k;sy=P.y+ddy*k;zb=EZ+(zb-EZ)*k;ss*=k}}
-sprData[o++]=sx;sprData[o++]=sy;sprData[o++]=zb;sprData[o++]=ss;sprData[o++]=f;sprData[o++]=s.fh?90/255:0;sprData[o++]=s.al?.8:1;sprData[o++]=s.ol?s.ol:0}
+sprData[o++]=sx;sprData[o++]=sy;sprData[o++]=zb;sprData[o++]=ss;sprData[o++]=f;sprData[o++]=s.fh?90/255:0;sprData[o++]=s.ga!==undefined?s.ga:s.al?.8:1;sprData[o++]=s.ol?s.ol:0}
 if(!sprBuf)sprBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,sprBuf);gl.bufferData(gl.ARRAY_BUFFER,sprData.subarray(0,n*bsz),gl.STREAM_DRAW);
 /* aA = (x,y,z), aB = (size, fog, flash, alpha), aC = (0,0,0,outline) */
 const A=pr.a;const l1=A.aA,l2=A.aB,l3=A.aO;gl.enableVertexAttribArray(l1);gl.enableVertexAttribArray(l2);gl.enableVertexAttribArray(l3);gl.vertexAttribPointer(l1,3,gl.FLOAT,false,32,0);gl.vertexAttribPointer(l2,4,gl.FLOAT,false,32,12);gl.vertexAttribPointer(l3,1,gl.FLOAT,false,32,28);gl.vertexAttribDivisor(l1,1);gl.vertexAttribDivisor(l2,1);gl.vertexAttribDivisor(l3,1);
 gl.bindTexture(gl.TEXTURE_2D,texOf(animeOn()?ANIME.char(t):t,0,0,false));gl.drawArraysInstanced(gl.TRIANGLE_STRIP,0,4,n);gl.vertexAttribDivisor(l1,0);gl.vertexAttribDivisor(l2,0);gl.vertexAttribDivisor(l3,0)};
 gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
-for(const[t,arr]of sb){const opq=arr.filter(s=>!s.al),bl=arr.filter(s=>s.al);if(opq.length)flush(opq,t);if(bl.length)sblend.push([t,bl])}
+for(const[t,arr]of sb){const opq=arr.filter(s=>!s.al&&s.ga===undefined),bl=arr.filter(s=>s.al||s.ga!==undefined);if(opq.length)flush(opq,t);if(bl.length)sblend.push([t,bl])}
 /* see-through sprites (enemy shots) are drawn after the solid 3D meshes, so the depth test hides them behind an enemy that is really in front of them and the enemy's own body can no longer paint over a shot that is in front of it */
 SPRB=()=>{pre();gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);const flat=[];for(const[t,arr]of sblend)for(const s of arr)flat.push([t,s]);flat.sort((a,b)=>b[1].d-a[1].d);for(const[t,s]of flat)flush([s],t);gl.depthMask(true);gl.disable(gl.BLEND)};if(!(mN>0)&&!(mBN>0)&&!PCM.size&&!PHD.length){SPRB();SPRB=null}}
 /* 3D meshes */
