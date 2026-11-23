@@ -417,7 +417,7 @@ const wAng=(a,b)=>{let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.283
 const W_PM_PRICE=100;
 /* what the use key would do here, if anything: {k, t (the prompt)} */
 function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const px=P.x,py=P.y;
- const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return{k:'duel',t:'CHALLENGE MCCASSIDY TO A DUEL'};
+ const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE MCCASSIDY TO A DUEL'}:{k:'noduel',t:'MCCASSIDY ONLY DUELS SOMEONE WITH A GUN'};
  const sm=W.smithE;if(sm&&sm.pac&&!sm.dead&&W.smithC&&Math.hypot(W.smithC.x-px,W.smithC.y-py)<1.6)return{k:'smith',t:W.pmSold?'THE GUNSMITH: "ENJOY IT, PARTNER"':'BUY THE PEACEMAKER  -  $'+W_PM_PRICE};
   const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!DM&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+ALLY_NAME.toUpperCase()+'  -  $'+ALLY_PRICE};
  const st=W.storeE;if(st&&st.pac&&!st.dead&&W.storeC&&Math.hypot(W.storeC.x-px,W.storeC.y-py)<1.6)return{k:'store',t:'BROWSE THE GENERAL STORE'};
@@ -425,12 +425,13 @@ function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const 
 /* the use key (called from chest()): true if the town took it */
 function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNear();if(!q)return false;keys={};
  if(q.k=='duel'){duelStart();return true}
+ if(q.k=='noduel'){wMsg('"Come back when you\'re carryin\' a real iron, partner."',2.6);return true}
  if(q.k=='smith'){if(W.pmSold){wMsg('"Take good care of her."',2);return true}
   const cur=Wp&&Wp.name||'your gun';snd(620,.12,'triangle',.06,200);
   choose('Gunsmith','"A Peacemaker. Single action, six shots, and the hardest-hitting iron in the territory. Wait a moment between shots and she never misses." You have $'+(P.money|0)+'.',
-   [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Heavier hits than the Hand cannon. Dead Eye: the first shot after a short pause does 60% more damage and goes exactly where you aim. '+(W2?'Replaces '+cur+'.':'Your '+cur+' goes to your second slot.')},{n:'Leave',d:'Keep your money.'}],
+   [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Heavier hits than the Hand cannon. Dead Eye: the first shot after a short pause does 60% more damage and goes exactly where you aim. Replaces the '+cur+' you are holding.'},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<W_PM_PRICE){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
-    P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();if(!W2&&Wp){W2=Wp;W2.am=P.ammo}Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
+    P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
   if(q.k=='store'){westStore();return true}
  if(q.k=='hire'){if(ALLY){wMsg('"One partner\'s plenty, friend."',2);return true}snd(620,.12,'triangle',.06,200);
   choose(ALLY_NAME,'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+ALLY_NAME+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
@@ -526,11 +527,11 @@ function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;D.t+=dt;const L=W.SY0+2.5,P
  D.fd=Math.max(0,D.fd-dt*2);
  if(D.st=='wait'){const k=Math.floor(D.t/1.1);if(k>D.toll&&D.toll<3){D.toll=k;snd(330,1.4,'triangle',.08,-4);snd(660,.9,'sine',.03,-4)}if(D.t>3.7){D.st='cue';D.t=0}return}
  if(D.st=='cue'){if(D.t>D.cue){D.st='draw';D.t=0;snd(1200,.12,'square',.06,-200)}return}
- if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,.6);W.duelDone=1;setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
+ if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,-1);W.duelDone=1;setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
  if(D.st=='won'||D.st=='lost'||D.st=='foul'){if(D.t>2.6){D.st='out';D.t=0}return}
  if(D.st=='out'){D.fd=Math.min(1,D.t/.5);if(D.t>.6){if(j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}W.duel=null}}}
 function jackShoots(j,k){snd(260,.14,'sawtooth',.1,-120,j);snd(90,.2,'square',.08,-40,j);try{ltPush(j.x,j.y,.7,3,[1,.8,.5],.12)}catch(er){}for(let i=0;i<6;i++)ptcPush({x:j.x+Math.cos(j.fa)*.35,y:j.y+Math.sin(j.fa)*.35,z:.62,vx:Math.cos(j.fa)*rr(1,3),vy:Math.sin(j.fa)*rr(1,3)+rr(-.5,.5),vz:rr(-.2,.4),life:.2,l0:.2,t:S.spark,s:.12,g:0},0);
- P.inv=0;hb(j);cause='McCassidy';hurt(P.mhp*k);P.hurt=.6}
+ P.inv=0;hb(j);cause='McCassidy';if(k<0){/* outdrawn: the shot is fatal (shields, overheal and the Aegis don't stop it) */P.shd=0;P.oh=0;if(P.pw.aegis)P.ag=Math.max(P.ag||0,.01);hurt(P.mhp*100)}else hurt(P.mhp*k);P.hurt=.6}
 function duelFire(){const W=WEST,D=W.duel,j=W.jack;if(!D)return;
  if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1}},800);W.duelDone=1}}
 /* a flashbang: a bang, a white-out, and your hands shake for a moment */
@@ -633,7 +634,7 @@ function westBrkSeen(){const W=WEST;if(!W||!W.brk||typeof propRay!='function')re
 
 /* the dart player: a throw every couple of seconds, the dart flying across to the board */
 function westDarts(e,dt){const W=WEST;e.dT-=dt;if(!W.dboard)return;const tx=W.dboard.x+.92,ty=W.dboard.y+.5;e.fa=Math.atan2(ty-e.y,tx-e.x);if(e.dT>0)return;e.dT=rr(1.8,3.4);const d=Math.hypot(tx-e.x,ty-e.y),v=7,lf=d/v;
- ptcPush({x:e.x+Math.cos(e.fa)*.3,y:e.y+Math.sin(e.fa)*.3,z:.62,vx:(tx-e.x)/d*v,vy:(ty-e.y)/d*v+rr(-.15,.15),vz:.25,life:lf,l0:lf,t:S.spark,s:.07,g:.4,fs:1},0);setTimeout(()=>{if(state=='play')snd(700+Math.random()*200,.04,'square',.04,-400,{x:tx,y:ty})},lf*1000)}
+ ptcPush({x:e.x+Math.cos(e.fa)*.3,y:e.y+Math.sin(e.fa)*.3,z:.62,vx:(tx-e.x)/d*v,vy:(ty-e.y)/d*v+rr(-.15,.15),vz:.25,life:lf,l0:lf,t:S.spark,s:.07,g:.4},0);setTimeout(()=>{if(state=='play')snd(700+Math.random()*200,.04,'square',.04,-400,{x:tx,y:ty})},lf*1000)}
 
 /* ===== the hired partner (0.9.315): hired in Frontier Town's saloon, then follows the player from floor to floor (single player).
    Fights what the player fights with a rifle; monsters that are closer to the partner than to the player go after the partner (the AI's target is swapped
@@ -689,3 +690,7 @@ function trapBoom(t){const W=WEST;t.fired=1;for(const q of[t.wire,t.plate,t.dyn]
  for(const e of E){if(e.dead)continue;const de=Math.hypot(e.x-t.x,e.y-t.y);if(de<TRAP_R){if(e.pac)westWake(e,1);e.hp-=dm*1.5*(1-de/(TRAP_R*1.4));e.flash=.1;e.aggro=1;if(e.hp<=0)kill(e)}}
  if(typeof ALLY!='undefined'&&ALLY&&ALLY.FN===FLN){const da=Math.hypot(ALLY.x-t.x,ALLY.y-t.y);if(da<TRAP_R)allyHurt(ALLY,dm*(1-da/(TRAP_R*1.4)))}
  for(const o of W.traps)if(!o.fired&&o.fuse<0&&Math.hypot(o.x-t.x,o.y-t.y)<1.6)trapFire(o,.35)}
+
+/* a duel needs a gun that hits where it points: not a melee weapon, the grenade launcher or the flamethrower. The gun in hand counts, or the off-hand one when dual wielding */
+const wDuelGun=w=>!!w&&!w.m&&!w.fist&&w.k!='Grenade launcher'&&w.k!='Flamethrower'&&w.k!='Hands';
+function westDuelOk(){return wDuelGun(Wp)||(typeof dualOn=='function'&&dualOn()&&wDuelGun(W2))}
