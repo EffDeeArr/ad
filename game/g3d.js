@@ -61,7 +61,7 @@ function g3dBuild(){
   /* ---- ceiling of the ordinary floors: a textured slab over every open cell (and solid, so you cannot jump through it) ---- */
   if((RLM||typeof CEILON!='undefined'&&CEILON)&&typeof CEIL!='undefined'&&CEIL&&top>1&&top<2){
     for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x;if(g[i]||CZ[i]<.99||CRS.has(i)||RLM&&!CMASK[i])continue;
-      quad([[x,y,top],[x+1,y,top],[x+1,y+1,top],[x,y+1,top]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(((x*7+y*13)%4==0)?CEIL[1]:CEIL[0]),.8,[0,0,-1]);
+      quad([[x,y,top],[x+1,y,top],[x+1,y+1,top],[x,y+1,top]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(WST&&WEST&&WEST.caveSet&&WEST.caveSet.has(i)?TX[0]:((x*7+y*13)%4==0)?CEIL[1]:CEIL[0]),.8,[0,0,-1]);
       box(x,y,top,x+1,y+1,ZT)}}
   /* ---- cells: low arches, risers between floor heights, walls ---- */
   for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x;
@@ -88,9 +88,9 @@ function g3dBuild(){
   /* the railway: the mountain above the walls and over the tunnel (steps where one column of rock is higher than the next, and the tops), the stone face over each
      mouth of the tunnel, and the tunnel's vault: a slope where every wall meets the roof, closed off where it ends */
   if(RLM){const TOP=j=>g[j]?WHM[j]:CMASK[j]?RFH[j]:-1,rv=typeof RAILV!='undefined'&&RAILV?RAILV:{rock:TX[0],portal:TX[1]||TX[0],vault:CEIL?CEIL[0]:TX[0]},zc=top-.36,ins=.3;
-    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x,Ha=TOP(i);if(Ha<0)continue;const tt=g[i]?(WST&&TU?TU[g[i]-1]:TX[g[i]-1]):rv.rock;let show=0;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x,Ha=TOP(i);if(Ha<0)continue;const cav=WST&&WEST&&WEST.caveSet&&WEST.caveSet.has(i),tt=g[i]?(WST&&TU?TU[g[i]-1]:TX[g[i]-1]):cav?TX[0]:rv.rock;let show=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=n||ny>=n)continue;const j=ny*n+nx,Hb=TOP(j);
-        if(Hb<0){show=1;if(!g[i]&&!(WST&&WEST&&WEST.doors.some(q=>q.i==i))){const f=bnd(x,y,d,top,Ha,1-top,1-Ha,flipOf(d));quad(f.p,f.u,mat(rv.portal),sideX(d)?1:.7,[DX[d],DY[d],0])}continue}
+        if(Hb<0){show=1;if(!g[i]&&!(WST&&WEST&&WEST.doors.some(q=>q.i==i))){const f=bnd(x,y,d,top,Ha,1-top,1-Ha,flipOf(d));quad(f.p,f.u,mat(cav?TX[0]:rv.portal),sideX(d)?1:.7,[DX[d],DY[d],0])}continue}
         if(Hb<Ha-.001){show=1;const f=bnd(x,y,d,Hb,Ha,1-Hb,1-Ha,flipOf(d));quad(f.p,f.u,mat(tt),sideX(d)?.95:.66,[DX[d],DY[d],0])}}
       if(show)quad([[x,y,Ha],[x+1,y,Ha],[x+1,y+1,Ha],[x,y+1,Ha]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(tt),1,[0,0,1]);
       if(!g[i]&&CMASK[i]&&!WST){/* the vault */

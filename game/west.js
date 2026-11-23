@@ -21,7 +21,7 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
  g=new Uint8Array(n*n).fill(1);ct.fill(0);FH.fill(0);rooms=[];
  CMASK=new Uint8Array(n*n);WHM=new Float32Array(n*n);RFH=new Float32Array(n*n);
  const W=WEST={td:[],tdk:{},b:[],T0:T,town:pk(WNAMES_TOWN),out:{name:pk(WNAMES_OUT),reward:25+5*ri(0,3)},jack:null,coach:null,tw:[],storm:{t:0,next:rr(35,55),on:0,k:0},msg:null,
-  doors:[],duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
+  doors:[],brk:[],duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
  /* texture ids: a wall cell's id picks its texture (TX), the part above the first storey (TU) and the side that faces into a building (TIN) */
  const tid=(d)=>{const k=JSON.stringify(d);if(W.tdk[k])return W.tdk[k];W.td.push(d);return W.tdk[k]=W.td.length};
  const MESA=tid({k:'mesa'}),FENCE=tid({k:'fence'});
@@ -73,6 +73,14 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
  /* fences round the corral (north-east) and the back lots */
  for(let x=45;x<=n-4;x++){wall(x,SY0-9,FENCE,.62)}for(let y=SY0-9;y<=SY0-3;y++){if(y==SY0-6)continue;wall(n-3,y,FENCE,.62)}
  for(let x=2;x<=12;x++)if(x!=6&&x!=7)wall(x,SY1+12,FENCE,.62);
+ /* the boot hill graveyard in the north-west corner: a fence with a gate on the town side, rows of graves, one dug open */
+ {const x0=2,x1=10,y0=5,y1=10;open(x0,y0,x1,y1,1);for(let x=x0;x<=x1;x++)for(let y=y0;y<=y1;y++){if(x>x0&&x<x1&&y>y0&&y<y1)continue;if(y==y1&&x==6)continue;wall(x,y,FENCE,.62)}
+  const og=[7,9],i=at(og[0],og[1]);FH[i]=-.42;ct[i]=12;W.grave={x0,x1,y0,y1,open:og,stones:[[3,6],[5,6],[7,6],[9,6],[3,8],[5,8],[7,8],[9,8]]}}
+ /* the old mine cave in the south-east corner: a block of rock with a winding tunnel cut through it, lined with explosive traps, a chamber at the end */
+ {for(let y=40;y<=50;y++)for(let x=35;x<=50;x++){if(x<0||y<0||x>=n||y>=n)continue;const i=at(x,y);g[i]=MESA;WHM[i]=3.4+wHash(x,y,41)*1.1;CMASK[i]=0;RFH[i]=0;ct[i]=0;FH[i]=0}
+  const path=[[44,40],[44,41],[44,42],[44,43],[45,43],[46,43],[47,43],[47,44],[47,45],[47,46],[46,46],[45,46],[44,46],[43,46],[42,46],[41,46]],cham=[];for(let y=43;y<=47;y++)for(let x=37;x<=40;x++)cham.push([x,y]);
+  W.caveSet=new Set();for(const[x,y]of path.concat(cham)){const i=at(x,y);g[i]=0;ct[i]=13;FH[i]=0;CMASK[i]=1;RFH[i]=3.4+wHash(x,y,42)*.8;WHM[i]=0;W.caveSet.add(i)}
+  W.cave={path,cham,ent:[44,40],traps:[[44,41,'w','y'],[46,43,'p','x'],[47,45,'w','y'],[45,46,'p','x'],[43,46,'w','x'],[42,46,'p','x'],[41,46,'w','x']],chests:[[37,43],[37,45],[37,47]]}}
  /* the alleys between the buildings stay dirt; the desert behind them is sand */
  for(let i=0;i<n*n;i++){if(g[i]||ct[i]!=2)continue;const x=i%n,y=(i/n)|0;if(y>=SY0-1&&y<=SY1+1)ct[i]=1;else if(wHash(x,y,9)<.08)ct[i]=11}
  /* rooms for the game's general use: the start (west end of the street), the street in pieces, the buildings, the exit (east end) */
@@ -127,12 +135,14 @@ function wSignBoard(g,W,b){/* the painted sign across the false front: a board w
  if(ic==2){g.save();g.translate(ix,iy);for(const s of[-1,1]){g.save();g.rotate(s*.6);g.fillStyle='#3a3a44';g.fillRect(-12,-2,18,4);g.fillStyle='#6a4a2a';g.fillRect(4,-1,6,9);g.restore()}g.restore()}
  if(ic==3){g.fillStyle='#5a3a28';g.beginPath();g.moveTo(ix-4,iy-12);g.lineTo(ix+4,iy-12);g.lineTo(ix+7,iy-5);g.lineTo(ix+4,iy+12);g.lineTo(ix-4,iy+12);g.lineTo(ix-7,iy-5);g.closePath();g.fill();g.fillStyle='#c8c0b0';g.fillRect(ix-.8,iy-8,1.6,9);g.fillRect(ix-3.5,iy-5,7,1.6)}
  if(b.k=='saloon'){g.fillStyle=wcss(fg);for(const x of[sx+10,sx+sw-10]){g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k&1?2:4.6;g.lineTo(x+Math.cos(a)*r,iy+Math.sin(a)*r)}g.closePath();g.fill()}}}
-function wPoster(g,o){/* the wanted poster: the outlaw's face from his own model, his name and the reward */
- g.save();g.translate(32,30);g.rotate(-.04);g.fillStyle='#e8d6a8';g.fillRect(-15,-24,30,44);g.fillStyle='rgba(120,90,50,.25)';g.fillRect(-15,14,30,6);g.fillRect(-15,-24,4,44);
- g.fillStyle='#2a1a12';g.textAlign='center';g.textBaseline='middle';g.font='bold 8px Georgia, serif';g.fillText('WANTED',0,-19);
- g.fillStyle='#bca478';g.fillRect(-10,-14,20,17);if(o.face)try{g.drawImage(o.face,-10,-14,20,17)}catch(e){}g.strokeStyle='#2a1a12';g.lineWidth=.6;g.strokeRect(-10,-14,20,17);
- g.font='bold 3.6px Georgia, serif';g.fillText('DEAD OR ALIVE',0,6.5);g.font='bold 3px Georgia, serif';g.fillText((o.name||'').toUpperCase().replace(/"/g,''),0,11.5);g.font='bold 5px Georgia, serif';g.fillText('$'+(o.reward||25)+' REWARD',0,17);
- g.fillStyle='#6a5a44';g.fillRect(-1,-24,2,2);g.restore()}
+function wPoster(g,o){/* the wanted poster: the outlaw's face from his own model, his name and the reward; every line is sized to fit inside the paper */
+ g.save();g.translate(32,31);g.rotate(-.03);const PW=40,PH=54,hw=PW/2,hh=PH/2;g.fillStyle='#e8d6a8';g.fillRect(-hw,-hh,PW,PH);g.fillStyle='rgba(120,90,50,.22)';g.fillRect(-hw,hh-7,PW,7);g.fillRect(-hw,-hh,4,PH);
+ g.fillStyle='#2a1a12';g.textAlign='center';g.textBaseline='middle';
+ const fit=(t,y,mx,max)=>{let f=mx;g.font='bold '+f+'px Georgia, serif';while(f>2.2&&g.measureText(t).width>max){f-=.2;g.font='bold '+f+'px Georgia, serif'}g.fillText(t,0,y)};
+ fit('WANTED',-hh+6,9,PW-5);
+ g.fillStyle='#bca478';g.fillRect(-12,-hh+11,24,20);if(o.face)try{g.drawImage(o.face,-12,-hh+11,24,20)}catch(e){}g.strokeStyle='#2a1a12';g.lineWidth=.7;g.strokeRect(-12,-hh+11,24,20);g.fillStyle='#2a1a12';
+ fit('DEAD OR ALIVE',-hh+35,4.6,PW-6);const nm=(o.name||'').toUpperCase().replace(/"/g,'');fit(nm,-hh+41.5,4.4,PW-5);fit('$'+(o.reward||25)+' REWARD',-hh+48.5,6,PW-6);
+ g.fillStyle='#6a5a44';g.fillRect(-1,-hh,2,2);g.restore()}
 function wFront(d,up,face){/* one cell of a building's street front: the first storey (windows, lamps, the poster) or the false front above it (the sign) */
  const b=WEST.rooms[d.b],sd=d.i*17+d.b.length*3;
  if(!up)return mkT(g=>{wSiding(g,b,sd);if(d.pst){wPoster(g,{face,name:WEST.out.name,reward:WEST.out.reward});return}
@@ -161,6 +171,8 @@ function wFloorTex(){const rn=wRng(77),F={};
  F.store=mkT(g=>{wPlanks(g,0,64,[176,140,96],51,{bh:8,clean:1})});
  F.barn=mkT(g=>{dirt(g,[150,120,84],61,{peb:4});g.strokeStyle='#d8c060';g.lineWidth=.8;const r=wRng(3);for(let i=0;i<30;i++){const x=r()*64,y=r()*64,a=r()*3;g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*6,y+Math.sin(a)*6);g.stroke()}});
  F.vault=mkT(g=>{g.fillStyle='#5a5e68';g.fillRect(0,0,64,64);g.fillStyle='#7a808c';for(let y=0;y<64;y+=8)for(let x=((y/8)&1)*4;x<64;x+=8){g.beginPath();g.moveTo(x,y+3);g.lineTo(x+4,y+1);g.lineTo(x+5,y+2);g.lineTo(x+1,y+4);g.closePath();g.fill()}});
+ F.grave=mkT(g=>{g.fillStyle='#5a4030';g.fillRect(0,0,64,64);const r=wRng(91);for(let i=0;i<90;i++){g.fillStyle=r()<.5?'rgba(40,26,18,.5)':'rgba(130,100,70,.4)';g.fillRect(r()*64,r()*64,1+r()*3,1+r()*2)}for(let i=0;i<5;i++){g.strokeStyle='rgba(30,20,14,.6)';g.lineWidth=.8;g.beginPath();const y=r()*64;g.moveTo(0,y);g.lineTo(64,y+r()*6-3);g.stroke()}});
+ F.cave=mkT(g=>{g.fillStyle='#6a4a3a';g.fillRect(0,0,64,64);const r=wRng(57);for(let i=0;i<26;i++){const x=r()*64,y=r()*64,s=3+r()*7;g.fillStyle=`rgb(${90+r()*30|0},${64+r()*22|0},${50+r()*18|0})`;g.beginPath();g.ellipse(x,y,s,s*.7,r()*3,0,7);g.fill()}for(let i=0;i<60;i++){g.fillStyle='rgba(30,18,12,.5)';g.fillRect(r()*64,r()*64,1.5,1.5)}});
  return F}
 function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');if(!WTXC||WTXC.k!==k)WTXC={k,F:wFloorTex(),m:{}};const C=WTXC,F=C.F,M=C.m;
  const memo=(key,f)=>M[key]||(M[key]=f());
@@ -178,7 +190,7 @@ function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANI
   else if(d.k=='front'){const kl='fl'+d.b+(d.pst?'p':d.dr?'d':(d.i==0||d.i==d.w-1)?'e':'w');lo=d.pst?wFront(d,0,face):memo(kl,()=>wFront(d,0,null));up=wFront(d,1);inn=memo('wp'+d.wp,()=>mkT(g=>wWallpaper(g,d.wp,d.sc[1])))}
   TXa.push(lo);TUa.push(up);TINa.push(inn)}
  TX=TXa;TU=TUa;TIN=TINa;RT=memo('riser',()=>mkT(g=>wPlanks(g,0,64,[150,108,70],7,{clean:1})));
- CT=[null,F.road,F.sand,F.boards,F.saloon,F.hotel,F.bank,F.jail,F.store,F.barn,F.vault,F.sand2];FT=F.sand;
+ CT=[null,F.road,F.sand,F.boards,F.saloon,F.hotel,F.bank,F.jail,F.store,F.barn,F.vault,F.sand2,F.grave,F.cave];FT=F.sand;RTS={0:F.grave};
  const roof=memo('roof',()=>mkT(g=>{g.fillStyle='#5a4a42';g.fillRect(0,0,64,64);for(let y=0;y<64;y+=8)for(let x=((y/8)&1)*5;x<64;x+=10){g.fillStyle=`rgb(${88+(x*7+y)%20},${70+(x*3+y)%16},${58+(x+y)%14})`;g.fillRect(x,y,9,7.4)}}));
  const ceil=memo('ceil',()=>mkT(g=>{wBoards(g,0,64,0,64,[128,92,60],23,8);g.fillStyle='#4a3424';g.fillRect(0,26,64,10);g.fillStyle='#5e4430';g.fillRect(0,27,64,3)}));
  CEIL=[ceil,ceil];RAILV={vault:ceil,rock:roof,portal:memo('portal',()=>mkT(g=>wPlanks(g,0,64,[150,120,90],15,{nails:1})))}}
@@ -245,6 +257,36 @@ function westMeshes(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=(
  {const m=f(),G=[[200,60,50],[60,120,180],[230,200,90],[90,150,80],[180,140,100],[240,240,230]];m.push(...B(0,.6,-.44,.98,1.2,.04,WD2));for(const y of[.04,.36,.68,1.0])m.push(...B(0,y,-.32,.96,.03,.26,WD3));let k=0;for(const y of[.055,.375,.695,1.015])for(let x=-.38;x<=.39;x+=.152){const c=G[(k++*5)%6];k%3?m.push(...C(x,y,-.32,.045,.16,c,{ax:'y',n:6})):m.push(...B(x,y+.1,-.32,.12,.2,.14,c))}M.push(m)}
  /* 23 a lone street lamp post */
  {const m=f();m.push(...B(0,.6,0,.06,1.2,.06,IR),...B(0,1.22,.08,.04,.04,.2,IR),...B(0,1.12,.16,.12,.16,.12,[40,40,46]),...B(0,1.12,.16,.08,.11,.08,[255,214,120],{e:1}));M.push(m)}
+
+ /* 24 a dartboard on the wall (-z), three darts in it */
+ {const m=f();m.push(...B(0,.78,-.47,.5,.5,.04,WD2),...C(0,.78,-.45,.21,.02,[34,30,30],{ax:'z',n:16}),...C(0,.78,-.43,.17,.012,[232,220,190],{ax:'z',n:16}),...C(0,.78,-.42,.12,.012,[44,120,64],{ax:'z',n:14}),...C(0,.78,-.41,.08,.012,[232,220,190],{ax:'z',n:12}),...C(0,.78,-.4,.04,.012,[190,40,40],{ax:'z',n:10}),...C(0,.78,-.39,.015,.012,[34,30,30],{ax:'z',n:8}));
+  for(const[x,y]of[[.05,.82],[-.07,.74],[.02,.7]])m.push(...B(x,y,-.34,.012,.012,.1,[210,210,220]),...B(x,y,-.28,.03,.03,.02,[220,60,50]));M.push(m)}
+ /* 25-27 a hotel room door with its number (a little brass plate, the digit in seven bars), the frame and the transom over it */
+ const SEG={1:'bc',2:'abged',3:'abgcd'};
+ for(const num of[1,2,3]){const m=f(),DW=[128,82,50],DW2=[96,60,36];m.push(...B(0,1.55,0,1.0,.6,.14,[150,110,76]),...B(-.47,.62,0,.06,1.24,.16,DW2),...B(.47,.62,0,.06,1.24,.16,DW2),...B(0,1.26,0,1.0,.05,.16,DW2),...B(0,.62,0,.88,1.22,.06,DW));
+  for(const[y,h]of[[.95,.42],[.36,.46]])for(const x of[-.2,.2])m.push(...B(x,y,.035,.3,h,.012,DW2));m.push(...C(.34,.58,.04,.03,.04,BR,{ax:'z',n:8}));
+  const px=0,py=.98;m.push(...B(px,py,.052,.22,.3,.014,BR),...B(px,py,.046,.26,.34,.01,DW2));const K=1.5,sg={a:[0,.07*K,.08*K,.02],b:[.035*K,.035*K,.02,.07*K],c:[.035*K,-.035*K,.02,.07*K],d:[0,-.07*K,.08*K,.02],e:[-.035*K,-.035*K,.02,.07*K],f:[-.035*K,.035*K,.02,.07*K],g:[0,0,.08*K,.02]};
+  for(const k of SEG[num]){const q=sg[k];m.push(...B(px+q[0],py+q[1],.061,q[2],q[3],.006,[40,26,18]))}M.push(m)}
+ /* 28 what is left of a kicked-in door: the frame, the transom, a splintered strip on the hinge side */
+ {const m=f(),DW=[128,82,50],DW2=[96,60,36];m.push(...B(0,1.55,0,1.0,.6,.14,[150,110,76]),...B(-.47,.62,0,.06,1.24,.16,DW2),...B(.47,.62,0,.06,1.24,.16,DW2),...B(0,1.26,0,1.0,.05,.16,DW2),...B(-.38,.5,.2,.12,.9,.05,DW,{ry:-.9,rz:.05}),...B(-.2,.04,.3,.3,.04,.12,DW,{ry:.6}),...B(.15,.03,.25,.22,.03,.1,DW2,{ry:-.3}));M.push(m)}
+
+ /* 29 a headstone (the face toward +z) */
+ {const m=f(),ST=[150,146,140],ST2=[110,106,102];m.push(...B(0,.27,-.25,.42,.54,.1,ST),...C(0,.54,-.3,.21,.1,ST,{ax:'z',n:12}),...B(0,.04,-.22,.52,.08,.18,ST2),...B(0,.42,-.199,.04,.2,.004,[70,66,64]),...B(0,.46,-.198,.14,.04,.004,[70,66,64]),...B(0,.2,-.199,.26,.03,.004,[90,86,84]),...B(0,.14,-.199,.2,.03,.004,[90,86,84]));M.push(m)}
+ /* 30 a wooden grave marker */
+ {const m=f(),WW=[120,92,64];m.push(...B(0,.38,-.25,.06,.76,.06,WW,{rz:.06}),...B(0,.58,-.25,.34,.06,.06,WW,{rz:.06}),...B(0,.04,-.25,.2,.08,.2,[100,76,56]));M.push(m)}
+ /* 31 a grave's mound of earth */
+ {const m=f(),DT=[118,88,60];m.push(...B(0,.05,.05,.46,.1,.84,DT),...B(0,.11,.05,.34,.05,.7,[132,100,70]));M.push(m)}
+ /* 32 the earth dug out of the open grave, a shovel stuck in it */
+ {const m=f(),DT=[118,88,60];m.push(...C(0,0,0,.36,.22,DT,{ax:'y',n:8,r2:.12}),...C(.1,0,.12,.22,.14,[132,100,70],{ax:'y',n:7,r2:.06}),...B(-.05,.45,0,.03,.6,.03,WD,{rz:.25}),...B(.03,.12,0,.13,.18,.02,IR,{rz:.25}),...B(-.12,.74,0,.12,.03,.03,WD,{rz:.25}));M.push(m)}
+
+ /* 33 a tripwire across the cell (along x), a stake at each end */
+ {const m=f();for(const x of[-.46,.46])m.push(...B(x,.12,0,.04,.24,.04,WD2));m.push(...B(0,.17,0,.92,.008,.008,[200,200,190]));M.push(m)}
+ /* 34 a bundle of dynamite against the wall (-z), the fuse hanging down */
+ {const m=f(),Y=.6;for(const[x,y]of[[-.06,Y-.03],[.06,Y-.03],[0,Y+.03]])m.push(...C(-.11,y,-.42+x*.3,.035,.22,[196,40,36],{ax:'x',n:6}));m.push(...B(0,Y,-.4,.05,.1,.12,[214,196,150]),...B(.13,Y-.12,-.4,.008,.2,.008,[40,34,30]),...B(0,Y,-.46,.32,.2,.03,[90,70,50]));M.push(m)}
+ /* 35 a pressure plate, a little raised */
+ {const m=f();m.push(...B(0,.015,0,.52,.03,.52,[96,86,78]),...B(0,.035,0,.42,.012,.42,[118,108,98]),...B(.12,.043,-.05,.18,.004,.02,[60,52,48],{ry:.5}));M.push(m)}
+ /* 36 the timber frame at a mine entrance (faces +z) */
+ {const m=f(),TB=[112,80,52];for(const x of[-.44,.44])m.push(...B(x,.9,.42,.12,1.8,.12,TB));m.push(...B(0,1.78,.42,1.04,.14,.16,TB),...B(.2,1.62,.5,.36,.12,.02,[214,196,150],{rz:-.05}),...B(.2,1.62,.51,.2,.03,.005,[160,40,36],{rz:-.05}));M.push(m)}
  return WESTM=M}
 /* the moving things: the stagecoach and its two horses, the tumbleweed (and a burning one) */
 let WESTMV=null;
@@ -269,11 +311,11 @@ function westHuman(x,y,o){o=o||{};const e=genHuman(x,y,fl);const gun=o.gun||pk([
  if(e.melee){e.melee=0;e.swD=0;e.melr=0;e.spd/=1.18;e.dmg/=1.2;e.traits=e.traits.map(t=>t=='brawler'?'shooter':t)}
  e.gun=gun;e.traits[0]=gun;const sp=e.fr.spec;sp.gun=gun;sp.gm=null;sp.m3=null;sp.c={};
  sp.hat=o.hat!==undefined?o.hat:pk([3,3,3,3,102,0]);sp.hatc=o.hatc||pk(WHATC);sp.cl=o.cl||pk(WSHIRT);sp.pn=o.pn||pk(WPANTS);if(o.band)sp.band=o.band;if(o.ponch)sp.ponch=o.ponch;if(o.vest!==false&&R()<.5)sp.vest=pk([[60,44,36],[40,40,46],[96,70,44]]);
- if(o.nm)e.name=o.nm;else e.name=pk(['Outlaw','Gunslinger','Desperado','Bandit','Rustler','Hired Gun','Drifter'])+' '+pk(['Jed','Clem','Rufus','Hank','Silas','Zeke','Amos','Wade','Earl','Cole','Luke','Boone']);
+ if(o.nm)e.name=o.nm;else e.name=pk(o.pas?['Rancher','Cowpoke','Prospector','Card Sharp','Cattleman','Homesteader','Townsman','Mule Skinner']:['Outlaw','Gunslinger','Desperado','Bandit','Rustler','Hired Gun','Drifter'])+' '+pk(['Jed','Clem','Rufus','Hank','Silas','Zeke','Amos','Wade','Earl','Cole','Luke','Boone']);
  return e}
 /* a seated version of someone's figure (the same look, sitting, hands on the table) */
 function westSitFr(fr){const sp=Object.assign({},fr.spec,{sit:1,gm:null,m3:null,c:{},av:null}),f=[];for(let ph=0;ph<4;ph++){let v=null;Object.defineProperty(f,ph,{get:()=>v||(v=hmRender(sp,ph,0)),enumerable:true})}f.spec=sp;return f}
-function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x|0)];
+function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x|0)]&&!(W.caveSet&&W.caveSet.has((y|0)*n+(x|0)));
  /* hostile gunmen round the town: on the street behind cover, in the alleys, the back lots, the sheriff's office, the store, the livery and the undertaker's */
  const SP=[[13,23.5],[24.5,26.6],[29,22.8],[36.5,25.3],[44.5,23.4],[12.6,17],[28.6,15],[23.6,33],[36.6,35],[8,8.5],[22,7.5],[38,8],[20,42],[32,43],[44,41],[6.5,18.5],[10.4,18.6],[6.5,33.6],[48,33],[39.6,34.5],[44.8,16.5],[2.6,40.5],[14,10]];
  const sh=SP.slice();for(let i=sh.length-1;i>0;i--){const j=ri(0,i);[sh[i],sh[j]]=[sh[j],sh[i]]}
@@ -286,20 +328,24 @@ function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x
   s.tb=[[X+3,Y+1,[[X+2,Y+1,1],[X+4,Y+1,1],[X+3,Y+2,0]]],[X+2,Y+4,[[X+1,Y+4,1],[X+3,Y+4,1],[X+2,Y+5,1],[X+2,Y+3,0]]],[X+6,Y+3,[[X+5,Y+3,1],[X+7,Y+3,1],[X+6,Y+2,0],[X+6,Y+4,0]]]];
   s.bar={x:X+8,y0:Y,y1:Y+3};s.piano=[X,Y];
   const pas=(e,grp)=>{e.pac=1;e.grp=grp;e.aggro=0;W.pac.push(e);E.push(e);return e};
-  for(const[tx,ty,chs]of s.tb)for(const[cx,cy,sit]of chs){if(!sit)continue;const e=westHuman(cx+.5,cy+.5,{vest:R()<.6});e.fa=Math.atan2(ty-cy,tx-cx);e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
+  for(const[tx,ty,chs]of s.tb)for(const[cx,cy,sit]of chs){if(!sit)continue;const e=westHuman(cx+.5,cy+.5,{vest:R()<.6,pas:1});e.fa=Math.atan2(ty-cy,tx-cx);e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
   {const e=westHuman(X+.5,Y+1.5,{hat:102,hatc:[40,36,34],cl:[236,230,214],pn:[40,38,44],nm:'Piano Player'});e.fa=-Math.PI/2;e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
   {const e=westHuman(s.bar.x+1.5,Y+2.5,{gun:'shotgun',hat:0,cl:[236,232,220],pn:[40,40,46],nm:'Bartender'});e.fa=Math.PI;pas(e,'saloon')}
-  {const e=westHuman(s.bar.x-.45,Y+1.2,{gun:'pistol',hat:101,hatc:[30,28,30],cl:[60,46,40],pn:[52,50,58],band:[176,36,40],ponch:[[178,64,40],[236,190,90],[60,90,120]],nm:'McCassidy'});e.fa=0;e.jack=1;e.hp*=2.2;e.mhp=e.hp;e.dmg*=1.3;e.sc=.9;pas(e,'saloon');W.jack=e}}
+  {const e=westHuman(s.bar.x-.45,Y+1.2,{gun:'pistol',hat:101,hatc:[30,28,30],cl:[60,46,40],pn:[52,50,58],band:[176,36,40],ponch:[[178,64,40],[236,190,90],[60,90,120]],nm:'McCassidy'});e.fa=0;e.jack=1;e.hp*=2.2;e.mhp=e.hp;e.dmg*=1.3;e.sc=.9;pas(e,'saloon');W.jack=e}
+  /* the dart player in the front corner by the bar: for hire */
+  {const bx=s.ix1,by=s.iy1-1,e=westHuman(bx-2.4,by+.5,{gun:'rifle',hat:3,hatc:[120,84,56],cl:[90,110,140],pn:[70,62,54],nm:ALLY_NAME});e.fa=0;e.darts=1;e.shd=0;e.fr.spec.pw=[];e.traits=['rifle','shooter'];e.dT=rr(1,2.5);pas(e,'saloon');W.darts=e;W.dboard={x:bx,y:by}}}
  /* the gunsmith behind his counter */
- {const s=W.smith,e=westHuman(s.ix0+2.5,s.iy0+4.5,{gun:'rifle',hat:0,cl:[150,120,90],pn:[60,54,50],nm:'Gunsmith'});e.fa=-Math.PI/2;e.pac=1;e.grp='smith';e.aggro=0;W.pac.push(e);E.push(e);W.smithE=e}}
+ {const s=W.smith,e=westHuman(s.ix0+2.5,s.iy0+4.5,{gun:'rifle',hat:0,cl:[150,120,90],pn:[60,54,50],nm:'Gunsmith'});e.fa=-Math.PI/2;e.pac=1;e.grp='smith';e.aggro=0;W.pac.push(e);E.push(e);W.smithE=e}
+ /* the storekeeper behind his counter */
+ {const b=W.rooms.store,e=westHuman(b.ix0+2.5,b.iy0+4.5,{gun:'shotgun',hat:102,hatc:[60,52,46],cl:[226,220,200],pn:[70,64,58],nm:'Storekeeper'});e.vest=0;e.fr.spec.vest=[96,40,40];e.fa=-Math.PI/2;e.pac=1;e.grp='store';e.aggro=0;W.pac.push(e);E.push(e);W.storeE=e}}
 /* a passive person this frame: stays put, looks where they look; true while passive (aiStep stops there) */
-function westPas(e,dt){if(!e.pac)return false;e.af=0;if(e.jack&&WEST&&WEST.duel)return duelJack(e,dt);
+function westPas(e,dt){if(!e.pac)return false;e.af=0;if(e.darts){westDarts(e,dt);return true}if(e.jack&&WEST&&WEST.duel)return duelJack(e,dt);
  if(!e.sit&&!e.jack&&!e.dsp){const dx=P.x-e.x,dy=P.y-e.y;if(dx*dx+dy*dy<9){const a=Math.atan2(dy,dx);let d=a-(e.fa||0);while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;e.fa=(e.fa||0)+d*Math.min(1,dt*3)}}
  if(e.jack){const dx=P.x-e.x,dy=P.y-e.y;if(dx*dx+dy*dy<6){const a=Math.atan2(dy,dx);let d=a-(e.fa||0);while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;e.fa=(e.fa||0)+d*Math.min(1,dt*2)}}
  return true}
 /* the group wakes up: everybody in it stands up and fights */
 function westWake(e,quiet){const W=WEST;if(!W||!e||!e.pac)return;const grp=e.grp;let any=0;for(const o of W.pac){if(!o.pac||o.dead||o.grp!==grp)continue;o.pac=0;o.aggro=1;if(o.sit){o.sit=0;if(o.frS)o.fr=o.frS}o.cd=rr(.4,1.1);any=1}
- if(any&&!quiet){if(grp=='saloon'){wMsg('SALOON BRAWL!',2.4);snd(220,.5,'sawtooth',.06,-120);for(let i=0;i<3;i++)setTimeout(()=>snd(600+Math.random()*400,.08,'square',.04,-300),i*90)}else wMsg('The gunsmith pulls a rifle!',2.2)}
+ if(any&&!quiet){if(grp=='saloon'){wMsg('SALOON BRAWL!',2.4);snd(220,.5,'sawtooth',.06,-120);for(let i=0;i<3;i++)setTimeout(()=>snd(600+Math.random()*400,.08,'square',.04,-300),i*90)}else if(grp=='store')wMsg('The storekeeper reaches for his scattergun!',2.2);else wMsg('The gunsmith pulls a rifle!',2.2)}
  if(HOSTCO&&HOSTCO())try{netSend({t:'wwk',fl,g:grp})}catch(er){}}
 
 /* ---------------- the props ---------------- */
@@ -313,20 +359,20 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
   for(const[tx,ty,chs]of s.tb){put(tx,ty,0,{h:.32,pr:.32});for(const[cx,cy,sit]of chs){const yaw=Math.atan2(tx-cx,ty-cy);put(cx,cy,1,{nb:!!sit,yaw,h:.5,pr:.2})}}
   for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.bar.x,y,2,{yaw:-Math.PI/2,h:.48,pr:.5});for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.ix1,y,17,{yaw:-Math.PI/2,h:1.1,pr:.3});
   put(s.piano[0],s.piano[1],3,{yaw:0,h:.7,pr:.45,x:s.piano[0]+.5,y:s.piano[1]+.38});
-  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]]}
+  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]];if(W.dboard)put(W.dboard.x,W.dboard.y,24,{yaw:-Math.PI/2,h:1.1,pr:.3,nb:1})}
  {const b=W.rooms.sheriff;W.poster={x:b.dr[0]+2.5,y:b.fy+1.3}}
  /* the sheriff's office: the jail bars (one cell door left open), a desk */
  {const b=W.rooms.sheriff;for(const[x,y]of b.jail){if(g[at(x,y)])continue;if(x==b.ix0+1)continue;put(x,y,18,{h:1.5,pr:.5})}put(b.ix1-1,b.iy1-1,0,{h:.32,pr:.32});put(b.ix1,b.iy1-1,1,{yaw:-Math.PI/2,h:.5,pr:.2})}
  /* the hotel: a bed in each room, the desk in the lobby */
- {const h=W.hotel;for(const r of h.rm){put(r.x0,r.y0,16,{yaw:0,h:.4,pr:.5,x:r.x0+.5,y:r.y0+.55})}put(h.ix1-1,h.iy1-1,21,{yaw:0,h:.5,pr:.5})}
+ {const h=W.hotel;h.rm.forEach((r,k)=>{put(r.x0,r.y0,16,{yaw:0,h:.4,pr:.5,x:r.x0+.5,y:r.y0+.55});/* the room's door, locked: it has to be broken down */const dp=put(r.door[0],r.door[1],25+k,{yaw:0,h:1.85,pr:.5});r.num=k+1;westBrkAdd(dp,200,'ROOM '+(k+1),0,()=>westDoorBreak(dp,r))});put(h.ix1-1,h.iy1-1,21,{yaw:0,h:.5,pr:.5})}
  /* the gunsmith: the counter, the racks on the back wall */
  {const s=W.smith;for(let x=s.ix0;x<s.ix1;x++)put(x,s.iy0+3,12,{yaw:Math.PI,h:.45,pr:.5});for(let x=s.ix0;x<=s.ix1;x++)put(x,s.iy1,11,{yaw:Math.PI,h:1,pr:.4});W.smithC={x:s.ix0+2.5,y:s.iy0+3.5}}
  /* the bank: desks in the lobby, the vault door, the gold inside */
- {const v=W.vault,b=v.b;W.vd=put(v.x,v.y,13,{yaw:Math.PI,h:1.5,pr:.5});put(b.ix0+1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});put(b.ix1-1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});
+ {const v=W.vault,b=v.b;W.vd=put(v.x,v.y,13,{yaw:Math.PI,h:1.5,pr:.5});westBrkAdd(W.vd,W_VHP,'VAULT DOOR',1,()=>{W.heist={st:'crack',t:0,tk:0};heistStep(0)});put(b.ix0+1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});put(b.ix1-1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});
   const gs=[];for(let y=v.inY0;y<=v.inY1;y++)for(let x=b.ix0;x<=b.ix1;x++)if((x!=v.x||y>v.inY0)&&!(y==v.inY1&&(x-b.ix0)%2==0))gs.push([x,y]);for(let i=0;i<5&&gs.length;i++){const[x,y]=gs.splice(ri(0,gs.length-1),1)[0];W.gb.push(put(x,y,15,{nb:1,x:x+.5+rr(-.15,.15),y:y+.5+rr(-.15,.15),yaw:rr(0,6.28),h:.2,pr:.15,gold:1}))}
   for(let x=b.ix0;x<=b.ix1;x+=2)if(!blk[at(x,v.inY1)])put(x,v.inY1,22,{yaw:Math.PI,h:1.2,pr:.4})}
  /* the general store: shelves along the walls, sacks and barrels */
- {const b=W.rooms.store;for(let x=b.ix0;x<=b.ix1;x++)if(x!=b.bk)put(x,b.iy1,22,{yaw:Math.PI,h:1.2,pr:.4});for(let y=b.iy0+1;y<b.iy1;y+=2)put(b.ix0,y,22,{yaw:Math.PI/2,h:1.2,pr:.4});put(b.ix1-1,b.iy0+2,0,{h:.32,pr:.32,m:3000});}
+ {const b=W.rooms.store;for(let x=b.ix0;x<=b.ix1;x++)if(x!=b.bk)put(x,b.iy1,22,{yaw:Math.PI,h:1.2,pr:.4});for(let y=b.iy0+1;y<b.iy1;y+=2)if(y!=b.iy0+3)put(b.ix0,y,22,{yaw:Math.PI/2,h:1.2,pr:.4});for(let x=b.ix0+1;x<=b.ix0+4;x++)put(x,b.iy0+3,12,{yaw:Math.PI,h:.45,pr:.5});W.storeC={x:b.ix0+2.5,y:b.iy0+2.5}}
  /* the undertaker: coffins inside and stood up outside */
  {const b=W.rooms.under;for(let x=b.ix0;x<=b.ix1;x+=2)put(x,b.iy1-1,8,{yaw:Math.PI,h:.95,pr:.25});for(const x of[b.x0+1,b.x1-1])if(!blk[at(x,b.bwy)])put(x,b.bwy,8,{yaw:Math.PI,h:.95,pr:.25,y:b.bwy+.62})}
  /* the livery: hay */
@@ -338,21 +384,30 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
  /* the back lots and the desert: cacti, boulders, hay, a wagon wheel, crates */
  for(let y=4;y<n-4;y++)for(let x=1;x<n-1;x++){const i=at(x,y);if(g[i]||blk[i]||ct[i]!=2&&ct[i]!=11)continue;if(y>=W.SY0-1&&y<=W.SY1+1)continue;if(!freeC(x,y))continue;const v=wHash(x,y,21);if(v>.06)continue;const k=wHash(x,y,22);put(x,y,k<.45?6:k<.8?20:7,{yaw:wHash(x,y,23)*6.28,h:k<.45?1.3:.4,pr:k<.45?.15:.3,x:x+.5+(wHash(x,y,24)-.5)*.3,y:y+.5+(wHash(x,y,25)-.5)*.3})}
  for(const b of W.b){const x=b.x1+1,y=b.sd=='n'?b.y0+3:b.y1-3;if(freeC(x,y))put(x,y,19,{nb:1,yaw:Math.PI/2,h:.6,pr:.3})}
+ /* boot hill: headstones and wooden markers, a mound before each, and in the open grave a cursed chest */
+ if(W.grave){const G=W.grave,[ox,oy]=G.open;for(const[x,y]of G.stones){const ci=at(x,y);if(g[ci]||blk[ci]||E.some(e=>(e.x|0)==x&&(e.y|0)==y))continue;put(x,y,wHash(x,y,31)<.6?29:30,{yaw:rr(-.08,.08),h:.6,pr:.25});if(!(x==ox&&y+1==oy))put(x,y+1,31,{nb:1,yaw:0,h:.15,pr:.3})}
+  if(!blk[at(ox+1,oy)])put(ox+1,oy,32,{nb:1,yaw:0,h:.3,pr:.3});const ci=at(ox,oy);blk[ci]=1;CH.push({x:ox+.5,y:oy+.5,cur:1})}
+ /* the cave: the entrance timbers, the traps (each has a bundle of dynamite on the wall: shoot it and it goes off where it is), the three chests at the end */
+ if(W.cave){const C=W.cave;W.traps=[];put(C.ent[0],C.ent[1],36,{nb:1,yaw:Math.PI,h:1.8,pr:.1});
+  for(const[x,y,k,dir]of C.traps){const t={x:x+.5,y:y+.5,k,dir,fired:0,fuse:-1};if(k=='w')t.wire=put(x,y,33,{nb:1,yaw:dir=='y'?0:Math.PI/2,h:.2,pr:.05});else t.plate=put(x,y,35,{nb:1,yaw:0,h:.05,pr:.05});
+   t.dyn=put(x,y,34,{nb:1,yaw:dir=='y'?Math.PI/2:0,h:.75,pr:.2});westBrkAdd(t.dyn,1,'DYNAMITE',0,()=>trapFire(t,.05));W.traps.push(t)}
+  for(const[x,y]of C.chests){const i=at(x,y);blk[i]=1;CH.push({x:x+.5,y:y+.5})}}
  /* chests: one in the general store, one in the livery */
- for(const[x,y]of[[W.rooms.store.ix1,W.rooms.store.iy0],[W.rooms.livery.ix0,W.rooms.livery.iy1-1]]){const i=at(x,y);if(g[i]||blk[i])continue;blk[i]=1;if(typeof pathOk=='function'&&!pathOk()){blk[i]=0;continue}CH.push({x:x+.5,y:y+.5})}
+ for(const[x,y]of[[W.rooms.store.ix1,W.rooms.store.iy0],[W.rooms.livery.ix0,W.rooms.livery.iy1-1]]){const i=at(x,y);if(g[i]||blk[i])continue;blk[i]=1;CH.push({x:x+.5,y:y+.5})}
  /* the stagecoach waits at the east end of the street */
- W.coach={st:'park',x:N-3.4,y:W.SY0+2.5,t:0,wait:rr(30,45),hit:new Set(),a:1};W.storm={t:0,next:rr(30,50),on:0,k:0};W.tw=[];W.twT=rr(2,5)}
+ open=true;W.coach={st:'park',x:N-3.4,y:W.SY0+2.5,t:0,wait:rr(30,45),hit:new Set(),a:1};W.storm={t:0,next:rr(30,50),on:0,k:0};W.tw=[];W.twT=rr(2,5)}
 
 /* ---------------- the town at work: messages, prompts, the use key ---------------- */
 function wMsg(t,d){if(!WEST)return;WEST.msg=t;WEST.msgT=d||2.5}
 const wIn=(b,x,y,pad)=>{pad=pad||0;return x>=b.ix0-pad&&x<b.ix1+1+pad&&y>=b.iy0-pad&&y<b.iy1+1+pad};
 const wAng=(a,b)=>{let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;return d};
-const W_PM_PRICE=40;
+const W_PM_PRICE=100;
 /* what the use key would do here, if anything: {k, t (the prompt)} */
 function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const px=P.x,py=P.y;
  const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return{k:'duel',t:'CHALLENGE MCCASSIDY TO A DUEL'};
  const sm=W.smithE;if(sm&&sm.pac&&!sm.dead&&W.smithC&&Math.hypot(W.smithC.x-px,W.smithC.y-py)<1.6)return{k:'smith',t:W.pmSold?'THE GUNSMITH: "ENJOY IT, PARTNER"':'BUY THE PEACEMAKER  -  $'+W_PM_PRICE};
- if(W.vd&&!W.heist&&!DM&&Math.hypot(W.vd.x-px,W.vd.y-.5-py)<1.5&&py<W.vd.y)return{k:'vault',t:'CRACK THE VAULT'};
+  const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!DM&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+ALLY_NAME.toUpperCase()+'  -  $'+ALLY_PRICE};
+ const st=W.storeE;if(st&&st.pac&&!st.dead&&W.storeC&&Math.hypot(W.storeC.x-px,W.storeC.y-py)<1.6)return{k:'store',t:'BROWSE THE GENERAL STORE'};
  return null}
 /* the use key (called from chest()): true if the town took it */
 function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNear();if(!q)return false;keys={};
@@ -363,8 +418,20 @@ function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNe
    [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Heavier hits than the Hand cannon. Dead Eye: the first shot after a short pause does 60% more damage and goes exactly where you aim. '+(W2?'Replaces '+cur+'.':'Your '+cur+' goes to your second slot.')},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<W_PM_PRICE){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
     P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();if(!W2&&Wp){W2=Wp;W2.am=P.ammo}Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
- if(q.k=='vault'){W.heist={st:'crack',t:0,tk:0};wMsg('CRACKING THE VAULT... STAY CLOSE',2.2);return true}
+  if(q.k=='store'){westStore();return true}
+ if(q.k=='hire'){if(ALLY){wMsg('"One partner\'s plenty, friend."',2);return true}snd(620,.12,'triangle',.06,200);
+  choose(ALLY_NAME,'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+ALLY_NAME+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
+   k=>{state='play';if(k!==0)return;if((P.money|0)<ALLY_PRICE){wMsg('"Money first, partner."',2.4);snd(160,.2,'square',.06,-60);return}P.money-=ALLY_PRICE;try{moneySync()}catch(er){}allyHire(W.darts);wMsg('"Let\'s ride."',2.4);snd(520,.12,'triangle',.08,300)});return true}
  return false}
+/* the general store's stock: frontier clothes (yours to keep) and Quickdraw */
+const W_QD_PRICE=90;
+function westStore(){const W=WEST,items=[];snd(620,.12,'triangle',.06,200);
+ for(const[id,pr]of WSTORE_COS()){const c=COS[id],has=LOOT.o.includes(id);items.push({n:c.n+'  —  '+(has?'owned':'$'+pr),d:(c.k=='hat'?'Hat. ':c.k=='cape'?'Cape. ':'Title. ')+c.d+(has?' You already have it.':' Yours to keep.'),buy:has?null:()=>{secretGive(id);HATNEW=id;wMsg(c.n.toUpperCase()+' BOUGHT. WEAR IT FROM COSMETICS',3)},pr})}
+ const qd=P.pw.qdraw|0,qdOk=qd<2&&!W.qdSold;items.push({n:'Quickdraw  —  '+(qdOk?'$'+W_QD_PRICE:qd>=2?'maxed':'sold out'),d:'Power: +20% fire and swing rate. One per Frontier Town, stacks up to 2 times. You have '+qd+'.',buy:qdOk?()=>{give(POW.find(p=>p.id=='qdraw'));W.qdSold=1;wMsg('QUICKDRAW x'+(P.pw.qdraw|0),2.6)}:null,pr:W_QD_PRICE});
+ items.push({n:'Leave',d:'Keep your money.'});
+ choose('General Store','"Howdy! Finest goods west of the river." You have $'+(P.money|0)+'.',items,k=>{state='play';const it=items[k];if(!it||!it.buy)return;
+  if((P.money|0)<it.pr){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
+  P.money-=it.pr;try{moneySync()}catch(er){}it.buy();snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(780,.2,'triangle',.08,200),110)})}
 /* the Peacemaker: a Hand cannon underneath (its sounds, its reload), with its own look and numbers */
 function westPeacemaker(){const b=WT.find(x=>x.t=='Hand cannon');const w=genW(b);w.pm=1;w.perk=undefined;w.dmg=Math.round(rr(70,92));w.rate=rr(1.55,1.85);w.spr=.012;w.mag=6;w.rt=WM['Hand cannon'][1]*.8;w.pi=1;w.hue=38;w.name='Peacemaker';return w}
 /* Dead Eye: the Peacemaker's first shot after .7 s */
@@ -373,11 +440,13 @@ function westDeadEye(w){if(!w||!w.pm)return 1;const k=T-(w.pmT===undefined?-9:w.
 /* gunfire: the saloon wakes if you shoot inside, and the stagecoach horses bolt */
 function westFire(){const W=WEST;if(!W||state!='play')return;
  if(W.duel){duelFire();return}
+ /* a shot at a trap's dynamite (bullets pass through things that don't block the way, so it is checked here) */
+ if(W.traps&&Wp&&!Wp.m){const b=westBrkSeen();if(b&&b.p.nb&&Math.abs(P.pt||0)<.25)westBrkDmg(b.p,99)}
  const s=W.saloon;if(wIn(s,P.x,P.y,.2)){const e=W.pac.find(o=>o.pac&&!o.dead&&o.grp=='saloon');if(e)westWake(e)}
  const sm=W.smith;if(wIn(sm,P.x,P.y,.2)&&W.smithE&&W.smithE.pac&&!W.smithE.dead){wMsg('"Not in my shop!"',2)}
  const c=W.coach;if(c&&c.st=='park'&&Math.hypot(c.x-P.x,c.y-P.y)<7){coachGo('spooked')}}
 /* a passive person was hit */
-function westHit(e){const W=WEST;if(!W)return;if(W.duel&&e.jack){duelHitJack(e);return}if(e.jack){e.grp='jack'}westWake(e)}
+function westHit(e){const W=WEST;if(!W)return;if(e.bty){W.outFree=1;return}if(W.duel&&e.jack){duelHitJack(e);return}if(e.jack){e.grp='jack'}westWake(e)}
 /* someone died */
 function westKill(e){const W=WEST;if(!W)return;
  if(e.bty&&!W.btyDone){W.btyDone=1;const v=W.out.reward;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}wMsg('BOUNTY COLLECTED: '+W.out.name.toUpperCase()+'  +$'+v,4);snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}
@@ -463,10 +532,8 @@ function duelJack(e,dt){const W=WEST,D=W.duel;if(D&&(D.st=='wait'||D.st=='cue'||
 
 /* ---------------- the bank job ---------------- */
 function heistStep(dt){const W=WEST,H=W.heist,v=W.vault;H.t+=dt;
- if(H.st=='crack'){const d=Math.hypot(W.vd.x-P.x,W.vd.y-.5-P.y);if(d>1.9){H.st=null;W.heist=null;wMsg('YOU WALKED AWAY FROM THE VAULT',2);return}
-  H.p=(H.p||0)+dt;H.tk-=dt;if(H.tk<=0){H.tk=.32;snd(1400+Math.random()*300,.03,'square',.03,-200)}
-  if(H.p>=5){/* the door swings open and the alarm goes */const vd=W.vd,i=vd.cell;PRP=PRP.filter(p=>p!==vd);blk[i]=0;try{if(SW&&SW.g3d)g3dFreeCell(i)}catch(er){}
-   PRP.push(Object.assign({},vd,{m:3014,nb:1}));W.vd=null;H.st='alarm';H.t=0;H.w=0;snd(200,.4,'square',.08,-60);wMsg('THE VAULT IS OPEN! THE ALARM IS RINGING',3.2);
+ if(H.st=='crack'){{/* the door swings open and the alarm goes */const vd=W.vd,i=vd.cell;PRP=PRP.filter(p=>p!==vd);blk[i]=0;try{if(SW&&SW.g3d)g3dFreeCell(i)}catch(er){}
+   PRP.push(Object.assign({},vd,{m:3014,nb:1}));W.vd=null;H.st='alarm';H.t=0;H.w=0;snd(200,.4,'square',.08,-60);snd(60,.6,'sawtooth',.12,-20);for(let k=0;k<24;k++){const a=Math.random()*6.28,v=rr(1,4);ptcPush({x:vd.x,y:vd.y-.4,z:.75,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.5,vz:rr(0,2),life:.6,l0:.6,t:S.spark,s:.15,g:6},0)}wMsg('THE VAULT DOOR GIVES WAY! THE ALARM IS RINGING',3.2);
    for(const e of E)if(!e.dead&&!e.pac)e.aggro=1}
   return}
  if(H.st=='alarm'){H.bt=(H.bt||0)-dt;if(H.bt<=0&&H.t<50){H.bt=.5;snd(880,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5});setTimeout(()=>snd(660,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5}),200)}
@@ -474,7 +541,7 @@ function heistStep(dt){const W=WEST,H=W.heist,v=W.vault;H.t+=dt;
 function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[N-3,L-1.5],[N-3,L+1.5],[10.5,42],[40.5,42],[22,8],[47,10]];const n=k==2?5:3+(fl>12?1:0);
  if(k==0)wMsg('THE POSSE IS HERE!',2.6);else wMsg('MORE DEPUTIES!',2.2);snd(500,.25,'sawtooth',.05,300);
  for(let i=0;i<n;i++){const[x,y]=src[(k*3+i)%src.length];if(g[(y|0)*N+(x|0)])continue;const e=westHuman(x+rr(-.3,.3),y+rr(-.3,.3),{gun:pk(['rifle','shotgun','pistol']),hat:3,hatc:[214,196,160],cl:[110,96,80],pn:[60,60,70],vest:[[40,40,46]],nm:'Deputy '+pk(['Hollis','Pike','Barlow','Tate','McCoy','Briggs','Fenton','Quill'])});e.aggro=1;e.posse=1;e.vest=1;if(SW&&SW.g3d)e.z=FH[(e.y|0)*N+(e.x|0)]||0;E.push(e)}
- open=false}
+ }
 /* the gold: picked up by walking over it, it slows you down, and it is paid out at the exit */
 function goldStep(dt){const W=WEST;if(!W.gb)return;
  for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);W.gold++;snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD x'+W.gold+'  (TAKE IT TO THE EXIT)',2.2)}}
@@ -486,9 +553,9 @@ function westSpd(){const W=WEST;if(!W)return 1;if(W.duel)return 0;return Math.ma
 function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;if(W.msgT>0)W.msgT-=dt;if(SW&&W.fk0===undefined)W.fk0=SW.FKS;
  if(W.duel)duelStep(dt);
  if(!W.duel||W.duel.st=='fade'||W.duel.st=='out')coachStep(dt);twStep(dt);stormStep(dt);
- if(W.heist)heistStep(dt);goldStep(dt);
+ if(W.heist)heistStep(dt);goldStep(dt);if(W.traps)trapStep(dt);
  /* the jail's open cell, the hotel's guard: nothing to do; the wanted man reacts if you come into his room */
- const o=W.outlaw;if(o&&!o.dead&&!o.aggro&&W.outRoom){const r=W.outRoom;if(P.x>=r.x0&&P.x<r.x1+1&&P.y>=r.y0&&P.y<r.y1+1.6){o.aggro=1;wMsg('"YOU\'LL NEVER TAKE ME ALIVE!"',2.2)}}
+ const o=W.outlaw;if(o&&!o.dead&&!W.outFree&&W.outRoom){const r=W.outRoom;if(P.x>=r.x0&&P.x<r.x1+1&&P.y>=r.y0&&P.y<r.y1+1.6){W.outFree=1;o.aggro=1;wMsg('"YOU\'LL NEVER TAKE ME ALIVE!"',2.2)}}
  W.near=westNear()}
 
 /* ---------------- drawing ---------------- */
@@ -512,7 +579,7 @@ function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;c.save()
  const q=W.near;if(q&&!D){const t='['+kbName(KBC('use'))+'] '+q.t;c.fillStyle='#000';c.fillText(t,LW/2+1,LH*.3+1);c.fillStyle='#ffe9b0';c.fillText(t,LW/2,LH*.3)}
  /* the wanted poster, read when you stand at it */
  if(!D&&W.poster&&Math.hypot(W.poster.x-P.x,W.poster.y-P.y)<1.4&&!W.btyDone){const t1='WANTED: '+W.out.name.toUpperCase()+'  -  $'+W.out.reward+' REWARD',t2='LAST SEEN AT THE HOTEL';c.fillStyle='#000';c.fillText(t1,LW/2+1,LH*.36+1);c.fillText(t2,LW/2+1,LH*.36+11);c.fillStyle='#f0d890';c.fillText(t1,LW/2,LH*.36);c.fillText(t2,LW/2,LH*.36+10)}
- if(W.heist&&W.heist.st=='crack'){const w=80,x=LW/2-w/2,y=LH*.38;c.fillStyle='#000';c.fillRect(x-1,y-1,w+2,6);c.fillStyle='#d8b050';c.fillRect(x,y,w*Math.min(1,(W.heist.p||0)/5),4)}
+ {const bk=!D&&(westBrkSeen()||(W.brkL&&W.brkL.hp>0&&T-(W.brkL.t||-9)<1.5?W.brkL:null));if(bk){const hp=bk.hp,w=90,x=LW/2-w/2,y=Math.round(LH*.2),t=bk.name+'  '+Math.ceil(hp)+' / '+bk.max;c.fillStyle='#000';c.fillText(t,LW/2+1,y-3);c.fillStyle='#e8e0d0';c.fillText(t,LW/2,y-4);c.fillStyle='#000';c.fillRect(x-1,y-1,w+2,6);c.fillStyle='#d8b050';c.fillRect(x,y,w*hp/bk.max,4)}}
  if(W.gold>0){const t='GOLD x'+W.gold+'  (-'+Math.round((1-westSpd())*100)+'% SPEED)';c.textAlign='right';c.fillStyle='#000';c.fillText(t,LW-7,LH*.2+1);c.fillStyle='#ffd24a';c.fillText(t,LW-8,LH*.2);c.textAlign='center'}
  if(W.flash>0){c.globalAlpha=Math.min(1,W.flash);c.fillStyle='#fff';c.fillRect(0,0,LW,LH);c.globalAlpha=1;W.flash-=.02}
  c.restore();
@@ -522,6 +589,7 @@ function westLights(){const W=WEST;const az=-1.1,el=1.18,D=70,c0=N/2;LT.push({x:
  const dx4=[1,-1,0,0],dy4=[0,0,1,-1];for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const i=y*N+x;if(g[i]||!CMASK[i])continue;
   for(let d=0;d<4;d++){const dx=dx4[d],dy=dy4[d];if(!g[(y+dy)*N+x+dx]||blk[i])continue;const lx=x+.5+dx*.34,ly=y+.5+dy*.34;let ok=LT.length<34;for(const l of LAMPS)if(Math.hypot(l.x-lx,l.y-ly)<4.2){ok=false;break}if(!ok)continue;
    LAMPS.push({x:x+.5+dx*.46,y:y+.5+dy*.46,yaw:Math.atan2(-dx,-dy),cool:0,hi:0});LT.push({x:lx,y:ly,z:1.05,r:5.5,c:[1,.66,.34],k:1.15,dx:-dx,dy:-dy,fk:.08,ph:wHash(x,y,d)*30})}}
+ if(W.cave){for(const[x,y]of[[44,42],[47,44],[44,46],[38,45]])LT.push({x:x+.5,y:y+.5,z:1.3,r:4.5,c:[1,.62,.3],k:1.2,dx:0,dy:0,fk:.12,ph:x*3+y})}
  for(const p of PRP)if(p.m===3023)LT.push({x:p.x,y:p.y+.16,z:1.12,r:3.5,c:[1,.75,.4],k:.9,dx:0,dy:0,fk:.05,ph:p.x})}
 
 /* the lintel over every street door (called from g3dBuild): the false front with its sign over the doorway, wallpaper on the inside, a solid block */
@@ -532,3 +600,79 @@ function westG3d(o){const W=WEST;if(!W||!W.doors)return;const DH=W_DH,top=o.top;
   f=o.bnd(x,y,di,DH,top,1-DH/top,0,o.flipOf(di));o.quad(f.p,f.u,o.mat(TIN[k]),.72,[o.DX[di],o.DY[di],0]);
   o.quad([[x,y,DH],[x+1,y,DH],[x+1,y+1,DH],[x,y+1,DH]],[[0,0],[1,0],[1,1],[0,1]],o.mat(RT),.55,[0,0,-1]);
   o.box(x,y,DH,x+1,y+1,top)}}
+
+/* the wanted man stays in his room, facing the door, until you step in or put a bullet in him */
+function westOutlaw(e,dt){const W=WEST;if(!W||W.outFree||e!==W.outlaw)return false;e.aggro=0;e.af=0;const r=W.outRoom;if(r){const a=Math.atan2(r.door[1]+.5-e.y,r.door[0]+.5-e.x);e.fa=(e.fa||0)+wAng(e.fa||0,a)*Math.min(1,dt*3)}return true}
+
+const W_VHP=800;
+/* props with health: shots, swings and blasts wear them down; at 0 they give way (the vault door: the alarm goes; a hotel door: it is kicked in) */
+function westBrkAdd(p,hp,name,metal,on){WEST.brk.push({p,hp,max:hp,name,metal,on})}
+function westBrkOf(p){const W=WEST;return p&&W&&W.brk?W.brk.find(b=>b.p===p&&b.hp>0)||null:null}
+function westBrkDmg(p,n){const b=westBrkOf(p);if(!b)return;b.hp-=Math.max(1,+n||1);b.t=T;WEST.brkL=b;const fx=p.x-Math.sin(p.yaw||0)*.45,fy=p.y-Math.cos(p.yaw||0)*.45;
+ if(b.metal)snd(900+Math.random()*300,.05,'square',.04,-500,{x:p.x,y:p.y});else snd(140+Math.random()*60,.08,'triangle',.07,-60,{x:p.x,y:p.y});
+ for(let k=0;k<3;k++)ptcPush({x:fx+rr(-.3,.3),y:fy+rr(-.1,.1),z:rr(.3,1.2),vx:rr(-1,1),vy:rr(-1,1),vz:rr(0,1),life:.25,l0:.25,t:b.metal?S.spark:S.dust,s:b.metal?.1:.18,g:4},0);
+ if(b.hp<=0){b.hp=0;b.on()}}
+/* a hotel door gives way: the leaf is gone, the frame stays */
+function westDoorBreak(p,r){const i=p.cell;PRP=PRP.filter(q=>q!==p);blk[i]=0;try{if(SW&&SW.g3d)g3dFreeCell(i)}catch(er){}PRP.push(Object.assign({},p,{m:3028,nb:1}));snd(90,.35,'sawtooth',.12,-40,{x:p.x,y:p.y});snd(260,.2,'square',.06,-180,{x:p.x,y:p.y});
+ for(let k=0;k<16;k++){const a=Math.random()*6.28,v=rr(1,3);ptcPush({x:p.x,y:p.y,z:rr(.2,1.1),vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(0,1.5),life:.7,l0:.7,t:S.dust,s:.2,g:5},0)}}
+/* the breakable the player is looking at (for its health bar) */
+function westBrkSeen(){const W=WEST;if(!W||!W.brk||typeof propRay!='function')return null;const c=Math.cos(P.a),s_=Math.sin(P.a),t=propRay(P.x,P.y,c,s_,.6,0,14),b=westBrkOf(PRAYP);if(!b)return null;try{const w=dda(P.x,P.y,c,s_);if(w&&w.d<t)return null}catch(er){}return b}
+
+/* the dart player: a throw every couple of seconds, the dart flying across to the board */
+function westDarts(e,dt){const W=WEST;e.dT-=dt;if(!W.dboard)return;const tx=W.dboard.x+.92,ty=W.dboard.y+.5;e.fa=Math.atan2(ty-e.y,tx-e.x);if(e.dT>0)return;e.dT=rr(1.8,3.4);const d=Math.hypot(tx-e.x,ty-e.y),v=7,lf=d/v;
+ ptcPush({x:e.x+Math.cos(e.fa)*.3,y:e.y+Math.sin(e.fa)*.3,z:.62,vx:(tx-e.x)/d*v,vy:(ty-e.y)/d*v+rr(-.15,.15),vz:.25,life:lf,l0:lf,t:S.spark,s:.07,g:.4,fs:1},0);setTimeout(()=>{if(state=='play')snd(700+Math.random()*200,.04,'square',.04,-400,{x:tx,y:ty})},lf*1000)}
+
+/* ===== the hired partner (0.9.315): hired in Frontier Town's saloon, then follows the player from floor to floor (single player).
+   Fights what the player fights with a rifle; monsters that are closer to the partner than to the player go after the partner (the AI's target is swapped
+   for a stand-in the same way co-op does it for other players). 200 health, back to full on each new floor; dead is dead. ===== */
+let ALLY=null,ALLYMSG=null,FLN=0;const ALLY_NAME='Dusty Reed',ALLY_PRICE=150,ALLY_HP=200;
+function allyHire(e){const W=WEST;ALLY={id:-7,cmh:ALLY_HP,hue:210,ally:1,hum:1,x:e.x,y:e.y,z:e.z,fa:e.fa,fr:e.fr,sc:e.sc,r:.24,hr:.24,name:e.name,hp:ALLY_HP,mhp:ALLY_HP,af:0,ap:0,cd:1,FN:FLN,flash:0,traits:['rifle'],gun:'rifle'};
+ if(W){W.pac=W.pac.filter(o=>o!==e);W.darts=null}E=E.filter(o=>o!==e);e.dead=1}
+/* a new floor: come along, at full health, behind the player */
+function allyArrive(){const a=ALLY;a.FN=FLN;a.hp=a.mhp;a.tg=null;a.cd=1;const ok=(x,y)=>{const c=(y|0)*N+(x|0);return x>0&&y>0&&x<N&&y<N&&!g[c]&&!blk[c]&&!(typeof pit!='undefined'&&pit[c])};
+ for(const[d,da]of[[1.2,Math.PI],[1.2,Math.PI*.6],[1.2,-Math.PI*.6],[1,Math.PI/2],[1,-Math.PI/2],[.6,0]]){const x=P.x+Math.cos(P.a+da)*d,y=P.y+Math.sin(P.a+da)*d;if(ok(x,y)){a.x=x;a.y=y;break}a.x=P.x;a.y=P.y}
+ a.z=P.z;if(SW&&typeof swNearFloor=='function'){const f=swNearFloor(a.x,a.y,P.z+.5);a.z=f===f?f:P.z}a.fa=P.a}
+function allyMsg(t,d){ALLYMSG={t,d:d||3}}
+/* an enemy goes for the partner when the partner is clearly the closer one */
+function allyTgt(e){const a=ALLY;if(!a||a.FN!==FLN||e.pac||e.dead||!e.aggro||state!='play')return false;e.tAT=(e.tAT||0)-1/60;if(e.tAT<=0){e.tAT=rr(.6,1.2);const da=Math.hypot(a.x-e.x,a.y-e.y),dp=Math.hypot(P.x-e.x,P.y-e.y);e.tAl=(da<9&&da+1.5<dp)||(e.tAl&&da<11&&da<dp)}return !!e.tAl}
+function allyStandIn(){const a=ALLY;return{x:a.x,y:a.y,z:a.z||0,cz:a.z||0,a:a.fa||0,pt:0,pw:{},inv:0,dv:0,deadT:0,hp:a.hp,mhp:a.mhp,am:1,rt:a,mom:0,lk:0,rf:1,sp:1,dm:1,hit:0,hurt:0,last:0}}
+function allyHurt(a,d){if(a!==ALLY||!(d>0)||a.hp<=0)return;a.hp-=d;a.flash=.1;try{burst(a,S.blood,3)}catch(er){}if(a.hp<=0){a.hp=0;try{burst(a,S.blood,14);goreBurst(a)}catch(er){}snd(150,.4,'sawtooth',.08,-100,a);allyMsg(a.name.toUpperCase()+' HAS FALLEN',4);ALLY=null}}
+/* hostile bullets hit the partner too */
+function allyBul(b,SCF){const a=ALLY;if(!a||a.FN!==FLN||b.rf)return false;if(Math.hypot(a.x-b.x,a.y-b.y)<.35*SCF&&(!SW||b.z===undefined||Math.abs(b.z-((a.z||0)+SW.HH*.55))<SW.HH*.6)){allyHurt(a,b.dmg);return true}return false}
+function allyLos(a,e){if(SW&&typeof swLosPt=='function'){const az=(a.z||0)+SW.HH*.75,ez=(e.z!==undefined?e.z:0)+SW.HH*.6;return swLosPt(a.x,a.y,az,e.x,e.y,ez)}try{const dx=e.x-a.x,dy=e.y-a.y,d=Math.hypot(dx,dy)||1;return dda(a.x,a.y,dx/d,dy/d).d>=d-.3}catch(er){return true}}
+function allyDmg(e,dmg){if(e.pac||e.bty){if(WEST)westHit(e)}if(e.shd>0){const ab=Math.min(e.shd,dmg);e.shd-=ab;dmg-=ab}e.hp-=dmg;e.aggro=1;e.tAl=1;e.tAT=1.5;e.flash=.08;try{burst(e,e.rb?S.spark:S.blood,3);dnAdd(e,dmg)}catch(er){}if(e.hp<=0)kill(e)}
+function allyStep(dt){const a=ALLY;if(!a||state!='play'||DM||NET)return;if(a.FN!==FLN)allyArrive();if(WEST&&WEST.duel)return;if(P.deadT>0||P.hp<=0)return;
+ a.flash=Math.max(0,a.flash-dt);a.cd-=dt;const SCF=SW?SW.SC:1;
+ /* a target: the nearest hostile it can see */
+ if(!a.tg||a.tg.dead||a.tg.pac||!E.includes(a.tg)||a.rtT<=0){a.rtT=.5;let bt=null,bd=11*SCF;for(const e of E){if(e.dead||e.pac||e.peace||e.reg||e.dsp||(e.bty&&WEST&&!WEST.outFree))continue;const d=Math.hypot(e.x-a.x,e.y-a.y);if(d<bd&&allyLos(a,e)){bd=d;bt=e}}a.tg=bt}a.rtT=(a.rtT||0)-dt;
+ const dp=Math.hypot(P.x-a.x,P.y-a.y);
+ if(dp>14*SCF){allyArrive();return}
+ /* keep up: walk toward the player along the monsters' route to them, stop about 1.6 away */
+ let moved=0;if(dp>1.7*SCF){let dir=null;try{dir=pathDir(a)}catch(er){dir=null}const dx=P.x-a.x,dy=P.y-a.y;if(!dir||dp<3*SCF&&allyLos(a,P))dir=[dx/dp,dy/dp];const sp=3.5*SCF*dt*(dp>5*SCF?1.25:1),ox=a.x,oy=a.y;mv(a,a.x+dir[0]*sp,a.y+dir[1]*sp,a.r);moved=Math.hypot(a.x-ox,a.y-oy);
+  if(moved<sp*.2){a.stuck=(a.stuck||0)+dt;if(a.stuck>2.5){a.stuck=0;allyArrive()}}else a.stuck=0;if(!a.tg)a.fa=Math.atan2(dir[1],dir[0])}
+ a.ap+=moved*4.5;a.af=moved>.001?(a.ap|0)%4:0;
+ if(!SW&&typeof FH!='undefined')a.z=0;
+ /* fire */
+ const t=a.tg;if(t){a.fa=Math.atan2(t.y-a.y,t.x-a.x);if(a.cd<=0){a.cd=rr(.65,.95);const d=Math.hypot(t.x-a.x,t.y-a.y),hitC=Math.max(.45,.85-d*.03),dmg=14+2*Math.min(60,fl);
+  snd(240,.12,'sawtooth',.07,-120,a);try{ltPush(a.x,a.y,(a.z||0)+.6,2.5,[1,.8,.5],.08)}catch(er){}const zb=(a.z||0)+(SW?SW.HH*.75:.62);
+  for(let i=0;i<4;i++){const k=(i+1)/5;ptcPush({x:a.x+(t.x-a.x)*k,y:a.y+(t.y-a.y)*k,z:zb-.1*k,vx:0,vy:0,vz:0,life:.06,l0:.06,t:S.spark,s:.06,g:0},0)}
+  if(Math.random()<hitC)allyDmg(t,dmg)}}}
+function allyList(L){const a=ALLY;if(!a||a.FN!==FLN)return;const it=hum3d(a)?{q:11,h:a,x:a.x,y:a.y,fl:0,fh:a.flash>0,ol:2}:{x:a.x,y:a.y,t:humT(a),s:a.sc,fl:0,fh:a.flash>0,ol:2};if(SW)it.zb=a.z!==undefined?a.z:0;L.push(it)}
+function allyHud(){const c=ctx;if(ALLYMSG&&ALLYMSG.d>0){ALLYMSG.d-=1/60;c.save();c.textAlign='center';c.textBaseline='alphabetic';c.font='bold 13px "DotGothic16",monospace';c.globalAlpha=Math.min(1,ALLYMSG.d*1.2);c.fillStyle='#000';c.fillText(ALLYMSG.t,LW/2+1,81);c.fillStyle='#8cc8ff';c.fillText(ALLYMSG.t,LW/2,80);c.restore()}
+}
+
+/* the cave's traps: a tripwire goes off when you walk through it (jump it and it doesn't), a pressure plate when you step on it; either way a short fuse, then the dynamite.
+   Shooting a trap's dynamite sets it off where it is. One blast sets off any other trap right next to it. */
+const TRAP_R=2.3;
+function trapStep(dt){const W=WEST,air=(P.jz||0)>.22||(SW&&P.gr===0);for(const t of W.traps){if(t.fired)continue;
+ if(t.fuse<0){const inC=(P.x|0)==(t.x|0)&&(P.y|0)==(t.y|0);if(!(P.deadT>0)&&inC&&!air&&(t.k=='w'||Math.hypot(P.x-t.x,P.y-t.y)<.42))trapFire(t,t.k=='w'?.45:.3)}
+ else{t.fuse-=dt;if(Math.random()<dt*40){const d=t.dyn;ptcPush({x:d.x+rr(-.1,.1),y:d.y+rr(-.1,.1),z:.3,vx:rr(-.4,.4),vy:rr(-.4,.4),vz:rr(.3,1),life:.25,l0:.25,t:S.spark,s:.08,g:2},0)}if(t.fuse<=0)trapBoom(t)}}}
+function trapFire(t,fuse){if(t.fired||t.fuse>=0)return;t.fuse=fuse;snd(t.k=='w'?1600:300,.08,'square',.05,-800,{x:t.x,y:t.y});snd(900,fuse+.1,'sawtooth',.02,-300,{x:t.x,y:t.y})}
+function trapBoom(t){const W=WEST;t.fired=1;for(const q of[t.wire,t.plate,t.dyn])if(q)PRP=PRP.filter(p=>p!==q);const b=W.brk.find(b=>b.p===t.dyn);if(b)b.hp=0;
+ const z=SW?(swNearFloor(t.x,t.y,1)||0):0;boom(t.x,t.y,TRAP_R*.8,z+.3);snd(55,.8,'sawtooth',.2,-25,{x:t.x,y:t.y});snd(140,.35,'square',.1,-90,{x:t.x,y:t.y});
+ for(let i=0;i<26;i++){const a=Math.random()*6.28,v=rr(1.5,5);ptcPush({x:t.x,y:t.y,z:.3,vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(.5,3),life:.8,l0:.8,t:i%3?S.dust:S.spark,s:i%3?.4:.2,g:5},0)}
+ for(let i=0;i<10;i++)ptcPush({x:t.x+rr(-1.5,1.5),y:t.y+rr(-1.5,1.5),z:1.7,vx:0,vy:0,vz:-.5,life:1.2,l0:1.2,t:S.dust,s:.25,g:3},0);
+ const dm=35+3*Math.min(60,fl),d=Math.hypot(P.x-t.x,P.y-t.y);if(d<TRAP_R&&!(P.deadT>0)){hb(null);cause='a dynamite trap';hurt(dm*(1-d/(TRAP_R*1.4)));push(P,(P.x-t.x)/(d||1),(P.y-t.y)/(d||1),2.4)}
+ for(const e of E){if(e.dead)continue;const de=Math.hypot(e.x-t.x,e.y-t.y);if(de<TRAP_R){if(e.pac)westWake(e,1);e.hp-=dm*1.5*(1-de/(TRAP_R*1.4));e.flash=.1;e.aggro=1;if(e.hp<=0)kill(e)}}
+ if(typeof ALLY!='undefined'&&ALLY&&ALLY.FN===FLN){const da=Math.hypot(ALLY.x-t.x,ALLY.y-t.y);if(da<TRAP_R)allyHurt(ALLY,dm*(1-da/(TRAP_R*1.4)))}
+ for(const o of W.traps)if(!o.fired&&o.fuse<0&&Math.hypot(o.x-t.x,o.y-t.y)<1.6)trapFire(o,.35)}

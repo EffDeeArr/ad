@@ -276,7 +276,7 @@ if(b.rem)return;/* a co-op guest's copy of the host's bomb: the host does the da
 
 /* ---------- the mecha bird ---------- */
 function mbFrames(s2){const sp={mb:1,s2:s2?1:0,pw:[],skin:null,tc:'',gun:'',hue:0,c:{},cap:900},fr=[];for(let ph=0;ph<4;ph++){let v=null;Object.defineProperty(fr,ph,{get:()=>v||(v=hmRender(sp,ph,0)),enumerable:true})}fr.spec=sp;return fr}
-function mkMecha(x,y,z){const hp=Math.round(7*65*(1+.3*fl)*fHp(fl)),dm=17*(1+.15*fl)*fScl(fl);
+function mkMecha(x,y,z){const hp=Math.round(7*65*(1+.3*fl)*fHp(fl)*(typeof BOSSHP=='number'?BOSSHP:1)),dm=17*(1+.15*fl)*fScl(fl);
 return{x,y,z,hp,mhp:hp,spd:7,dmg:dm,sc:7,r:1.3,hr:2.1,traits:['flying'],name:'Skyfall Warden',spr:null,fr:mbFrames(0),fr2:mbFrames(1),cd:1.5,aggro:1,burn:0,slow:0,flash:0,tp:3,boss:1,mb:1,fly:1,mk:0,mt:0,oa:Math.random()*6.2832,od:Math.random()<.5?1:-1,bcd:3.2,scd:2,dcd:6,pcd:12,fa:0,wf:0,hc:0}}
 function mbV(e){return(e.mk==1||e.mk==2||e.mk==4)?1:e.bb>0?3:e.sh>0?2:0}
 function mbGeo(sp,ph,v,H){const{F,Q,tube,ball}=H,S2=sp.s2,K=.78;
