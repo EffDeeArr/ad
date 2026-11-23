@@ -97,17 +97,29 @@ float cl(vec3 p){return vn(p)*.6+vn(p*2.1+5.3)*.28+vn(p*4.3+1.7)*.12;}
 float cumSh(float a,float vv,float base,float hg){float tt=(vv-base)/hg;if(tt<0.)return -9.;float n=cl(vec3(cos(a)*3.2,sin(a)*3.2,vv*5.5));float gap=vn(vec3(cos(a)*2.3,sin(a)*2.3,base*3.));return n+.42-tt*.62+(gap-.5)*.8;}
 /* 90s cel sky (0.9.242): a deep cobalt that pales toward the horizon, big cumulus painted in three flat tones (white where the sun hits, a pink body, periwinkle underneath), and two rows of far wooded hills on the horizon. m=1 day, m=2 evening */
 float hillH(float a,float f,float sd){vec3 q=vec3(cos(a),sin(a),0.);return vn(q*f+vec3(sd,sd*.7,1.3))*.6+vn(q*f*2.7+vec3(sd*1.9,3.,sd))*.28+vn(q*f*7.+vec3(1.,sd,5.))*.12;}
-vec3 animeSky(float a,float v,float m){bool des=m>2.5,day=m<1.5||des;
+vec3 animeSky(float a,float v,float m){bool des=m>2.5,ash=m>3.5&&m<4.5,aln=m>4.5,day=(m<1.5||des)&&!ash&&!aln;
  vec3 top=day?vec3(.055,.17,.62):vec3(.10,.07,.30),mid=day?vec3(.13,.36,.86):vec3(.42,.20,.50),hor=des?vec3(.98,.86,.62):day?vec3(.50,.74,.97):vec3(1.,.62,.42);
+ if(ash){top=vec3(.16,.08,.07);mid=vec3(.42,.18,.12);hor=vec3(.78,.42,.24);}if(aln){top=vec3(.06,.05,.2);mid=vec3(.55,.30,.62);hor=vec3(1.,.62,.62);}
  vec3 c=v>.22?mix(mid,top,smoothstep(.22,.75,v)):mix(hor,mid,smoothstep(-.02,.22,v));
  vec3 q=vec3(cos(a)*1.7,sin(a)*1.7,0.);float lay=v>.5?1.:0.;float base=.15+.08*vn(q*1.3+vec3(3.1,1.2,.5))+lay*.42,hg=.17+.2*vn(q*1.9+vec3(7.3,2.,1.)+lay*5.);
  float S=cumSh(a+lay*2.1,v,base,hg);
- if(S>.55){float tt=(v-base)/hg;vec3 cw=day?vec3(1.,.97,.96):vec3(1.,.86,.76),cm=day?vec3(.99,.83,.90):vec3(.95,.60,.62),cs=day?vec3(.62,.72,.97):vec3(.50,.30,.52);
+ if(S>.55&&!aln){float tt=(v-base)/hg;vec3 cw=day?vec3(1.,.97,.96):vec3(1.,.86,.76),cm=day?vec3(.99,.83,.90):vec3(.95,.60,.62),cs=day?vec3(.62,.72,.97):vec3(.50,.30,.52);
   vec3 cc=cm;if(cumSh(a+lay*2.1,v+.02,base,hg)<.55||cumSh(a+lay*2.1,v+.042,base,hg)<.5)cc=cw;if(tt<.26)cc=cs;else if(tt<.31)cc=mix(cs,cm,.5);
   /* the rim of the cloud against the sky is a thin lighter line, like the white paint left at a cel's edge */if(S<.6&&tt>.3)cc=cw;c=cc;}
+ /* the alien sky (0.9.327): stars, green-violet aurora curtains, a huge ringed gas giant and a small pale moon */
+ if(aln){float st=h3(vec3(floor(a*180.),floor(v*90.),7.));if(st>.985&&v>.12)c=mix(c,vec3(.9,.95,1.),.8);
+  float au=smoothstep(.18,.32,v)*smoothstep(.75,.45,v)*(.5+.5*sin(a*9.+vn(vec3(cos(a)*4.,sin(a)*4.,v*3.))*6.))*smoothstep(.45,.7,vn(vec3(cos(a)*2.,sin(a)*2.,v*6.)));c=mix(c,vec3(.2,.9,.8),au*.45);c+=vec3(.9,.3,.8)*au*smoothstep(.6,.8,vn(vec3(cos(a)*3.,sin(a)*3.,v*5.+7.)))*.35;
+  float sg=atan(sin(a+.6),cos(a+.6));c+=vec3(1.,.55,.4)*exp(-(sg*sg*6.+(v-.05)*(v-.05)*40.))*.35;
+  float da=atan(sin(a-1.1),cos(a-1.1))*.55,dv=v-.36,pr=length(vec2(da,dv));if(pr<.17){float sh=clamp(.55+(da*-1.6+dv*2.2),0.,1.),bd=sin(dv*70.+sin(da*12.)*1.5);vec3 pc=mix(vec3(.82,.56,.78),vec3(.32,.55,.78),smoothstep(-.6,.6,dv/.17+.15*bd));c=pc*(.35+.75*sh);}else c+=vec3(.5,.3,.7)*exp(-(pr-.17)*30.)*.18;
+  float ry=dv*3.2-da*.7,rr=length(vec2(da,ry));if(rr>.2&&rr<.3&&abs(dv+da*.22)<.03&&!(pr<.17&&dv+da*.22>0.))c=mix(c,vec3(.9,.82,.7),.75);
+  float mv=length(vec2(atan(sin(a+2.3),cos(a+2.3))*.55,v-.58));if(mv<.035){c=mix(vec3(.7,.78,.86),vec3(.95,.9,.98),smoothstep(.035,0.,mv+.01));}float m2=length(vec2(atan(sin(a-2.8),cos(a-2.8))*.55,v-.44));if(m2<.022)c=mix(c,vec3(.75,.9,1.),smoothstep(.022,.015,m2));
+  /* floating islands over a luminous cloud sea, pearl spires on top */float iq=hillH(a,1.9,5.3),ic=.06+.05*vn(vec3(cos(a)*3.,sin(a)*3.,1.)),it=ic+.018;if(iq>.56){float w=smoothstep(.56,.62,iq);float bot=ic-.05*w;if(v<it&&v>bot&&v>ic-.05*w*smoothstep(.0,1.,(it-v)/.07)){c=v>it-.004?vec3(.72,.62,.92):mix(vec3(.44,.35,.6),vec3(.58,.45,.7),(v-bot)/.07);}
+   float sp=fract(a*14.),sh2=step(.5,vn(vec3(cos(a)*9.,sin(a)*9.,4.)));if(sh2>.5&&v>=it&&v<it+.06*w*(1.-abs(sp-.5)*2.)*(1.-abs(sp-.5)*2.)){c=abs(sp-.5)<.08?vec3(.25,.95,.92):vec3(.93,.9,.98);}}
+  if(v<.035){c=mix(c,mix(vec3(1.,.82,.86),vec3(.95,.9,1.),vn(vec3(cos(a)*6.,sin(a)*6.,v*30.))),smoothstep(.035,.0,v)*.9);}
+  return c;}
  /* hills: the far row is hazed blue-green, the near row a deeper green with a lit top band */
- if(des){/* the desert (0.9.308): flat-topped red mesas and buttes on the horizon instead of green hills */float q2=hillH(a,1.6,2.9),h3=q2>.52?.02+.11*smoothstep(.52,.56,q2):.012+.01*q2;if(v<h3){vec3 m1=vec3(.80,.50,.40),m2=vec3(.94,.66,.46);c=v>h3-.006?m2:mix(m1,vec3(.86,.72,.62),.35);}
-  float q1=hillH(a+1.3,2.4,8.3),h4=q1>.58?.008+.06*smoothstep(.58,.61,q1):.004;if(v<h4){c=v>h4-.007?vec3(.86,.48,.30):vec3(.66,.32,.22);}
+ if(des){/* the desert (0.9.308): flat-topped red mesas and buttes on the horizon instead of green hills */float q2=hillH(a,1.6,2.9),h3=q2>.52?.02+.11*smoothstep(.52,.56,q2):.012+.01*q2;if(v<h3){vec3 m1=aln?vec3(.36,.12,.46):ash?vec3(.30,.16,.12):vec3(.80,.50,.40),m2=aln?vec3(.3,.95,.9):ash?vec3(.52,.28,.18):vec3(.94,.66,.46);c=v>h3-.006?m2:mix(m1,aln?vec3(.2,.1,.3):vec3(.86,.72,.62),.35);}
+  float q1=hillH(a+1.3,2.4,8.3),h4=q1>.58?.008+.06*smoothstep(.58,.61,q1):.004;if(v<h4){c=aln?(v>h4-.007?vec3(.95,.4,.9):vec3(.24,.08,.32)):ash?(v>h4-.007?vec3(.46,.24,.16):vec3(.22,.12,.1)):(v>h4-.007?vec3(.86,.48,.30):vec3(.66,.32,.22));}
   return c;}
  float h2=.012+.075*hillH(a,2.2,4.7);if(v<h2){vec3 f1=day?vec3(.36,.60,.66):vec3(.36,.22,.46);c=v>h2-.007?mix(f1,vec3(1.),.14):f1;}
  float h1=.004+.05*hillH(a+1.3,3.4,9.1);if(v<h1){vec3 n1=day?vec3(.17,.50,.36):vec3(.20,.13,.34),n2=day?vec3(.27,.63,.40):vec3(.30,.18,.42);c=v>h1-.009-.006*vn(vec3(cos(a)*40.,sin(a)*40.,2.))?n2:n1;}
@@ -254,7 +266,7 @@ gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);good=1;return 1}catch(e){bad=String(e&&e.m
 const animeOn=()=>!!(window.ANIME&&ANIME.on);
 /* saturation, S-curve, shadow tint, ink strength, ink colour; outdoors a little lighter */
 /* what distance fades to: the sky's haze outdoors, a deep night blue indoors (it used to fade to black) */
-function animeFog(){if(!animeOn())return[0,0,0];if(typeof BRV!='undefined'&&BRV||GR&&GR.cq)return[.66,.78,.92];if(GR&&GR.city)return[.2,.15,.33];if(GR&&GR.west){const k=typeof WEST!='undefined'&&WEST&&WEST.storm?WEST.storm.k:0;return[.9-.06*k,.78-.08*k,.6-.12*k]}if(GR&&GR.rail)return[.16,.12,.24];return[.035,.03,.08]}
+function animeFog(){if(!animeOn())return[0,0,0];if(typeof BRV!='undefined'&&BRV||GR&&GR.cq)return[.66,.78,.92];if(GR&&GR.city)return[.2,.15,.33];if(GR&&GR.west){if(typeof alienOn=='function'&&alienOn())return[.22,.12,.36];if(typeof apocOn=='function'&&apocOn())return[.42,.28,.22];const k=typeof WEST!='undefined'&&WEST?(WEST.stormV||0):0;return[.9-.06*k,.78-.08*k,.6-.12*k]}if(GR&&GR.rail)return[.16,.12,.24];return[.035,.03,.08]}
 window.animeFog=animeFog;
 function animeGrade(){const out=GR&&(GR.city||GR.cq||GR.rail)||typeof BRV!='undefined'&&BRV;return[1.2,.34,1,1,out?.035:.015,out?.02:.012,out?.085:.05]}
 function texOf(arr,w,h,repeat){let t=texC.get(arr);if(t)return t;let a=arr;if(!(a instanceof Uint32Array))a=Uint32Array.from(a);const n=a.length;if(!w){w=Math.round(Math.sqrt(n));h=Math.ceil(n/w)}
@@ -529,7 +541,7 @@ gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.enable(gl.DEPTH_TEST);gl.depthF
 /* background: gradient above and below the horizon (and the tower skyline in the colosseum) */
 {const pr=P_.bg;gl.useProgram(pr.p);gl.disable(gl.DEPTH_TEST);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,lineTex('cl',CL,h,0xff000000,H));gl.uniform1i(pr.u.uCL,0);gl.activeTexture(gl.TEXTURE1);gl.bindTexture(gl.TEXTURE_2D,lineTex('fl',FL,h,0xff000000,H));gl.uniform1i(pr.u.uFL,1);
 const cq=GR&&GR.cq;if(cq){if(!SKYT)SKYT=mkTowers();gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,texOf(SKYT,1024,128,false));if(animeOn()){gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT)}gl.uniform1i(pr.u.uSky,2)}else{gl.activeTexture(gl.TEXTURE2);gl.bindTexture(gl.TEXTURE_2D,whiteT);gl.uniform1i(pr.u.uSky,2)}
-gl.uniform4f(pr.u.uB,h,hH,0,w);gl.uniform4f(pr.u.uD,dX,dY,plX,plY);gl.uniform1f(pr.u.uCQ,cq?1:0);gl.uniform1f(pr.u.uSkyM,!animeOn()?0:(typeof BRV!='undefined'&&BRV||cq)?1:GR&&GR.west?3:GR&&(GR.city||GR.rail)?2:0);gl.drawArrays(gl.TRIANGLES,0,3);gl.enable(gl.DEPTH_TEST);gl.activeTexture(gl.TEXTURE0)}
+gl.uniform4f(pr.u.uB,h,hH,0,w);gl.uniform4f(pr.u.uD,dX,dY,plX,plY);gl.uniform1f(pr.u.uCQ,cq?1:0);gl.uniform1f(pr.u.uSkyM,!animeOn()?0:(typeof BRV!='undefined'&&BRV||cq)?1:GR&&GR.west?(typeof alienOn=='function'&&alienOn()?5:typeof apocOn=='function'&&apocOn()?4:3):GR&&(GR.city||GR.rail)?2:0);gl.drawArrays(gl.TRIANGLES,0,3);gl.enable(gl.DEPTH_TEST);gl.activeTexture(gl.TEXTURE0)}
 /* the level */
 if((window.ARBN&&ARBN.rtOn&&ARBN.rtOn()&&LF&&LF.sh>0)||window.GLR_FORCE_OCC){try{occPass(dX,dY,plX,plY,inv,hH)}catch(e){}}
 if(SW)bspDraw(dX,dY,plX,plY,ps);else{if(BS)bspDrop();const pr=P_.world;setCam(pr,dX,dY,ps);gl.uniform1f(pr.u.uFK,FKU);gl.uniform1f(pr.u.uAT,0);gl.uniform1f(pr.u.uWash,animeOn()&&!(typeof SHOPF!='undefined'&&SHOPF)?1:0);gl.uniform1i(pr.u.uTex,0);gl.activeTexture(gl.TEXTURE0);

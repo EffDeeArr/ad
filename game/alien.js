@@ -166,3 +166,23 @@ f.push(...shSph(0,.16,.255,.075,[255,40,120],{sz:.35,e:1}),...vmBox(0,.16,.285,.
 for(let i=0;i<6;i++){const a=i/6*6.2832+.5,x=Math.cos(a)*.24,z=Math.sin(a)*.24;f.push(...vmCyl(x,.3,z,.03,.2,PR2,{ax:'y',r2:0,n:4,pv:[x,.3,z],rx:Math.sin(a)*.5,rz:-Math.cos(a)*.5}))}
 for(const sx of[-1,1])f.push(...vmCyl(sx*.31,.12,.0,.025,.17,PR2,{ax:'y',r2:0,n:4,pv:[sx*.31,.12,0],rz:-sx*.6}))}
 out.push(f)}return out}
+/* 0.9.330: alien names. A name wrapped in ALNS marks (alnNm) is written in the alien glyphs wherever it is shown: on the canvas (fillText and
+   strokeText split the line and scribble the marked part, measureText leaves the marks out) and in the page (the marked part becomes a little
+   picture of the glyphs). The marks themselves take no room. */
+const ALNS='⁠';function alnSeed(s){return[...String(s).toLowerCase()].reduce((q,ch)=>q*31+ch.charCodeAt(0)>>>0,5)}
+function alnNm(s){return ALNS+String(s).split(ALNS).join('')+ALNS}
+(function(){const P_=CanvasRenderingContext2D.prototype,f0=P_.fillText,s0=P_.strokeText,m0=P_.measureText;
+ P_.measureText=function(t){t=String(t);return m0.call(this,t.indexOf(ALNS)<0?t:t.split(ALNS).join(''))};
+ const run=function(ctx,t,x,y,fill){const parts=t.split(ALNS),W=m0.call(ctx,parts.join('')).width,a=ctx.textAlign,fs=parseFloat((ctx.font.match(/([\d.]+)px/)||[0,8])[1])||8,bl=ctx.textBaseline;
+  let x0=a=='center'?x-W/2:(a=='right'||a=='end')?x-W:x;const yb=bl=='top'||bl=='hanging'?y+fs*.8:bl=='middle'?y+fs*.35:bl=='bottom'||bl=='ideographic'?y-fs*.2:y;
+  ctx.save();ctx.textAlign='left';for(let i=0;i<parts.length;i++){const p=parts[i];if(!p)continue;const w=m0.call(ctx,p).width;
+   if(i&1){if(fill){const h=fs*.75;ctx.shadowBlur=0;alnGlyphs(ctx,x0,yb-h,Math.max(w,fs),h,alnSeed(p),typeof ctx.fillStyle=='string'?ctx.fillStyle:'#fff')}}else(fill?f0:s0).call(ctx,p,x0,y);x0+=w}ctx.restore()};
+ P_.fillText=function(t,x,y,mw){t=String(t);if(t.indexOf(ALNS)<0)return mw===undefined?f0.call(this,t,x,y):f0.call(this,t,x,y,mw);run(this,t,x,y,1)};
+ P_.strokeText=function(t,x,y,mw){t=String(t);if(t.indexOf(ALNS)<0)return mw===undefined?s0.call(this,t,x,y):s0.call(this,t,x,y,mw);run(this,t,x,y,0)};
+ /* in the page: replace the marked part of any text with an image of glyphs in the text's colour */
+ const img=(s,col,px)=>{const h=Math.max(10,Math.round(px)),cv=document.createElement('canvas'),w=Math.max(h*1.2,Math.round(s.length*h*.55));cv.width=w*2;cv.height=h*2;const g=cv.getContext('2d');g.scale(2,2);
+  alnGlyphs(g,1,h*.12,w-2,h*.76,alnSeed(s),col);const im=document.createElement('img');im.src=cv.toDataURL();im.alt='';im.style.cssText='height:'+h+'px;width:'+w+'px;vertical-align:-'+Math.round(h*.15)+'px;display:inline-block';return im};
+ const fix=root=>{if(!root||!(root.textContent||'').includes(ALNS))return;const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),L=[];let n;while(n=tw.nextNode())if(n.nodeValue.includes(ALNS))L.push(n);
+  for(const t of L){const el=t.parentNode;if(!el)continue;const cs=getComputedStyle(el),parts=t.nodeValue.split(ALNS),fr=document.createDocumentFragment();parts.forEach((p,i)=>{if(!p)return;fr.appendChild(i&1?img(p,cs.color,parseFloat(cs.fontSize)||14):document.createTextNode(p))});el.replaceChild(fr,t)}};
+ const go=()=>{try{new MutationObserver(ms=>{for(const m of ms){if(m.type=='characterData')fix(m.target.parentNode);else for(const a of m.addedNodes)fix(a.nodeType==3?a.parentNode:a)}}).observe(document.body,{childList:true,subtree:true,characterData:true})}catch(e){}};
+ if(document.body)go();else addEventListener('DOMContentLoaded',go)})();

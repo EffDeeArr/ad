@@ -30,7 +30,7 @@ function wHash(x,y,k){let h=(Math.imul(x+1,73856093)^Math.imul(y+1,19349663)^Mat
 function genWest(){const n=N,at=(x,y)=>y*n+x;
  g=new Uint8Array(n*n).fill(1);ct.fill(0);FH.fill(0);rooms=[];
  CMASK=new Uint8Array(n*n);WHM=new Float32Array(n*n);RFH=new Float32Array(n*n);
- const W=WEST={td:[],tdk:{},b:[],T0:T,town:pk(WNAMES_TOWN),out:{name:pk(WNAMES_OUT),reward:25+5*ri(0,3)},jack:null,coach:null,tw:[],storm:{t:0,next:rr(35,55),on:0,k:0},msg:null,
+ const W=WEST={td:[],tdk:{},b:[],T0:T,town:pk(WNAMES_TOWN),out:{name:wNm(pk(WNAMES_OUT)),reward:25+5*ri(0,3)},jack:null,coach:null,tw:[],storm:{t:0,next:rr(35,55),on:0,k:0},msg:null,
   doors:[],brk:[],duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
  /* texture ids: a wall cell's id picks its texture (TX), the part above the first storey (TU) and the side that faces into a building (TIN) */
  const tid=(d)=>{const k=JSON.stringify(d);if(W.tdk[k])return W.tdk[k];W.td.push(d);return W.tdk[k]=W.td.length};
@@ -129,6 +129,7 @@ function wWallpaper(g,wp,sd){const rn=wRng(sd||9);
 function wSignBoard(g,W,b){/* the painted sign across the false front: a board with a border, the name in big letters, a little picture for some */
  const sw=W-16,sx=8,sy=12,sh=34,bg=b.k=='saloon'?[38,28,26]:b.k=='bank'?[28,52,40]:b.k=='under'?[20,20,24]:b.k=='hotel'?[236,226,196]:b.k=='sheriff'?[236,220,170]:[236,224,190],fg=b.k=='saloon'?[244,206,110]:b.k=='bank'?[236,196,90]:b.k=='under'?[220,220,220]:b.k=='hotel'?[70,40,34]:[60,34,26];
  g.fillStyle=wcss(wdk(bg,.6));g.fillRect(sx-2,sy-2,sw+4,sh+4);g.fillStyle=wcss(bg);g.fillRect(sx,sy,sw,sh);g.strokeStyle=wcss(fg);g.lineWidth=1.2;g.strokeRect(sx+3,sy+3,sw-6,sh-6);
+ if(wAlien()&&typeof alnGlyphs=='function'){const seed=[...b.nm].reduce((a,c)=>a*31+c.charCodeAt(0)>>>0,7);g.lineWidth=1.6;alnGlyphs(g,sx+8,sy+6,sw-16,sh-12,seed,wcss(fg));return}
  let txt=b.nm,ic=0;if(b.k=='sheriff')ic=1;if(b.k=='smith')ic=2;if(b.k=='under')ic=3;if(b.k=='livery')txt='LIVERY & FEED';
  const icw=ic?30:0;g.textAlign='center';g.textBaseline='middle';let fs=24;const fnt=s=>`bold ${s}px Georgia, "Times New Roman", serif`;g.font=fnt(fs);while(g.measureText(txt).width>sw-16-icw&&fs>8){fs--;g.font=fnt(fs)}
  const tx=sx+sw/2+icw/2,ty=sy+sh/2+1;g.fillStyle=wcss(wdk(bg,.55));g.fillText(txt,tx+1.2,ty+1.2);g.fillStyle=wcss(fg);g.fillText(txt,tx,ty);
@@ -141,9 +142,9 @@ function wPoster(g,o){/* the wanted poster: the outlaw's face from his own model
  g.save();g.translate(32,31);g.rotate(-.03);const PW=40,PH=54,hw=PW/2,hh=PH/2;g.fillStyle='#e8d6a8';g.fillRect(-hw,-hh,PW,PH);g.fillStyle='rgba(120,90,50,.22)';g.fillRect(-hw,hh-7,PW,7);g.fillRect(-hw,-hh,4,PH);
  g.fillStyle='#2a1a12';g.textAlign='center';g.textBaseline='middle';
  const fit=(t,y,mx,max)=>{let f=mx;g.font='bold '+f+'px Georgia, serif';while(f>2.2&&g.measureText(t).width>max){f-=.2;g.font='bold '+f+'px Georgia, serif'}g.fillText(t,0,y)};
- fit('WANTED',-hh+6,9,PW-5);
+ const AL=wAlien()&&typeof alnGlyphs=='function';if(AL){const gl=(y,h,sd)=>alnGlyphs(g,-hw+4,y-h/2,PW-8,h,sd,'#2a1a12');gl(-hh+6,8,11)}else fit('WANTED',-hh+6,9,PW-5);
  g.fillStyle='#bca478';g.fillRect(-12,-hh+11,24,20);if(o.face)try{g.drawImage(o.face,-12,-hh+11,24,20)}catch(e){}g.strokeStyle='#2a1a12';g.lineWidth=.7;g.strokeRect(-12,-hh+11,24,20);g.fillStyle='#2a1a12';
- fit('DEAD OR ALIVE',-hh+35,4.6,PW-6);const nm=(o.name||'').toUpperCase().replace(/"/g,'');fit(nm,-hh+41.5,4.4,PW-5);fit('$'+(o.reward||25)+' REWARD',-hh+48.5,6,PW-6);
+ if(AL){alnGlyphs(g,-hw+5,-hh+32,PW-10,5,23,'#2a1a12');alnGlyphs(g,-hw+4,-hh+39,PW-8,5,(o.name||'').length*97+5,'#2a1a12');alnGlyphs(g,-hw+7,-hh+46,PW-14,6,41,'#2a1a12')}else{fit('DEAD OR ALIVE',-hh+35,4.6,PW-6);const nm=(o.name||'').toUpperCase().replace(/"/g,'');fit(nm,-hh+41.5,4.4,PW-5);fit('$'+(o.reward||25)+' REWARD',-hh+48.5,6,PW-6)}
  g.fillStyle='#6a5a44';g.fillRect(-1,-hh,2,2);g.restore()}
 function wFront(d,up,face){/* one cell of a building's street front: the first storey (windows, lamps, the poster) or the false front above it (the sign) */
  const b=WBD.find(x=>x.k==d.b),s0=Math.max(1,Math.floor((d.w-Math.min(d.w-2,7))/2)),s1=d.w-1-s0,inS=d.i>=s0&&d.i<=s1,sd=up&&!inS?d.b.length*3:d.i*17+d.b.length*3;
@@ -175,7 +176,7 @@ function wFloorTex(){const rn=wRng(77),F={};
  F.grave=mkT(g=>{g.fillStyle='#5a4030';g.fillRect(0,0,64,64);const r=wRng(91);for(let i=0;i<90;i++){g.fillStyle=r()<.5?'rgba(40,26,18,.5)':'rgba(130,100,70,.4)';g.fillRect(r()*64,r()*64,1+r()*3,1+r()*2)}for(let i=0;i<5;i++){g.strokeStyle='rgba(30,20,14,.6)';g.lineWidth=.8;g.beginPath();const y=r()*64;g.moveTo(0,y);g.lineTo(64,y+r()*6-3);g.stroke()}});
  F.cave=mkT(g=>{g.fillStyle='#6a4a3a';g.fillRect(0,0,64,64);const r=wRng(57);for(let i=0;i<26;i++){const x=r()*64,y=r()*64,s=3+r()*7;g.fillStyle=`rgb(${90+r()*30|0},${64+r()*22|0},${50+r()*18|0})`;g.beginPath();g.ellipse(x,y,s,s*.7,r()*3,0,7);g.fill()}for(let i=0;i<60;i++){g.fillStyle='rgba(30,18,12,.5)';g.fillRect(r()*64,r()*64,1.5,1.5)}});
  return F}
-function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');if(!WTXC||WTXC.k!==k)WTXC={k,F:null,m:{}};if(!WTXC.F)WTXC.F=wFloorTex();const C=WTXC,F=C.F,M=C.m;
+function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'')+(wAlien()?'x':'');if(!WTXC||WTXC.k!==k)WTXC={k,F:null,m:{}};if(!WTXC.F)WTXC.F=wFloorTex();const C=WTXC,F=C.F,M=C.m;
  const memo=(key,f)=>M[key]||(M[key]=f());
  const mesa=memo('mesa',()=>mkT(g=>{const r=wRng(19),band=[[196,104,70],[214,132,84],[176,86,60],[226,152,98],[188,96,66],[204,120,78]];let y=0,k=0;while(y<64){const h2=6+r()*9;g.fillStyle=wcss(band[k++%band.length]);g.fillRect(0,y,64,h2+1);y+=h2}
   for(let i=0;i<5;i++){const x=r()*64;g.strokeStyle='rgba(80,36,24,.55)';g.lineWidth=.9;g.beginPath();g.moveTo(x,0);g.lineTo(x+r()*6-3,20);g.lineTo(x+r()*8-4,44);g.lineTo(x+r()*6-3,64);g.stroke()}
@@ -194,12 +195,13 @@ function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANI
  CT=[null,F.road,F.sand,F.boards,F.saloon,F.hotel,F.bank,F.jail,F.store,F.barn,F.vault,F.sand2,F.grave,F.cave];FT=F.sand;RTS={0:F.grave};
  const roof=memo('roof',()=>mkT(g=>{g.fillStyle='#5a4a42';g.fillRect(0,0,64,64);for(let y=0;y<64;y+=8)for(let x=((y/8)&1)*5;x<64;x+=10){g.fillStyle=`rgb(${88+(x*7+y)%20},${70+(x*3+y)%16},${58+(x+y)%14})`;g.fillRect(x,y,9,7.4)}}));
  const ceil=memo('ceil',()=>mkT(g=>{wBoards(g,0,64,0,64,[128,92,60],23,8);g.fillStyle='#4a3424';g.fillRect(0,26,64,10);g.fillStyle='#5e4430';g.fillRect(0,27,64,3)}));
- CEIL=[ceil,ceil];RAILV={vault:ceil,rock:roof,portal:memo('portal',()=>mkT(g=>wPlanks(g,0,64,[150,120,90],15,{nails:1})))}}
+ CEIL=[ceil,ceil];RAILV={vault:ceil,rock:roof,portal:memo('portal',()=>mkT(g=>wPlanks(g,0,64,[150,120,90],15,{nails:1})))}
+ westLook()}
 /* textures are kept for the whole session (they depend only on the fixed buildings), keyed by what they show: a slice of a sign, or the plain left/middle/right of a false front */
 function wUpKey(d){const s0=Math.max(1,Math.floor((d.w-Math.min(d.w-2,7))/2)),s1=d.w-1-s0;return 'up'+d.b+(d.i>=s0&&d.i<=s1?d.i:d.i==0?'L':d.i==d.w-1?'R':'M')}
 function wLoKey(d){return 'fl'+d.b+(d.dr?'d':(d.i==0||d.i==d.w-1)?'e':'w')}
 /* every texture the town will need, as [key, maker] jobs */
-function westTexJobs(){const J=[];const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');
+function westTexJobs(){const J=[];const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'')+(wAlien()?'x':'');
  for(const b of WBD){const w=b.x1-b.x0+1;for(let x=b.x0;x<=b.x1;x++){const d={k:'front',b:b.k,i:x-b.x0,w,sc:b.sc,tc:b.tc,wp:b.wp,nm:b.nm,dr:b.dr.includes(x+1)||b.dr.includes(x-1)?1:0,pst:0};const N0=b.sd=='n';d.i=N0?x-b.x0:b.x1-x;J.push([wUpKey(d),()=>wFront(d,1)]);J.push([wLoKey(d),()=>wFront(d,0,null)])}
   J.push(['side'+b.sc+b.wp,()=>mkT(g=>wSiding(g,{sc:b.sc},b.sc[0]))]);J.push(['wp'+b.wp,()=>mkT(g=>wWallpaper(g,b.wp,b.sc[1]))])}
  return{k,J}}
@@ -214,7 +216,8 @@ function wFace(e){const sp=e.fr.spec,img=hmRender(sp,0,0);const S=Math.round(Mat
 
 /* ---------------- the props (numbered from 3000, drawn by drawProp; collision from their exact pieces like every other prop) ---------------- */
 let WESTM=null;
-function westMeshes(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a);
+function westMeshes(){const b=westMeshes0();return wAlien()?(WESTMA||(WESTMA=wAlienKit(wAlienMesh(b)))):b}
+function westMeshes0(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a);
  const WD=[112,70,42],WD2=[84,52,32],WD3=[150,104,66],WDL=[190,146,98],BR=[206,160,70],IR=[54,54,62],GR=[62,128,74],GR2=[48,100,58],CL=[226,214,186];
  const f=()=>[];
  /* 0 round saloon table, cards and a bottle on it */
@@ -300,10 +303,15 @@ function westMeshes(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=(
  {const m=f();m.push(...B(0,.015,0,.52,.03,.52,[96,86,78]),...B(0,.035,0,.42,.012,.42,[118,108,98]),...B(.12,.043,-.05,.18,.004,.02,[60,52,48],{ry:.5}));M.push(m)}
  /* 36 the timber frame at a mine entrance (faces +z) */
  {const m=f(),TB=[112,80,52];for(const x of[-.44,.44])m.push(...B(x,.9,.42,.12,1.8,.12,TB));m.push(...B(0,1.78,.42,1.04,.14,.16,TB),...B(.2,1.62,.5,.36,.12,.02,[214,196,150],{rz:-.05}),...B(.2,1.62,.51,.2,.03,.005,[160,40,36],{rz:-.05}));M.push(m)}
+
+ /* 37 the roulette table: green felt with the betting layout, a wooden rail, legs; the wheel sits in the -z half and is drawn on its own (it spins) */
+ {const m=f(),FE=[30,110,62],RD=[176,30,36],BK=[26,24,28],GO=[214,180,90];m.push(...B(0,.2,0,.96,.4,.96,WD2),...B(0,.41,0,.94,.02,.94,FE),...B(0,.43,-.485,.98,.05,.03,WD3),...B(0,.43,.485,.98,.05,.03,WD3),...B(-.485,.43,0,.03,.05,.98,WD3),...B(.485,.43,0,.03,.05,.98,WD3));
+  for(let r=0;r<3;r++)for(let c=0;c<6;c++){const n=r*6+c;m.push(...B(-.3+c*.12,.424,.1+r*.11,.1,.006,.09,n%2?RD:BK))}m.push(...B(-.39,.424,.21,.05,.006,.31,[40,140,70]),...B(0,.424,.4,.7,.006,.05,GO));M.push(m)}
  return WESTM=M}
 /* the moving things: the stagecoach and its two horses, the tumbleweed (and a burning one) */
 let WESTMV=null;
-function westMov(){if(WESTMV)return WESTMV;const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),RD=[170,40,36],RD2=[120,26,24],YL=[226,180,70],BK=[34,30,30],WD=[104,66,40];
+function westMov(){const b=westMov0();if(!wAlien())return b;if(!b.__a){const a=Object.fromEntries(Object.entries(b).filter(([k])=>k!='__a').map(([k,v])=>[k,wAlienMesh([v])[0]]));Object.assign(a,wAlienMov());b.__a=a}return b.__a}
+function westMov0(){if(WESTMV)return WESTMV;const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),RD=[170,40,36],RD2=[120,26,24],YL=[226,180,70],BK=[34,30,30],WD=[104,66,40];
  /* the coach: front toward +z */
  const coach=[];coach.push(...B(0,.62,0,.66,.5,1.0,RD),...B(0,.9,0,.7,.06,1.04,RD2),...B(0,.4,0,.62,.08,1.1,BK),...B(0,.95,-.05,.6,.08,.8,[90,70,50]),...B(0,1.02,-.05,.5,.08,.6,[150,120,80]));
  for(const sx of[-1,1]){coach.push(...B(sx*.334,.66,.0,.01,.22,.3,[30,40,60]),...B(sx*.336,.66,0,.005,.26,.34,YL))}
@@ -315,7 +323,10 @@ function westMov(){if(WESTMV)return WESTMV;const B=(...a)=>vmBox(...a),C=(...a)=
  for(const[x,z,a]of[[-.08,.2,.5],[.08,.16,-.3],[-.08,-.26,-.5],[.08,-.22,.4]])horse.push(...B(x,.28,z,.06,.42,.06,HD,{rx:a,pv:[x,.48,z]}));horse.push(...B(0,.5,-.44,.05,.3,.05,BK,{rx:.7}));horse.push(...B(0,.72,.7,.14,.04,.03,[160,40,30]));
  /* a tumbleweed: a loose ball of twigs */
  const tw=[],twf=[];const r=wRng(5);for(let k=0;k<22;k++){const a=r()*6.283,b=r()*3.14,c=r()*3.14,l=.26+r()*.16;const col=[150+r()*30|0,120+r()*24|0,74+r()*20|0];tw.push(...B(0,0,0,l,.018,.018,col,{rx:a,ry:b,rz:c}));twf.push(...B(0,0,0,l*.92,.024,.024,r()<.5?[255,170,60]:[255,96,40],{rx:a,ry:b,rz:c,e:1}))}
- return WESTMV={coach,horse,tw,twf}}
+ /* the roulette wheel: a wooden bowl, a ring of red and black pockets (and the green zero), the silver turret in the middle */
+ const rwh=[],RRD=[176,30,36],BKc=[26,24,28];rwh.push(...C(0,0,0,.22,.05,[96,60,36],{ax:'y',n:18}),...C(0,.05,0,.2,.012,[150,104,62],{ax:'y',n:18}));for(let k=0;k<37;k++){const a=k/37*6.2832;rwh.push(...B(Math.cos(a)*.15,.064,Math.sin(a)*.15,.024,.006,.05,k==0?[40,150,70]:k%2?RD:BKc,{ry:-a}))}
+ rwh.push(...C(0,.06,0,.09,.01,[120,80,50],{ax:'y',n:12}),...C(0,.07,0,.02,.06,[210,214,224],{ax:'y',n:6}));for(let k=0;k<4;k++)rwh.push(...B(0,.12,0,.12,.012,.012,[210,214,224],{ry:k*.785}));
+ return WESTMV={coach,horse,tw,twf,wheel:rwh}}
 
 /* ---------------- the people ---------------- */
 const WSHIRT=[[176,58,48],[60,90,140],[206,186,146],[96,116,72],[150,116,84],[226,214,190],[120,60,96],[70,70,80]],WPANTS=[[70,88,126],[104,82,60],[44,42,48],[120,104,80]],WHATC=[[166,112,62],[96,72,52],[44,38,36],[206,184,150],[120,96,80]];
@@ -324,8 +335,15 @@ function westHuman(x,y,o){o=o||{};const e=genHuman(x,y,fl);const gun=o.gun||pk([
  if(e.melee){e.melee=0;e.swD=0;e.melr=0;e.spd/=1.18;e.dmg/=1.2;e.traits=e.traits.map(t=>t=='brawler'?'shooter':t)}
  e.gun=gun;e.traits[0]=gun;const sp=e.fr.spec;sp.gun=gun;sp.gm=null;sp.m3=null;sp.c={};
  sp.hat=o.hat!==undefined?o.hat:pk([3,3,3,3,102,0]);sp.hatc=o.hatc||pk(WHATC);sp.cl=o.cl||pk(WSHIRT);sp.pn=o.pn||pk(WPANTS);if(o.band)sp.band=o.band;if(o.ponch)sp.ponch=o.ponch;if(o.vest!==false&&R()<.5)sp.vest=pk([[60,44,36],[40,40,46],[96,70,44]]);
- if(o.nm)e.name=o.nm;else e.name=pk(o.pas?['Rancher','Cowpoke','Prospector','Card Sharp','Cattleman','Homesteader','Townsman','Mule Skinner']:['Outlaw','Gunslinger','Desperado','Bandit','Rustler','Hired Gun','Drifter'])+' '+pk(['Jed','Clem','Rufus','Hank','Silas','Zeke','Amos','Wade','Earl','Cole','Luke','Boone']);
- return e}
+ if(wRuin()){for(const k of['cl','pn','hatc'])if(sp[k])sp[k]=sp[k].map(v=>v*.62+30)}
+ /* 0.9.329: past floor 25 the townsfolk are aliens of the home world, the alien shopkeeper's people: pearl skin, a big egg head with glowing teal eyes,
+    a floating ring of light instead of a hat, and lavender robes (spec.aln; hmGeo draws the head) */
+ if(wAlien()){sp.aln=1;sp.hat=0;sp.cape=0;delete sp.band;delete sp.ponch;delete sp.vest;sp.sk=pk([[225,220,250],[232,226,252],[218,214,246]]);
+  sp.cl=pk([[150,115,240],[138,104,228],[164,128,246],[200,185,250]]);sp.pn=pk([[130,96,215],[118,88,200],[146,112,226]]);sp.dk=[96,70,170];sp.hair=sp.sk}
+/* 0.9.330: on the alien world every name is written in the alien glyphs (wNm) */
+ if(wAlien()&&!o.nm)e.name=pk(o.pas?['Settler','Drifter','Trader','Prospector','Watcher','Herder']:['Raider','Gunner','Marauder','Rustler','Reaver','Hired Gun'])+' '+pk(['Zyx','Ql\'orr','Vael','Xunn','Ozzik','Threm','Iyyo','Krell','Nuu\'ta','Sarrq','Ylo','Phex']);
+ else if(o.nm)e.name=o.nm;else e.name=pk(o.pas?['Rancher','Cowpoke','Prospector','Card Sharp','Cattleman','Homesteader','Townsman','Mule Skinner']:['Outlaw','Gunslinger','Desperado','Bandit','Rustler','Hired Gun','Drifter'])+' '+pk(['Jed','Clem','Rufus','Hank','Silas','Zeke','Amos','Wade','Earl','Cole','Luke','Boone']);
+ if(wAlien())e.name=wNm(e.name);return e}
 /* a seated version of someone's figure (the same look, sitting, hands on the table) */
 function westSitFr(fr){const sp=Object.assign({},fr.spec,{sit:1,gm:null,m3:null,c:{},av:null}),f=[];for(let ph=0;ph<4;ph++){let v=null;Object.defineProperty(f,ph,{get:()=>v||(v=hmRender(sp,ph,0)),enumerable:true})}f.spec=sp;return f}
 function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x|0)]&&!(W.caveSet&&W.caveSet.has((y|0)*n+(x|0)));
@@ -342,19 +360,20 @@ function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x
   s.bar={x:X+8,y0:Y,y1:Y+3};s.piano=[X,Y];
   const pas=(e,grp)=>{e.pac=1;e.grp=grp;e.aggro=0;W.pac.push(e);E.push(e);return e};
   for(const[tx,ty,chs]of s.tb)for(const[cx,cy,sit]of chs){if(!sit)continue;const e=westHuman(cx+.5,cy+.5,{vest:R()<.6,pas:1});e.fa=Math.atan2(ty-cy,tx-cx);e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
-  {const e=westHuman(X+.5,Y+1.5,{hat:102,hatc:[40,36,34],cl:[236,230,214],pn:[40,38,44],nm:'Piano Player'});e.fa=-Math.PI/2;e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
+  {const e=westHuman(X+.5,Y+1.08,{hat:102,hatc:[40,36,34],cl:[236,230,214],pn:[40,38,44],nm:'Piano Player'});e.fa=-Math.PI/2;e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
   {const e=westHuman(s.bar.x+1.5,Y+2.5,{gun:'shotgun',hat:0,cl:[236,232,220],pn:[40,40,46],nm:'Bartender'});e.fa=Math.PI;pas(e,'saloon')}
   {const e=westHuman(s.bar.x-.45,Y+1.2,{gun:'pistol',hat:101,hatc:[30,28,30],cl:[60,46,40],pn:[52,50,58],band:[176,36,40],ponch:[[178,64,40],[236,190,90],[60,90,120]],nm:'McCassidy'});e.fa=0;e.jack=1;e.hp*=2.2;e.mhp=e.hp;e.dmg*=1.3;e.sc=.9;pas(e,'saloon');W.jack=e}
   /* the dart player in the front corner by the bar: for hire */
-  {const bx=s.ix1,by=s.iy1-1,e=westHuman(bx-2.4,by+.5,{gun:'rifle',hat:3,hatc:[120,84,56],cl:[90,110,140],pn:[70,62,54],nm:ALLY_NAME});e.fa=0;e.darts=1;e.shd=0;e.fr.spec.pw=[];e.traits=['rifle','shooter'];e.dT=rr(1,2.5);pas(e,'saloon');W.darts=e;W.dboard={x:bx,y:by}}}
+  {const bx=s.ix1,by=s.iy1-1,e=westHuman(bx-2.4,by+.5,{gun:'rifle',hat:3,hatc:[120,84,56],cl:[90,110,140],pn:[70,62,54],nm:ALLY_NAME});e.fa=0;e.darts=1;e.shd=0;e.fr.spec.pw=[];e.fr.spec.ng=1;e.traits=['rifle','shooter'];e.dT=rr(1,2.5);pas(e,'saloon');W.darts=e;W.dboard={x:bx,y:by}}}
  /* the gunsmith behind his counter */
  {const s=W.smith,e=westHuman(s.ix0+2.5,s.iy0+4.5,{gun:'rifle',hat:0,cl:[150,120,90],pn:[60,54,50],nm:'Gunsmith'});e.fa=-Math.PI/2;e.pac=1;e.grp='smith';e.aggro=0;W.pac.push(e);E.push(e);W.smithE=e}
  /* the storekeeper behind his counter */
- {const b=W.rooms.store,e=westHuman(b.ix0+2.5,b.iy0+4.5,{gun:'shotgun',hat:102,hatc:[60,52,46],cl:[226,220,200],pn:[70,64,58],nm:'Storekeeper'});e.vest=0;e.fr.spec.vest=[96,40,40];e.fa=-Math.PI/2;e.pac=1;e.grp='store';e.aggro=0;W.pac.push(e);E.push(e);W.storeE=e}}
+ {const b=W.rooms.store,e=westHuman(b.ix0+2.5,b.iy0+4.5,{gun:'shotgun',hat:102,hatc:[60,52,46],cl:[226,220,200],pn:[70,64,58],nm:'Storekeeper'});e.vest=0;if(!wAlien())e.fr.spec.vest=[96,40,40];e.fa=-Math.PI/2;e.pac=1;e.grp='store';e.aggro=0;W.pac.push(e);E.push(e);W.storeE=e}
+ /* the townsfolk carry none of the fighters' powers (no shield bubbles in the saloon) */
+ for(const e of W.pac){e.shd=0;e.rev=0;e.ls=0;e.traits=[e.gun,'shooter'];for(const f of[e.fr,e.frS])if(f&&f.spec){f.spec.pw=[];f.spec.gm=null;f.spec.m3=null;f.spec.c={}}}}
 /* a passive person this frame: stays put, looks where they look; true while passive (aiStep stops there) */
 function westPas(e,dt){if(!e.pac)return false;e.af=0;if(e.darts){westDarts(e,dt);return true}if(e.jack&&WEST&&WEST.duel)return duelJack(e,dt);
- if(!e.sit&&!e.jack&&!e.dsp){const dx=P.x-e.x,dy=P.y-e.y;if(dx*dx+dy*dy<9){const a=Math.atan2(dy,dx);let d=a-(e.fa||0);while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;e.fa=(e.fa||0)+d*Math.min(1,dt*3)}}
- if(e.jack){const dx=P.x-e.x,dy=P.y-e.y;if(dx*dx+dy*dy<6){const a=Math.atan2(dy,dx);let d=a-(e.fa||0);while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;e.fa=(e.fa||0)+d*Math.min(1,dt*2)}}
+ /* 0.9.326: the townsfolk keep to what they are doing: nobody turns to watch the player */
  return true}
 /* the group wakes up: everybody in it stands up and fights */
 function westWake(e,quiet){const W=WEST;if(!W||!e||!e.pac)return;const grp=e.grp;let any=0;for(const o of W.pac){if(!o.pac||o.dead||o.grp!==grp)continue;o.pac=0;o.aggro=1;if(o.sit){o.sit=0;if(o.frS)o.fr=o.frS}o.cd=rr(.4,1.1);any=1}
@@ -366,13 +385,13 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
  const put=(x,y,m,o)=>{const i=at(x|0,y|0);const p=Object.assign({x:(x|0)+.5,y:(y|0)+.5,t:PS[0],s:.62,fl:0,fb:0,cell:i,m:3000+m,yaw:0,h:.6,pr:.35},o||{});if(!(o&&o.nb))blk[i]=1;PRP.push(p);return p};
  const freeC=(x,y)=>{const i=at(x,y);return !g[i]&&!blk[i]&&Math.hypot(x+.5-P.x,y+.5-P.y)>1.5&&Math.hypot(x+.5-ex.x,y+.5-ex.y)>1.2&&!E.some(e=>Math.hypot(e.x-x-.5,e.y-y-.5)<.7)};
  /* porch roofs over the boardwalks; the north side slopes down toward the street (+y), the south side toward -y */
- for(const b of W.b)for(let x=b.x0;x<=b.x1;x++){if(b.k=='livery')continue;put(x,b.bwy,9,{nb:1,yaw:b.sd=='n'?0:Math.PI,h:1.05,pr:.5})}
+ for(const b of W.b)for(let x=b.x0;x<=b.x1;x++){if(b.k=='livery')continue;if(wRuin()&&wHash(x,b.bwy,61)<.38)continue;put(x,b.bwy,9,{nb:1,yaw:b.sd=='n'?0:Math.PI,h:1.05,pr:.5})}
  /* the saloon: batwing doors, tables and chairs, the bar, the bottles, the piano */
  {const s=W.saloon;for(const dx of s.dr){const left=dx==s.dr[0];put(dx,s.fy,10,{nb:1,x:dx+.5,y:s.fy+.5,yaw:left?0:Math.PI,h:.7,pr:.3})}
   for(const[tx,ty,chs]of s.tb){put(tx,ty,0,{h:.32,pr:.32});for(const[cx,cy,sit]of chs){const yaw=Math.atan2(tx-cx,ty-cy);put(cx,cy,1,{nb:!!sit,yaw,h:.5,pr:.2})}}
   for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.bar.x,y,2,{yaw:-Math.PI/2,h:.48,pr:.5});for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.ix1,y,17,{yaw:-Math.PI/2,h:1.1,pr:.3});
   put(s.piano[0],s.piano[1],3,{yaw:0,h:.7,pr:.45,x:s.piano[0]+.5,y:s.piano[1]+.38});
-  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]];if(W.dboard)put(W.dboard.x,W.dboard.y,24,{yaw:-Math.PI/2,h:1.1,pr:.3,nb:1})}
+  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]];if(W.dboard)put(W.dboard.x,W.dboard.y,24,{yaw:-Math.PI/2,h:1.1,pr:.3,nb:1});{const rx=s.ix1-1,ry=s.iy1;put(rx,ry,37,{yaw:0,h:.45,pr:.5});W.roul={x:rx+.5,y:ry+.5,a:0,v:0}}}
  {const b=W.rooms.sheriff;W.poster={x:b.dr[0]+2.5,y:b.fy+1.3}}
  /* the sheriff's office: the jail bars (one cell door left open), a desk */
  {const b=W.rooms.sheriff;for(const[x,y]of b.jail){if(g[at(x,y)])continue;if(x==b.ix0+1)continue;put(x,y,18,{h:1.5,pr:.5})}put(b.ix1-1,b.iy1-1,0,{h:.32,pr:.32});put(b.ix1,b.iy1-1,1,{yaw:-Math.PI/2,h:.5,pr:.2})}
@@ -381,7 +400,7 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
  /* the gunsmith: the counter, the racks on the back wall */
  {const s=W.smith;for(let x=s.ix0;x<s.ix1;x++)put(x,s.iy0+3,12,{yaw:Math.PI,h:.45,pr:.5});for(let x=s.ix0;x<=s.ix1;x++)put(x,s.iy1,11,{yaw:Math.PI,h:1,pr:.4});W.smithC={x:s.ix0+2.5,y:s.iy0+3.5}}
  /* the bank: desks in the lobby, the vault door, the gold inside */
- {const v=W.vault,b=v.b;W.vd=put(v.x,v.y,13,{yaw:Math.PI,h:1.5,pr:.5});westBrkAdd(W.vd,W_VHP,'VAULT DOOR',1,()=>{W.heist={st:'crack',t:0,tk:0};heistStep(0)});put(b.ix0+1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});put(b.ix1-1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});
+ {const v=W.vault,b=v.b;W.vd=put(v.x,v.y,13,{yaw:Math.PI,h:1.5,pr:.5});westBrkAdd(W.vd,W_VHP,'VAULT DOOR',1,()=>{W.robbed=1;W.heist={st:'crack',t:0,tk:0};heistStep(0)});put(b.ix0+1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});put(b.ix1-1,b.iy0+1,21,{yaw:Math.PI,h:.5,pr:.5});
   const gs=[];for(let y=v.inY0;y<=v.inY1;y++)for(let x=b.ix0;x<=b.ix1;x++)if((x!=v.x||y>v.inY0)&&!(y==v.inY1&&(x-b.ix0)%2==0))gs.push([x,y]);for(let i=0;i<5&&gs.length;i++){const[x,y]=gs.splice(ri(0,gs.length-1),1)[0];W.gb.push(put(x,y,15,{nb:1,x:x+.5+rr(-.15,.15),y:y+.5+rr(-.15,.15),yaw:rr(0,6.28),h:.2,pr:.15,gold:1}))}
   for(let x=b.ix0;x<=b.ix1;x+=2)if(!blk[at(x,v.inY1)])put(x,v.inY1,22,{yaw:Math.PI,h:1.2,pr:.4})}
  /* the general store: shelves along the walls, sacks and barrels */
@@ -405,26 +424,32 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
   for(const[x,y,k,dir]of C.traps){const t={x:x+.5,y:y+.5,k,dir,fired:0,fuse:-1};if(k=='w')t.wire=put(x,y,33,{nb:1,yaw:dir=='y'?0:Math.PI/2,h:.2,pr:.05});else t.plate=put(x,y,35,{nb:1,yaw:0,h:.05,pr:.05});
    t.dyn=put(x,y,34,{nb:1,yaw:dir=='y'?Math.PI/2:0,h:.75,pr:.2});westBrkAdd(t.dyn,1,'DYNAMITE',0,()=>trapFire(t,.05));W.traps.push(t)}
   for(const[x,y]of C.chests){const i=at(x,y);blk[i]=1;CH.push({x:x+.5,y:y+.5})}}
+ /* the ruined floors: rubble heaps and a few fires in the street, the alleys and the lots */
+ if(wRuin()){let k=0;for(let t=0;t<600&&k<22;t++){const x=ri(2,n-3),y=ri(5,n-6),i=at(x,y);if(g[i]||blk[i]||CMASK[i]||!freeC(x,y))continue;if(y>=W.SY0+1&&y<=W.SY1-1)continue;const m=k<18?14+(R()<.5?1:0):5;blk[i]=1;PRP.push({x:x+.5+rr(-.1,.1),y:y+.5+rr(-.1,.1),t:PS[m>=14?0:m],s:PD[m]||.62,fl:0,fb:m==5?1:0,br:m==5,cell:i,m,yaw:rr(0,6.283),h:PROP_H[m],pr:PROP_R[m]});k++}}
  /* chests: one in the general store, one in the livery */
  for(const[x,y]of[[W.rooms.store.ix1,W.rooms.store.iy0],[W.rooms.livery.ix0,W.rooms.livery.iy1-1]]){const i=at(x,y);if(g[i]||blk[i])continue;blk[i]=1;CH.push({x:x+.5,y:y+.5})}
  /* the stagecoach waits at the east end of the street */
  open=true;W.coach={st:'park',x:N-3.4,y:W.SY0+2.5,t:0,wait:rr(30,45),hit:new Set(),a:1};W.storm={t:0,next:rr(30,50),on:0,k:0};W.tw=[];W.twT=rr(2,5)}
 
 /* ---------------- the town at work: messages, prompts, the use key ---------------- */
+function wNm(s){return wAlien()&&typeof alnNm=='function'?alnNm(s):s}
 function wMsg(t,d){if(!WEST)return;WEST.msg=t;WEST.msgT=d||2.5}
 const wIn=(b,x,y,pad)=>{pad=pad||0;return x>=b.ix0-pad&&x<b.ix1+1+pad&&y>=b.iy0-pad&&y<b.iy1+1+pad};
 const wAng=(a,b)=>{let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;return d};
 const W_PM_PRICE=100;
 /* what the use key would do here, if anything: {k, t (the prompt)} */
 function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const px=P.x,py=P.y;
- const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE MCCASSIDY TO A DUEL'}:{k:'noduel',t:'MCCASSIDY ONLY DUELS SOMEONE WITH A GUN'};
+ const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE '+wNm('MCCASSIDY')+' TO A DUEL'}:{k:'noduel',t:wNm('MCCASSIDY')+' ONLY DUELS SOMEONE WITH A GUN'};
+ if(W.robbed){const near=(e,r)=>e&&!e.dead&&e.pac&&Math.hypot(e.x-px,e.y-py)<r;if(near(W.smithE,2.4)||near(W.storeE,2.4)||near(W.darts,1.8)||(W.roul&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.4))return{k:'robbed',t:'NOBODY IN THIS TOWN WILL DEAL WITH A BANK ROBBER'}}
  const sm=W.smithE;if(sm&&sm.pac&&!sm.dead&&W.smithC&&Math.hypot(W.smithC.x-px,W.smithC.y-py)<1.6)return{k:'smith',t:W.pmSold?'THE GUNSMITH: "ENJOY IT, PARTNER"':'BUY THE PEACEMAKER  -  $'+W_PM_PRICE};
-  const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!DM&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+ALLY_NAME.toUpperCase()+'  -  $'+ALLY_PRICE};
+ if(W.roul&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.4&&!DM&&!(W.darts&&W.darts.pac&&!W.darts.dead&&Math.hypot(W.darts.x-px,W.darts.y-py)<Math.hypot(W.roul.x-px,W.roul.y-py)))return{k:'roul',t:W.roul.busy?'THE WHEEL IS SPINNING...':'PLAY ROULETTE'};
+ const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!DM&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+wNm(ALLY_NAME.toUpperCase())+'  -  $'+ALLY_PRICE};
  const st=W.storeE;if(st&&st.pac&&!st.dead&&W.storeC&&Math.hypot(W.storeC.x-px,W.storeC.y-py)<1.6)return{k:'store',t:'BROWSE THE GENERAL STORE'};
  return null}
 /* the use key (called from chest()): true if the town took it */
 function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNear();if(!q)return false;keys={};
  if(q.k=='duel'){duelStart();return true}
+ if(q.k=='robbed'){wMsg('"We don\'t serve thieves here."',2.4);return true}
  if(q.k=='noduel'){wMsg('"Come back when you\'re carryin\' a real iron, partner."',2.6);return true}
  if(q.k=='smith'){if(W.pmSold){wMsg('"Take good care of her."',2);return true}
   const cur=Wp&&Wp.name||'your gun';snd(620,.12,'triangle',.06,200);
@@ -433,8 +458,9 @@ function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNe
    k=>{state='play';if(k!==0)return;if((P.money|0)<W_PM_PRICE){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
     P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
   if(q.k=='store'){westStore();return true}
+ if(q.k=='roul'){if(!W.roul.busy)westRoulette();return true}
  if(q.k=='hire'){if(ALLY){wMsg('"One partner\'s plenty, friend."',2);return true}snd(620,.12,'triangle',.06,200);
-  choose(ALLY_NAME,'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+ALLY_NAME+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
+  choose(wNm(ALLY_NAME),'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+wNm(ALLY_NAME)+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<ALLY_PRICE){wMsg('"Money first, partner."',2.4);snd(160,.2,'square',.06,-60);return}P.money-=ALLY_PRICE;try{moneySync()}catch(er){}allyHire(W.darts);wMsg('"Let\'s ride."',2.4);snd(520,.12,'triangle',.08,300)});return true}
  return false}
 /* the general store's stock: frontier clothes (yours to keep) and Quickdraw */
@@ -468,7 +494,7 @@ function westKill(e){const W=WEST;if(!W)return;
 
 /* ---------------- the runaway stagecoach ---------------- */
 function coachGo(why){const c=WEST.coach;if(!c||c.st!='park')return;c.st='rear';c.t=0;c.hit=new Set();
- snd(700,.35,'sawtooth',.06,600,{x:c.x,y:c.y});setTimeout(()=>snd(900,.3,'sawtooth',.05,-500,{x:c.x,y:c.y}),120);wMsg(why=='spooked'?'THE HORSES BOLT!':'RUNAWAY STAGECOACH!',2.4)}
+ snd(700,.35,'sawtooth',.06,600,{x:c.x,y:c.y});setTimeout(()=>snd(900,.3,'sawtooth',.05,-500,{x:c.x,y:c.y}),120);}
 function coachStep(dt){const W=WEST,c=W.coach;if(!c)return;c.t+=dt;const L=W.SY0+2.5;
  if(c.st=='park'){c.x=N-3.4;c.y=L;c.v=0;if(!W.duel&&c.t>c.wait)coachGo();
   /* a parked coach is solid: push the player out of it */const dx=P.x-(c.x-.9),dy=P.y-c.y;if(Math.abs(dx)<1.9&&Math.abs(dy)<.75){P.y=c.y+(dy<0?-.76:.76)}return}
@@ -508,13 +534,13 @@ function twBurst(t,ash){for(let i=0;i<12;i++){const a=Math.random()*6.28,v=rr(.4
 
 /* ---------------- dust storms ---------------- */
 function stormStep(dt){const W=WEST,st=W.storm;st.t+=dt;
- if(!st.on){if(st.t>st.next&&!W.duel){st.on=1;st.t=0;st.len=rr(13,16);wMsg('DUST STORM!',2.4);snd(90,1.4,'sawtooth',.04,-30)}}
+ if(!st.on){if(st.t>st.next&&!W.duel){st.on=1;st.t=0;st.len=rr(13,16);snd(90,1.4,'sawtooth',.04,-30)}}
  else if(st.t>st.len){st.on=0;st.t=0;st.next=rr(55,75)}
  const tgt=st.on?(st.t<2?st.t/2:st.t>st.len-2.5?(st.len-st.t)/2.5:1):0;st.k+=(tgt-st.k)*Math.min(1,dt*1.5);
- if(SW&&W.fk0!==undefined)SW.FKS=W.fk0*(1+st.k*7);
+ const ins=westIndoors();W.inK=(W.inK||0)+((ins?1:0)-(W.inK||0))*Math.min(1,dt*4);const ko=st.k*(1-W.inK);W.stormV=ko;if(SW&&W.fk0!==undefined)SW.FKS=W.fk0*(1+ko*7);
  /* the howl and the grit in the air */
- if(st.k>.05){st.ht=(st.ht||0)-dt;if(st.ht<=0){st.ht=.35;snd(140+Math.random()*80,.5,'sawtooth',.012*st.k,-60)}
-  if(PTC.length<700&&Math.random()<dt*40*st.k){const a=P.a+rr(-1,1),r=rr(1,5);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.4),vx:W.wind*rr(3,6),vy:rr(-.5,.5),vz:rr(-.2,.2),life:.8,l0:.8,t:S.dust,s:rr(.25,.55),g:0},0)}}}
+ if(st.k>.05){st.ht=(st.ht||0)-dt;if(st.ht<=0){st.ht=.35;snd(140+Math.random()*80,.5,'sawtooth',.012*st.k*(1-.6*W.inK),-60)}if(ko>.05)
+  if(PTC.length<700&&Math.random()<dt*40*ko){const a=P.a+rr(-1,1),r=rr(1,5);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.4),vx:W.wind*rr(3,6),vy:rr(-.5,.5),vz:rr(-.2,.2),life:.8,l0:.8,t:S.dust,s:rr(.25,.55),g:0},0)}}}
 
 /* ---------------- the duel ---------------- */
 function duelStart(){const W=WEST,j=W.jack;if(!j||W.duel)return;W.duel={st:'fade',t:0,fd:0};snd(300,.3,'triangle',.06,-100);wMsg("\"Well, it's high noon somewhere.\"",2.6)}
@@ -531,7 +557,7 @@ function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;D.t+=dt;const L=W.SY0+2.5,P
  if(D.st=='won'||D.st=='lost'||D.st=='foul'){if(D.t>2.6){D.st='out';D.t=0}return}
  if(D.st=='out'){D.fd=Math.min(1,D.t/.5);if(D.t>.6){if(j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}W.duel=null}}}
 function jackShoots(j,k){snd(260,.14,'sawtooth',.1,-120,j);snd(90,.2,'square',.08,-40,j);try{ltPush(j.x,j.y,.7,3,[1,.8,.5],.12)}catch(er){}for(let i=0;i<6;i++)ptcPush({x:j.x+Math.cos(j.fa)*.35,y:j.y+Math.sin(j.fa)*.35,z:.62,vx:Math.cos(j.fa)*rr(1,3),vy:Math.sin(j.fa)*rr(1,3)+rr(-.5,.5),vz:rr(-.2,.4),life:.2,l0:.2,t:S.spark,s:.12,g:0},0);
- P.inv=0;hb(j);cause='McCassidy';if(k<0){/* outdrawn: the shot is fatal (shields, overheal and the Aegis don't stop it) */P.shd=0;P.oh=0;if(P.pw.aegis)P.ag=Math.max(P.ag||0,.01);hurt(P.mhp*100)}else hurt(P.mhp*k);P.hurt=.6}
+ P.inv=0;hb(j);cause=wNm('McCassidy');if(k<0){/* outdrawn: the shot is fatal (shields, overheal and the Aegis don't stop it) */P.shd=0;P.oh=0;if(P.pw.aegis)P.ag=Math.max(P.ag||0,.01);hurt(P.mhp*100)}else hurt(P.mhp*k);P.hurt=.6}
 function duelFire(){const W=WEST,D=W.duel,j=W.jack;if(!D)return;
  if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1}},800);W.duelDone=1}}
 /* a flashbang: a bang, a white-out, and your hands shake for a moment */
@@ -557,16 +583,18 @@ function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[
  for(let i=0;i<n;i++){const[x,y]=src[(k*3+i)%src.length];if(g[(y|0)*N+(x|0)])continue;const e=westHuman(x+rr(-.3,.3),y+rr(-.3,.3),{gun:pk(['rifle','shotgun','pistol']),hat:3,hatc:[214,196,160],cl:[110,96,80],pn:[60,60,70],vest:[[40,40,46]],nm:'Deputy '+pk(['Hollis','Pike','Barlow','Tate','McCoy','Briggs','Fenton','Quill'])});e.aggro=1;e.posse=1;e.vest=1;if(SW&&SW.g3d)e.z=FH[(e.y|0)*N+(e.x|0)]||0;E.push(e)}
  }
 /* the gold: picked up by walking over it, it slows you down, and it is paid out at the exit */
+/* the gold: walking over a sack puts its money straight in your pocket */
 function goldStep(dt){const W=WEST;if(!W.gb)return;
- for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);W.gold++;snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD x'+W.gold+'  (TAKE IT TO THE EXIT)',2.2)}}
- if(W.gold>0&&typeof ex!='undefined'&&ex&&Math.hypot(ex.x-P.x,ex.y-P.y)<2.6){const v=W.gold*(14+(fl>>2));P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}wMsg('GOLD CASHED IN  +$'+v,3.5);W.gold=0;snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}}
-/* the player's speed: gold is heavy; nobody moves in a duel */
-function westSpd(){const W=WEST;if(!W)return 1;if(W.duel)return 0;return Math.max(.6,1-.07*(W.gold|0))}
+ for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);const v=14+(fl>>2);W.gold=(W.gold|0)+1;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD  +$'+v,1.8)}}}
+/* nobody moves in a duel */
+function westSpd(){const W=WEST;if(!W)return 1;return W.duel?0:1}
 
 /* ---------------- every frame ---------------- */
 function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;if(W.msgT>0)W.msgT-=dt;if(SW&&W.fk0===undefined)W.fk0=SW.FKS;
  if(W.duel)duelStep(dt);
  if(!W.duel||W.duel.st=='fade'||W.duel.st=='out')coachStep(dt);twStep(dt);stormStep(dt);
+ if(W.roul){const r=W.roul;r.a+=r.v*dt;r.v=Math.max(r.busy?r.v:0,r.v-dt*(r.busy?0:6))}
+ if(wAlien()&&!westIndoors()&&PTC.length<600&&Math.random()<dt*14){const a=Math.random()*6.28,r=rr(1.5,7);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.6),vx:rr(-.2,.2),vy:rr(-.2,.2),vz:rr(.05,.25),life:3,l0:3,t:S.plasma||S.spark,s:rr(.05,.1),g:0},0)}
  if(W.heist)heistStep(dt);goldStep(dt);if(W.traps)trapStep(dt);
  /* the jail's open cell, the hotel's guard: nothing to do; the wanted man reacts if you come into his room */
  const o=W.outlaw;if(o&&!o.dead&&!W.outFree&&W.outRoom){const r=W.outRoom;if(P.x>=r.x0&&P.x<r.x1+1&&P.y>=r.y0&&P.y<r.y1+1.6){W.outFree=1;o.aggro=1;wMsg('"YOU\'LL NEVER TAKE ME ALIVE!"',2.2)}}
@@ -574,16 +602,18 @@ function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;i
 
 /* ---------------- drawing ---------------- */
 let WTWF=null;
-function twFrames(){if(WTWF)return WTWF;const M=westMov(),cp=F=>F.map(q=>Object.assign({},q,{p:q.p.map(p=>p.slice())})),out={tw:[],twf:[]};
+function twFrames(){const al=wAlien();if(WTWF&&WTWF.al===al)return WTWF;const M=westMov(),cp=F=>F.map(q=>Object.assign({},q,{p:q.p.map(p=>p.slice())})),out={tw:[],twf:[],al};
  for(const k of['tw','twf'])for(let i=0;i<8;i++){const F=cp(M[k]);vmTurn(F,[0,0,0],i/8*6.2832,0,0);out[k].push(F)}return WTWF=out}
-function westList(L){const W=WEST;if(!W)return;const c=W.coach;
+function westList(L){const W=WEST;if(!W)return;const c=W.coach;if(wAlien()){if(!W.roofK)W.roofK=wRoofKit();for(const r of W.roofK){if((r.x-P.x)**2+(r.y-P.y)**2>900)continue;if(r.wo=='beacon'&&((T*1.5+r.x)%2)<.6)continue;L.push({q:14,wo:r.wo,x:r.x,y:r.y,yaw:r.yaw,k:r.k||1,z:r.z,abs:1})}
+ /* a great saucer hangs over the middle of town, turning slowly, and two small ones circle */L.push({q:14,wo:'ufo',x:26,y:W.SY0+2.5,yaw:T*.15,k:3.2,z:4.4+.15*Math.sin(T*.7),abs:1});for(let i=0;i<2;i++){const a=T*(.25+i*.1)+i*3;L.push({q:14,wo:'ufo',x:26+Math.cos(a)*(14+i*6),y:W.SY0+2.5+Math.sin(a)*(10+i*5),yaw:-T,k:1.1,z:3.2+i*.8,abs:1})}}
  if(c&&c.st!='gone'){const rear=c.st=='rear'?Math.sin(c.t*7)*.08:0;L.push({q:14,wo:'coach',x:c.x+.15,y:c.y,yaw:-Math.PI/2,k:1.25,z:rear*.3});for(const s of[-1,1])L.push({q:14,wo:'horse',x:c.x-1.25,y:c.y+s*.24,yaw:-Math.PI/2,k:1.2,z:c.st=='run'?Math.abs(Math.sin(c.t*9+s))*.06:rear})}
+ if(W.roul)L.push({q:14,wo:'wheel',x:W.roul.x,y:W.roul.y-.22,yaw:W.roul.a,k:1,z:.45});
  for(const t of W.tw)L.push({q:14,wo:t.burn>0?'twf':'tw',x:t.x,y:t.y,yaw:W.wind>0?Math.PI/2:-Math.PI/2,k:t.r*1.5,z:(t.z||0)+.36*t.r,ph:t.ph})}
 function westDraw(s,dX,dY,plX,plY,inv,hH,Z){const M=westMov();let F;if(s.wo=='tw'||s.wo=='twf'){const fr=twFrames()[s.wo],i=((Math.floor(s.ph/6.2832*8)%8)+8)%8;F=fr[i]}else F=M[s.wo];if(!F)return;
- let base=0;if(SW){const f=swNearFloor(s.x,s.y,P.z+.5);base=f===f?f:0}else base=FHc(s.x,s.y);drawMesh(F,s.x,s.y,base+(s.z||0),s.k||1,s.yaw||0,null,0,dX,dY,plX,plY,inv,hH,Z)}
+ let base=0;if(SW){const f=swNearFloor(s.x,s.y,P.z+.5);base=f===f?f:0}else base=FHc(s.x,s.y);if(s.abs)base=0;else if(wAlien()&&(s.wo=='coach'||s.wo=='horse'))base+=.22+.04*Math.sin(T*3+s.x);drawMesh(F,s.x,s.y,base+(s.z||0),s.k||1,s.yaw||0,null,0,dX,dY,plX,plY,inv,hH,Z)}
 function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;c.save();c.textAlign='center';c.textBaseline='alphabetic';
  /* the dust storm: a sandy wash over everything */
- const sk=W.storm?W.storm.k:0;if(sk>.02){c.globalAlpha=Math.min(.42,sk*.42);c.fillStyle='#c89a5c';c.fillRect(0,0,LW,LH);c.globalAlpha=1}
+ const sk=W.stormV||0;if(sk>.02){c.globalAlpha=Math.min(.42,sk*.42);c.fillStyle='#c89a5c';c.fillRect(0,0,LW,LH);c.globalAlpha=1}
  const D=W.duel;if(D){/* letterbox bars, the title, the cue */const bh=Math.round(LH*.11);c.fillStyle='#000';c.fillRect(0,0,LW,bh);c.fillRect(0,LH-bh,LW,bh);
   c.font='bold 16px "DotGothic16",monospace';const T_=D.st=='wait'?"IT'S HIGH NOON":D.st=='cue'?'...':D.st=='draw'?'DRAW!':D.st=='won'?'YOU WIN':D.st=='lost'?'TOO SLOW':D.st=='foul'?'FOUL!':'';
   if(T_){c.fillStyle='#000';c.fillText(T_,LW/2+1,bh+25);c.fillStyle=D.st=='draw'?'#ff5a3a':'#ffe9b0';c.fillText(T_,LW/2,bh+24)}
@@ -594,17 +624,17 @@ function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;c.save()
  /* the wanted poster, read when you stand at it */
  if(!D&&W.poster&&Math.hypot(W.poster.x-P.x,W.poster.y-P.y)<1.4&&!W.btyDone){const t1='WANTED: '+W.out.name.toUpperCase()+'  -  $'+W.out.reward+' REWARD',t2='LAST SEEN AT THE HOTEL';c.fillStyle='#000';c.fillText(t1,LW/2+1,LH*.36+1);c.fillText(t2,LW/2+1,LH*.36+11);c.fillStyle='#f0d890';c.fillText(t1,LW/2,LH*.36);c.fillText(t2,LW/2,LH*.36+10)}
  {const bk=!D&&(westBrkSeen()||(W.brkL&&W.brkL.hp>0&&T-(W.brkL.t||-9)<1.5?W.brkL:null));if(bk){const hp=bk.hp,w=90,x=LW/2-w/2,y=Math.round(LH*.2),t=bk.name+'  '+Math.ceil(hp)+' / '+bk.max;c.fillStyle='#000';c.fillText(t,LW/2+1,y-3);c.fillStyle='#e8e0d0';c.fillText(t,LW/2,y-4);c.fillStyle='#000';c.fillRect(x-1,y-1,w+2,6);c.fillStyle='#d8b050';c.fillRect(x,y,w*hp/bk.max,4)}}
- if(W.gold>0){const t='GOLD x'+W.gold+'  (-'+Math.round((1-westSpd())*100)+'% SPEED)';c.textAlign='right';c.fillStyle='#000';c.fillText(t,LW-7,LH*.2+1);c.fillStyle='#ffd24a';c.fillText(t,LW-8,LH*.2);c.textAlign='center'}
+
  if(W.flash>0){c.globalAlpha=Math.min(1,W.flash);c.fillStyle='#fff';c.fillRect(0,0,LW,LH);c.globalAlpha=1;W.flash-=.02}
  c.restore();
  if(W.msgT>0&&W.msg){c.save();c.textAlign='center';c.font='bold 13px "DotGothic16",monospace';c.globalAlpha=Math.min(1,W.msgT*1.2);c.fillStyle='#000';c.fillText(W.msg,LW/2+1,61);c.fillStyle='#ffe9b0';c.fillText(W.msg,LW/2,60);c.restore()}}
 /* the lights: a high noon sun, oil lamps inside every building, the street lamps */
-function westLights(){const W=WEST;const az=-1.1,el=1.18,D=70,c0=N/2;LT.push({x:c0+Math.cos(az)*D*Math.cos(el),y:c0+Math.sin(az)*D*Math.cos(el),z:D*Math.sin(el),r:2000,c:[1,.92,.78],k:.7,dx:0,dy:0,fk:0,ph:0,sun:1});
+function westLights(){const W=WEST,AL=wAlien(),RU=wRuin();const az=-1.1,el=1.18,D=70,c0=N/2;LT.push({x:c0+Math.cos(az)*D*Math.cos(el),y:c0+Math.sin(az)*D*Math.cos(el),z:D*Math.sin(el),r:2000,c:AL?[.8,.72,1]:RU?[1,.62,.46]:[1,.92,.78],k:RU?.55:.7,dx:0,dy:0,fk:0,ph:0,sun:1});
  const dx4=[1,-1,0,0],dy4=[0,0,1,-1];for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const i=y*N+x;if(g[i]||!CMASK[i])continue;
   for(let d=0;d<4;d++){const dx=dx4[d],dy=dy4[d];if(!g[(y+dy)*N+x+dx]||blk[i])continue;const lx=x+.5+dx*.34,ly=y+.5+dy*.34;let ok=LT.length<34;for(const l of LAMPS)if(Math.hypot(l.x-lx,l.y-ly)<4.2){ok=false;break}if(!ok)continue;
-   LAMPS.push({x:x+.5+dx*.46,y:y+.5+dy*.46,yaw:Math.atan2(-dx,-dy),cool:0,hi:0});LT.push({x:lx,y:ly,z:1.05,r:5.5,c:[1,.66,.34],k:1.15,dx:-dx,dy:-dy,fk:.08,ph:wHash(x,y,d)*30})}}
+   LAMPS.push({x:x+.5+dx*.46,y:y+.5+dy*.46,yaw:Math.atan2(-dx,-dy),cool:AL?1:0,hi:0});LT.push({x:lx,y:ly,z:1.05,r:5.5,c:AL?[.4,.9,1]:[1,.66,.34],k:1.15,dx:-dx,dy:-dy,fk:.08,ph:wHash(x,y,d)*30})}}
  if(W.cave){for(const[x,y]of[[44,42],[47,44],[44,46],[38,45]])LT.push({x:x+.5,y:y+.5,z:1.3,r:4.5,c:[1,.62,.3],k:1.2,dx:0,dy:0,fk:.12,ph:x*3+y})}
- for(const p of PRP)if(p.m===3023)LT.push({x:p.x,y:p.y+.16,z:1.12,r:3.5,c:[1,.75,.4],k:.9,dx:0,dy:0,fk:.05,ph:p.x})}
+ for(const p of PRP)if(p.m===3023)LT.push({x:p.x,y:p.y+.16,z:1.12,r:3.5,c:AL?[1,.4,.9]:[1,.75,.4],k:.9,dx:0,dy:0,fk:.05,ph:p.x})}
 
 /* the lintel over every street door (called from g3dBuild): the false front with its sign over the doorway, wallpaper on the inside, a solid block */
 const W_DH=1.02;
@@ -633,14 +663,14 @@ function westDoorBreak(p,r){const i=p.cell;PRP=PRP.filter(q=>q!==p);blk[i]=0;try
 function westBrkSeen(){const W=WEST;if(!W||!W.brk||typeof propRay!='function')return null;const c=Math.cos(P.a),s_=Math.sin(P.a),t=propRay(P.x,P.y,c,s_,.6,0,14),b=westBrkOf(PRAYP);if(!b)return null;try{const w=dda(P.x,P.y,c,s_);if(w&&w.d<t)return null}catch(er){}return b}
 
 /* the dart player: a throw every couple of seconds, the dart flying across to the board */
-function westDarts(e,dt){const W=WEST;e.dT-=dt;if(!W.dboard)return;const tx=W.dboard.x+.92,ty=W.dboard.y+.5;e.fa=Math.atan2(ty-e.y,tx-e.x);if(e.dT>0)return;e.dT=rr(1.8,3.4);const d=Math.hypot(tx-e.x,ty-e.y),v=7,lf=d/v;
+function westDarts(e,dt){const W=WEST;e.dT-=dt;if(!W.dboard)return;const tx=W.dboard.x+.92,ty=W.dboard.y+.5;e.fa=Math.atan2(ty-e.y,tx-e.x);if(e.dT>0)return;e.dT=rr(1.8,3.4);e.dTt=T;const d=Math.hypot(tx-e.x,ty-e.y),v=7,lf=d/v;
  ptcPush({x:e.x+Math.cos(e.fa)*.3,y:e.y+Math.sin(e.fa)*.3,z:.62,vx:(tx-e.x)/d*v,vy:(ty-e.y)/d*v+rr(-.15,.15),vz:.25,life:lf,l0:lf,t:S.spark,s:.07,g:.4},0);setTimeout(()=>{if(state=='play')snd(700+Math.random()*200,.04,'square',.04,-400,{x:tx,y:ty})},lf*1000)}
 
 /* ===== the hired partner (0.9.315): hired in Frontier Town's saloon, then follows the player from floor to floor (single player).
    Fights what the player fights with a rifle; monsters that are closer to the partner than to the player go after the partner (the AI's target is swapped
    for a stand-in the same way co-op does it for other players). 200 health, back to full on each new floor; dead is dead. ===== */
 let ALLY=null,ALLYMSG=null,FLN=0;const ALLY_NAME='Dusty Reed',ALLY_PRICE=150,ALLY_HP=200;
-function allyHire(e){const W=WEST;ALLY={id:-7,cmh:ALLY_HP,hue:210,ally:1,hum:1,x:e.x,y:e.y,z:e.z,fa:e.fa,fr:e.fr,sc:e.sc,r:.24,hr:.24,name:e.name,hp:ALLY_HP,mhp:ALLY_HP,af:0,ap:0,cd:1,FN:FLN,flash:0,traits:['rifle'],gun:'rifle'};
+function allyHire(e){const W=WEST;if(e.fr&&e.fr.spec&&e.fr.spec.ng){const sp=e.fr.spec;sp.ng=0;sp.gm=null;sp.m3=null;sp.c={}}ALLY={id:-7,cmh:ALLY_HP,hue:210,ally:1,hum:1,x:e.x,y:e.y,z:e.z,fa:e.fa,fr:e.fr,sc:e.sc,r:.24,hr:.24,name:e.name,hp:ALLY_HP,mhp:ALLY_HP,af:0,ap:0,cd:1,FN:FLN,flash:0,traits:['rifle'],gun:'rifle'};
  if(W){W.pac=W.pac.filter(o=>o!==e);W.darts=null}E=E.filter(o=>o!==e);e.dead=1}
 /* a new floor: come along, at full health, behind the player */
 function allyArrive(){const a=ALLY;a.FN=FLN;a.hp=a.mhp;a.tg=null;a.cd=1;const ok=(x,y)=>{const c=(y|0)*N+(x|0);return x>0&&y>0&&x<N&&y<N&&!g[c]&&!blk[c]&&!(typeof pit!='undefined'&&pit[c])};
@@ -654,11 +684,11 @@ function allyHurt(a,d){if(a!==ALLY||!(d>0)||a.hp<=0)return;a.hp-=d;a.flash=.1;tr
 /* hostile bullets hit the partner too */
 function allyBul(b,SCF){const a=ALLY;if(!a||a.FN!==FLN||b.rf)return false;if(Math.hypot(a.x-b.x,a.y-b.y)<.35*SCF&&(!SW||b.z===undefined||Math.abs(b.z-((a.z||0)+SW.HH*.55))<SW.HH*.6)){allyHurt(a,b.dmg);return true}return false}
 function allyLos(a,e){if(SW&&typeof swLosPt=='function'){const az=(a.z||0)+SW.HH*.75,ez=(e.z!==undefined?e.z:0)+SW.HH*.6;return swLosPt(a.x,a.y,az,e.x,e.y,ez)}try{const dx=e.x-a.x,dy=e.y-a.y,d=Math.hypot(dx,dy)||1;return dda(a.x,a.y,dx/d,dy/d).d>=d-.3}catch(er){return true}}
-function allyDmg(e,dmg){if(e.pac||e.bty){if(WEST)westHit(e)}if(e.shd>0){const ab=Math.min(e.shd,dmg);e.shd-=ab;dmg-=ab}e.hp-=dmg;e.aggro=1;e.tAl=1;e.tAT=1.5;e.flash=.08;try{burst(e,e.rb?S.spark:S.blood,3);dnAdd(e,dmg)}catch(er){}if(e.hp<=0)kill(e)}
+function allyDmg(e,dmg){if(e.dorm&&typeof zWake=='function')zWake(e);if(e.pac||e.bty){if(WEST)westHit(e)}if(e.shd>0){const ab=Math.min(e.shd,dmg);e.shd-=ab;dmg-=ab}e.hp-=dmg;e.aggro=1;e.tAl=1;e.tAT=1.5;e.flash=.08;try{burst(e,e.rb?S.spark:S.blood,3);dnAdd(e,dmg)}catch(er){}if(e.hp<=0)kill(e)}
 function allyStep(dt){const a=ALLY;if(!a||state!='play'||DM||NET)return;if(a.FN!==FLN)allyArrive();if(WEST&&WEST.duel)return;if(P.deadT>0||P.hp<=0)return;
  a.flash=Math.max(0,a.flash-dt);a.cd-=dt;const SCF=SW?SW.SC:1;
  /* a target: the nearest hostile it can see */
- if(!a.tg||a.tg.dead||a.tg.pac||!E.includes(a.tg)||a.rtT<=0){a.rtT=.5;let bt=null,bd=11*SCF;for(const e of E){if(e.dead||e.pac||e.peace||e.reg||e.dsp||(e.bty&&WEST&&!WEST.outFree))continue;const d=Math.hypot(e.x-a.x,e.y-a.y);if(d<bd&&allyLos(a,e)){bd=d;bt=e}}a.tg=bt}a.rtT=(a.rtT||0)-dt;
+ if(!a.tg||a.tg.dead||a.tg.pac||!E.includes(a.tg)||a.rtT<=0){a.rtT=.5;let bt=null,bd=11*SCF;for(const e of E){if(e.dead||e.pac||e.dorm||e.peace||e.reg||e.dsp||(e.bty&&WEST&&!WEST.outFree))continue;const d=Math.hypot(e.x-a.x,e.y-a.y);if(d<bd&&allyLos(a,e)){bd=d;bt=e}}a.tg=bt}a.rtT=(a.rtT||0)-dt;
  const dp=Math.hypot(P.x-a.x,P.y-a.y);
  if(dp>14*SCF){allyArrive();return}
  /* keep up: walk toward the player along the monsters' route to them, stop about 1.6 away */
@@ -694,3 +724,108 @@ function trapBoom(t){const W=WEST;t.fired=1;for(const q of[t.wire,t.plate,t.dyn]
 /* a duel needs a gun that hits where it points: not a melee weapon, the grenade launcher or the flamethrower. The gun in hand counts, or the off-hand one when dual wielding */
 const wDuelGun=w=>!!w&&!w.m&&!w.fist&&w.k!='Grenade launcher'&&w.k!='Flamethrower'&&w.k!='Hands';
 function westDuelOk(){return wDuelGun(Wp)||(typeof dualOn=='function'&&dualOn()&&wDuelGun(W2))}
+
+/* under a roof: inside a building, the jail, the hotel, the mine */
+function westIndoors(){const i=(P.y|0)*N+(P.x|0);return !!(typeof CMASK!='undefined'&&CMASK&&CMASK[i])}
+
+/* roulette: pick a stake, pick a bet, the wheel spins; European wheel (one green zero). Even-money bets pay 1:1, the zero pays 35:1 */
+const WR_RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+function westRoulette(){const W=WEST,r=W.roul;snd(620,.12,'triangle',.06,200);const stakes=[10,25,50,100];
+ choose('Roulette','"Place your bets!" You have $'+(P.money|0)+'.',stakes.map(v=>({n:'Bet $'+v,d:(P.money|0)>=v?'Then choose what to bet on.':'Not enough money.'})).concat([{n:'Leave',d:'Keep your money.'}]),k=>{state='play';const st=stakes[k];if(!st)return;if((P.money|0)<st){wMsg('"Not enough chips, friend."',2);return}
+  const bets=[['Red',n=>WR_RED.has(n),1],['Black',n=>n>0&&!WR_RED.has(n),1],['Odd',n=>n>0&&n%2==1,1],['Even',n=>n>0&&n%2==0,1],['1 to 18',n=>n>=1&&n<=18,1],['19 to 36',n=>n>=19,1],['Zero',n=>n==0,35]];
+  setTimeout(()=>choose('Roulette','$'+st+' on...',bets.map(b=>({n:b[0]+'  —  pays '+b[2]+':1',d:b[2]>1?'Win $'+(st*b[2])+' (1 chance in 37).':'Win $'+st+' (18 chances in 37).'})).concat([{n:'Leave',d:'Keep your money.'}]),j=>{state='play';const b=bets[j];if(!b)return;if((P.money|0)<st)return;
+   P.money-=st;try{moneySync()}catch(er){}r.busy=1;r.v=14;wMsg('$'+st+' ON '+b[0].toUpperCase()+'... THE WHEEL SPINS',2);let tk=0;const tick=()=>{if(++tk<14&&state!='dead'){snd(1500+Math.random()*300,.02,'square',.03,-600,{x:r.x,y:r.y});setTimeout(tick,60+tk*14)}};tick();
+   setTimeout(()=>{const n=Math.floor(Math.random()*37),col=n==0?'GREEN':WR_RED.has(n)?'RED':'BLACK';r.busy=0;r.v=3;if(b[1](n)){const w=st+st*b[2];P.money=Math.min(MAXM(),(P.money|0)+w);try{moneySync()}catch(er){}wMsg(n+' '+col+'!  YOU WIN $'+(st*b[2]),3.2);snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}else{wMsg(n+' '+col+'.  THE HOUSE WINS',2.8);snd(160,.25,'square',.05,-60)}},2400)}),0)})}
+
+/* ---------------- the town on the ruined floors (16-25) and on the alien world (past 25) ---------------- */
+const wRuin=()=>typeof apocOn=='function'&&apocOn(),wAlien=()=>typeof alienOn=='function'&&alienOn();
+/* an alien recolour of a finished texture: its light and dark kept, its colours swapped for a palette (rock: magenta and violet; metal: teal steel with
+   glowing panel seams; ground: dusky violet), the colours of the painted signs pushed toward neon */
+const WAPAL={rock:[[34,10,46],[118,40,150],[236,140,255]],metal:[[18,24,40],[70,108,132],[180,246,250]],ground:[[30,18,52],[92,64,140],[190,160,240]],deck:[[22,26,44],[64,84,112],[150,200,230]]};
+function wAlienTex(a,kind,seam){if(!(a instanceof Uint32Array))return a;const C=WTXC&&(WTXC.al||(WTXC.al=new Map())),key=a;let m=C&&C.get(key);if(m&&m[kind])return m[kind];
+ const n=Math.round(Math.sqrt(a.length)),o=new Uint32Array(a.length),pal=WAPAL[kind];
+ for(let i=0;i<a.length;i++){const v=a[i],al=v>>>24,r=v&255,g=v>>8&255,b=v>>16&255,L=(r*.3+g*.59+b*.11)/255,mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx?(mx-mn)/mx:0;let c;
+  if(L<.5){const t=L/.5;c=[0,1,2].map(k=>pal[0][k]+(pal[1][k]-pal[0][k])*t)}else{const t=(L-.5)/.5;c=[0,1,2].map(k=>pal[1][k]+(pal[2][k]-pal[1][k])*t)}
+  if(sat>.45&&L>.35&&kind!='rock'){/* painted colours (signs, trims) become neon */const h=(r>g&&r>b)?[255,80,200]:(g>=r&&g>=b)?[90,255,200]:[80,200,255];c=c.map((x,k)=>x*.35+h[k]*.65)}
+  o[i]=(al<<24|(Math.min(255,c[2])|0)<<16|(Math.min(255,c[1])|0)<<8|(Math.min(255,c[0])|0))>>>0}
+ if(seam){const s2=Math.max(1,n>>6);for(let y=0;y<n;y++)for(let x=0;x<n;x++){const ex=(x%(n>>1))<s2||(y%(n>>1))<s2;if(ex){const i=y*n+x;o[i]=(255<<24|60<<16|50<<8|30)>>>0}}
+  for(const[fx,fy]of[[.06,.06],[.56,.06],[.06,.56],[.56,.56]]){const cx=fx*n|0,cy=fy*n|0;for(let y=0;y<Math.max(2,n>>5);y++)for(let x=0;x<Math.max(2,n>>5);x++)o[(cy+y)*n+cx+x]=(255<<24|250<<16|240<<8|120)>>>0}}
+ if(kind=='rock'){/* glowing crystal veins */let sd=(a.length*7+13)>>>0;const rnd=()=>(sd=(Math.imul(sd,1664525)+1013904223)>>>0)/4294967296;for(let v=0;v<4;v++){let x=rnd()*n,y=rnd()*n,dx=rnd()*2-1,dy=rnd()*2-1;const col=v%2?(255<<24|240<<16|120<<8|255):(255<<24|230<<16|250<<8|120);for(let t=0;t<n*.7;t++){const i=(y|0)*n+(x|0);if(i>=0&&i<o.length){o[i]=col>>>0;if((x|0)+1<n)o[i+1]=col>>>0}x+=dx;y+=dy;dx+=(rnd()-.5)*.6;dy+=(rnd()-.5)*.6;const l=Math.hypot(dx,dy)||1;dx/=l;dy/=l;if(x<0||y<0||x>=n||y>=n)break}}}
+ if(C){if(!m){m={};C.set(key,m)}m[kind]=o}return o}
+function westLook(){const W=WEST;
+ if(wAlien()&&typeof alnRecolor=='function'){const C=WTXC&&(WTXC.al2||(WTXC.al2=new Map()));let k=0;const d=(a,flo)=>{if(!(a instanceof Uint32Array))return a;const key=a;let r=C&&C.get(key);if(!r){r=alnRecolor(a,k++,flo);if(C)C.set(key,r)}return r};
+  TX=TX.map(t=>d(t));TU=TU.map(t=>d(t));TIN=TIN.map(t=>d(t));CT=CT.map(t=>t?d(t,1):t);FT=d(FT,1);RT=d(RT);CEIL=CEIL.map(t=>d(t));RAILV={vault:d(RAILV.vault),rock:d(RAILV.rock),portal:d(RAILV.portal)};if(RTS)for(const q in RTS)RTS[q]=d(RTS[q],1);return}
+ if(wRuin()&&typeof apocDecay=='function'){const mp=new Map(),d=a=>{if(!(a instanceof Uint32Array))return a;let r=mp.get(a);if(!r){r=apocDecay(a,mp.size);mp.set(a,r)}return r};
+  TX=TX.map(d);TU=TU.map(d);TIN=TIN.map(d);CT=CT.map(d);FT=d(FT);RT=d(RT);CEIL=CEIL.map(d);RAILV={vault:d(RAILV.vault),rock:d(RAILV.rock),portal:d(RAILV.portal)};if(RTS)for(const k in RTS)RTS[k]=d(RTS[k])}}
+/* the props on the alien world: wood and brass turned to steel, with the same light and shade */
+let WESTMA=null;
+function wAlienMesh(M){const AME=[128,92,199],LAV=[184,158,235],PRL=[237,230,250];return M.map(F=>F.map(q=>{if(!q||!q.c||q.e)return q;const c=q.c,L=(c[0]*.3+c[1]*.59+c[2]*.11)/255,sat=Math.max(...c)?(Math.max(...c)-Math.min(...c))/Math.max(...c):0;let n=sat>.55&&L>.3?(c[0]>c[1]?[250,128,200]:[64,242,235]):L<.4?AME.map((v,i)=>v*(.45+L)):L<.65?LAV.map((v,i)=>AME[i]+(v-AME[i])*(L-.4)/.25):LAV.map((v,i)=>v+(PRL[i]-v)*Math.min(1,(L-.65)/.3));return Object.assign({},q,{c:n.map(v=>Math.min(255,v|0))})}))}
+
+/* the alien world's own pieces: crystal spires instead of cacti, glowing pod clusters instead of rocks, egg sacs instead of hay, crystal pylons for street
+   lamps, energy rails, a glowing pool for the trough; on the roofs dishes, antennas with beacons and domes; hover drones pull the coach */
+function wAlienKit(M){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),A=M.slice(),CY=[64,242,235],MG=[250,128,200],VI=[128,92,199],DK=[184,158,235];
+ {const m=[];for(const[x,z,h,r,c]of[[0,0,1.4,.09,CY],[.16,.08,.9,.07,MG],[-.14,.1,1.05,.06,CY],[.05,-.16,.7,.06,VI]]){m.push(...C(x,0,z,r,h,c,{ax:'y',n:5,r2:.005,e:c!==VI?1:0}),...C(x,0,z,r*1.5,.08,DK,{ax:'y',n:5}))}A[6]=m}
+ {const m=[];m.push(...C(0,0,0,.24,.12,[60,40,90],{ax:'y',n:7,r2:.16}));for(const[x,z,r,c]of[[.1,.05,.11,MG],[-.08,.1,.09,CY],[0,-.12,.1,MG],[.16,-.1,.06,CY]])m.push(...C(x,.1,z,r,r*1.6,c,{ax:'y',n:7,r2:.02,e:1}));A[20]=m}
+ {const m=[];for(const[x,z,r]of[[0,0,.16],[.2,.08,.12],[-.18,.1,.13]])m.push(...C(x,0,z,r,r*2.2,[150,90,200],{ax:'y',n:8,r2:.03}),...C(x,r*1.2,z,r*.5,r*.4,CY,{ax:'y',n:6,e:1}));A[7]=m}
+ {const m=[];m.push(...C(0,0,0,.08,1.1,DK,{ax:'y',n:6,r2:.05}),...C(0,1.1,0,.1,.26,MG,{ax:'y',n:5,r2:.01,e:1}),...C(0,.9,0,.15,.03,CY,{ax:'y',n:8,e:1}));A[23]=m}
+ {const m=[];for(const x of[-.42,.42])m.push(...B(x,.25,0,.08,.5,.08,DK),...B(x,.5,0,.1,.04,.1,CY,{e:1}));m.push(...B(0,.4,0,.84,.03,.03,CY,{e:1}));A[4]=m}
+ {const m=[];m.push(...B(0,.12,0,.8,.24,.36,DK),...B(0,.235,0,.7,.01,.26,[110,255,200],{e:1}));A[5]=m}
+ wAlienFurn(A);return A}
+/* 0.9.330: the furniture of the alien town: nothing is wood or brass. Pearl shells, violet stone, dark glass and things that glow, all the same size and
+   facing as the western pieces they stand in for (the seated folk, the piano player and the dart thrower line up with them as before) */
+function wAlienFurn(A){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),ST=[237,230,250],ST2=[206,196,240],VI=[128,92,199],VD=[86,60,150],IN=[40,28,84],CY=[64,242,235],MG=[250,128,200],GN=[120,255,170],E={e:1};
+ /* 0 a hover table: a tapering stem on a glowing foot ring, a pearl top with a lit rim, a hologram disc, a crystal vial and glowing chips */
+ {const m=[];m.push(...C(0,0,0,.16,.03,VD,{ax:'y',n:10}),...C(0,.03,0,.16,.012,CY,{ax:'y',n:10,e:1}),...C(0,.04,0,.07,.2,ST2,{ax:'y',n:8,r2:.035}),...C(0,.24,0,.1,.03,VI,{ax:'y',n:10,r2:.3}),...C(0,.26,0,.33,.03,ST,{ax:'y',n:16}),...C(0,.29,0,.34,.008,CY,{ax:'y',n:16,e:1}),...C(0,.29,0,.29,.008,IN,{ax:'y',n:16}),...C(0,.298,0,.12,.004,[110,90,230],{ax:'y',n:12,e:1}));
+  m.push(...C(.12,.3,-.08,.025,.14,MG,{ax:'y',n:5,r2:.008,e:1}),...C(.12,.3,-.08,.035,.02,ST2,{ax:'y',n:6}));for(const[x,z,c]of[[-.12,-.06,CY],[-.08,.1,MG],[-.15,.06,GN],[.04,.14,CY]])m.push(...C(x,.3,z,.028,.012,c,{ax:'y',n:6,e:1}));A[0]=m}
+ /* 1 a pod seat: a cup on a stem, a curved shell for a back (toward -z) */
+ {const m=[];m.push(...C(0,0,0,.11,.02,VD,{ax:'y',n:8}),...C(0,.02,0,.03,.14,ST2,{ax:'y',n:6}),...C(0,.15,0,.1,.06,VI,{ax:'y',n:10,r2:.15}),...C(0,.205,0,.135,.008,ST,{ax:'y',n:10}));
+  for(let k=0;k<5;k++){const a=(k-2)*.42;m.push(...B(Math.sin(a)*.13,.36,-Math.cos(a)*.13,.11,.3,.03,ST,{ry:-a}))}m.push(...B(0,.5,-.13,.06,.02,.035,CY,E));A[1]=m}
+ /* 2 the bar: a pearl slab over a violet body, a lit seam along the top and the foot on the customers' side (+z), glowing vials on it */
+ {const m=[];m.push(...B(0,.22,0,1.0,.44,.4,VD),...B(0,.2,.15,1.0,.36,.12,VI),...B(0,.455,.01,1.02,.035,.5,ST),...B(0,.43,.255,1.0,.015,.012,CY,E),...B(0,.02,.215,1.0,.025,.03,CY,E));for(const x of[-.33,0,.33])m.push(...B(x,.22,.214,.05,.26,.01,MG,E));
+  m.push(...C(.25,.47,0,.03,.14,CY,{ax:'y',n:5,r2:.01,e:1}),...C(-.2,.47,.05,.024,.07,GN,{ax:'y',n:6,r2:.03,e:1}));A[2]=m}
+ /* 3 the light-organ in place of the piano: a dark console, a fan of glowing pipes behind, a floating row of lit pads for keys (toward +z) */
+ {const m=[];m.push(...B(0,.18,0,.86,.36,.3,IN),...B(0,.34,.04,.86,.04,.36,VD),...B(0,.375,.2,.8,.014,.15,VI));for(let k=0;k<12;k++)m.push(...B(-.36+k*.065,.39,.2,.05,.012,.11,k%3==2?MG:CY,E));
+  m.push(...B(0,.56,-.1,.9,.42,.06,VD));for(let k=0;k<9;k++){const x=-.38+k*.095,h=.32+.36*Math.sin((k+.5)/9*Math.PI);m.push(...C(x,.36,-.04,.028,h,k%2?MG:CY,{ax:'y',n:6,e:1}),...C(x,.36+h,-.04,.04,.02,ST,{ax:'y',n:6}))}
+  m.push(...C(0,.36,-.04,.44,.03,ST,{ax:'z',n:12,r2:.44}),...B(0,.5,.17,.32,.1,.015,[150,140,255],E));A[3]=m}
+ /* 8 a stasis pod stood on its foot: a pearl capsule with a lit window */
+ {const m=[];m.push(...C(0,0,-.02,.2,.1,VD,{ax:'y',n:10}),...C(0,.1,-.02,.18,.72,ST,{ax:'y',n:10,r2:.16}),...C(0,.82,-.02,.16,.12,ST,{ax:'y',n:10,r2:.05}),...B(0,.5,.13,.18,.46,.04,[120,220,240],E),...B(0,.5,.125,.22,.5,.03,VI));A[8]=m}
+ /* 11 a rack of ray rifles on the wall (-z) */
+ {const m=[];m.push(...B(0,.6,-.43,.9,.5,.05,VD),...B(0,.6,-.4,.84,.44,.01,IN));for(const x of[-.28,0,.28]){m.push(...B(x,.62,-.37,.05,.38,.04,ST),...C(x,.81,-.37,.03,.08,CY,{ax:'y',n:6,e:1}),...B(x,.45,-.37,.07,.12,.05,VI),...B(x+.03,.58,-.37,.02,.1,.06,MG,E))}A[11]=m}
+ /* 12 the shop counter: a pearl case with a lit glass top and glowing wares inside */
+ {const m=[];m.push(...B(0,.2,0,1.0,.4,.42,VD),...B(0,.41,0,1.0,.02,.44,[120,220,240],E),...B(0,.43,0,1.02,.018,.46,ST),...B(0,.02,.22,1.0,.025,.02,CY,E));for(const[x,c]of[[-.3,MG],[.05,CY],[.32,GN]])m.push(...B(x,.39,0,.18,.015,.06,ST),...B(x-.05,.395,.03,.05,.015,.04,c,E));A[12]=m}
+ /* 16 a sleep pod: an oval shell, a glowing mattress, a clear canopy over the head end (toward -z) */
+ {const m=[];m.push(...C(0,0,0,.3,.14,VD,{ax:'y',n:12}));for(const q of m)q.p=q.p.map(p=>[p[0]*1,p[1],p[2]*1.7]);const t=[...B(0,.17,0,.52,.06,.94,ST),...B(0,.21,.05,.46,.03,.8,[170,150,250],E),...B(0,.235,-.36,.34,.04,.14,ST)];m.push(...t);
+  for(let k=0;k<6;k++){const a=k/5*Math.PI;m.push(...B(Math.cos(a)*.27,.22+Math.sin(a)*.24,-.3,.06,.04,.38,[150,230,250],{rz:a+Math.PI/2,e:1}))}A[16]=m}
+ /* 17 floating shelves (-z) of crystal vials */
+ {const m=[],VC=[CY,MG,GN,[150,140,255],[255,220,120]];m.push(...B(0,.75,-.48,.98,.9,.03,VD));for(const y of[.45,.75,1.05])m.push(...B(0,y,-.4,.96,.025,.16,ST),...B(0,y-.016,-.33,.96,.008,.01,CY,E));let k=0;for(const y of[.465,.765,1.065])for(let x=-.4;x<=.41;x+=.1){const c=VC[(k++*7)%5];m.push(...C(x,y,-.4,.026,.14,c,{ax:'y',n:5,r2:.006,e:1}))}A[17]=m}
+ /* 18 jail bars of light between pearl rails */
+ {const m=[];for(let k=0;k<8;k++)m.push(...B(-.44+k*.125,.75,0,.02,1.3,.02,MG,E));for(const y of[.05,1.45])m.push(...B(0,y,0,1.0,.1,.08,ST));A[18]=m}
+ /* 19 a hover-drive ring leaning on the wall (-z) */
+ {const m=[],RD=.3;for(let k=0;k<14;k++){const a=k/14*6.283;m.push(...B(Math.cos(a)*RD,RD+Math.sin(a)*RD,0,.15,.06,.06,ST,{rz:a+1.571}),...B(Math.cos(a)*(RD-.05),RD+Math.sin(a)*(RD-.05),.01,.12,.02,.04,CY,{rz:a+1.571,e:1}))}m.push(...C(0,RD,-.04,.12,.08,VD,{ax:'z',n:10}),...C(0,RD,.0,.06,.06,MG,{ax:'z',n:8,e:1}));vmTurn(m,[0,0,0],-.25,0,0);for(const q of m)q.p=q.p.map(p=>[p[0],p[1],p[2]-.3]);A[19]=m}
+ /* 21 the hotel desk: a pearl desk, a glowing orb for the bell, a hologram page for the register */
+ {const m=[];m.push(...B(0,.22,0,1.0,.44,.4,VD),...B(0,.455,0,1.04,.03,.46,ST),...B(0,.02,.21,1.0,.025,.02,CY,E),...C(.25,.47,0,.04,.05,MG,{ax:'y',n:8,r2:.01,e:1}),...B(-.15,.58,0,.22,.16,.01,[120,220,240],{rx:-.3,e:1}),...C(-.15,.47,0,.03,.02,VI,{ax:'y',n:6}));A[21]=m}
+ /* 22 store shelves (-z): orbs, crystals and boxes that glow */
+ {const m=[],G=[CY,MG,GN,[150,140,255],ST,[255,220,120]];m.push(...B(0,.6,-.44,.98,1.2,.04,VD));for(const y of[.04,.36,.68,1.0])m.push(...B(0,y,-.32,.96,.03,.26,ST));let k=0;for(const y of[.055,.375,.695,1.015])for(let x=-.38;x<=.39;x+=.152){const c=G[(k++*5)%6],e=c!==ST?1:0;k%3?m.push(...C(x,y,-.32,.05,.13,c,{ax:'y',n:6,r2:.02,e})):m.push(...B(x,y+.08,-.32,.11,.16,.12,c,{ry:.4,e}))}A[22]=m}
+ /* 24 a hologram target on the wall (-z), three crystal darts in it */
+ {const m=[];m.push(...B(0,.78,-.47,.5,.5,.04,VD),...C(0,.78,-.45,.21,.02,IN,{ax:'z',n:16}));const R=[[.19,CY],[.14,MG],[.09,CY],[.045,MG],[.015,ST]];R.forEach(([r,c],i)=>m.push(...C(0,.78,-.43+i*.01,r,.008,c,{ax:'z',n:16,e:1}),...C(0,.78,-.425+i*.01,r-.022,.008,IN,{ax:'z',n:16})));
+  for(const[x,y]of[[.05,.82],[-.07,.74],[.02,.7]])m.push(...B(x,y,-.34,.014,.014,.12,ST),...B(x,y,-.28,.035,.035,.02,GN,{rz:.785,e:1}));A[24]=m}
+ /* 37 the alien wheel-of-chance table: a violet base, a dark glass top with a lit grid of glyph tiles, a pearl rim (the spinning orb wheel is drawn on its own) */
+ {const m=[];m.push(...B(0,.2,0,.8,.4,.8,VD),...B(0,.04,0,.92,.08,.92,VI),...B(0,.06,.47,.9,.02,.02,CY,E),...B(0,.41,0,.94,.02,.94,IN));for(const z of[-.485,.485])m.push(...B(0,.43,z,.98,.05,.03,ST));for(const x of[-.485,.485])m.push(...B(x,.43,0,.03,.05,.98,ST));
+  for(let r=0;r<3;r++)for(let c=0;c<6;c++){const n=r*6+c;m.push(...B(-.3+c*.12,.424,.1+r*.11,.1,.006,.09,n%3==0?MG:n%3==1?CY:[150,140,255],E),...B(-.3+c*.12,.428,.1+r*.11,.04,.004,.03,IN,{ry:n*.7}))}m.push(...B(-.39,.424,.21,.05,.006,.31,GN,E),...B(0,.424,.4,.7,.006,.05,[255,220,120],E));A[37]=m}
+}
+function wAlienMov(){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),CY=[64,242,235],MG=[250,128,200],DK=[128,92,199],ST=[237,230,250];
+ const drone=[];drone.push(...C(0,.42,-.25,.16,.55,ST,{ax:'z',n:8,r2:.1}),...C(0,.42,.08,.24,.05,DK,{ax:'z',n:12}),...B(0,.46,.32,.12,.06,.04,MG,{e:1}),...C(0,.22,-.05,.14,.03,CY,{ax:'y',n:8,e:1}));
+ const dish=[],ant=[],dome=[],beacon=[];
+ dish.push(...C(0,0,0,.05,.25,DK,{ax:'y',n:6}),...C(0,.25,0,.3,.05,ST,{ax:'y',n:10,r2:.05,rx:-.6,pv:[0,.25,0]}),...B(0,.42,.12,.02,.2,.02,ST,{rx:-.6,pv:[0,.25,0]}),...B(0,.5,.18,.05,.05,.05,MG,{e:1}));
+ ant.push(...C(0,0,0,.03,.9,ST,{ax:'y',n:5}),...B(0,.55,0,.3,.02,.02,ST),...B(0,.75,0,.18,.02,.02,ST),...C(0,.9,0,.05,.06,MG,{ax:'y',n:6,e:1}));
+ dome.push(...C(0,0,0,.42,.08,DK,{ax:'y',n:12}),...C(0,.08,0,.38,.3,[80,220,230],{ax:'y',n:12,r2:.05,e:1}),...B(0,.04,.4,.14,.08,.04,MG,{e:1}));
+ beacon.push(...C(0,0,0,.05,.5,ST,{ax:'y',n:5}),...C(0,.5,0,.09,.09,[255,60,90],{ax:'y',n:8,r2:.02,e:1}));
+ /* a flying saucer: a wide disc, a domed cockpit, lights round the rim, a glow underneath */
+ const ufo=[];ufo.push(...C(0,0,0,.6,.08,ST,{ax:'y',n:16,r2:.3}),...C(0,-.06,0,.62,.06,DK,{ax:'y',n:16,r2:.6}),...C(0,.08,0,.26,.18,[120,240,250],{ax:'y',n:12,r2:.08,e:1}),...C(0,-.1,0,.22,.04,[150,255,200],{ax:'y',n:10,e:1}));for(let k=0;k<10;k++){const a=k/10*6.283;ufo.push(...B(Math.cos(a)*.58,.0,Math.sin(a)*.58,.06,.05,.06,k%2?MG:CY,{e:1}))}
+ /* the wheel of chance: a pearl dish, a ring of glowing pockets in three colours (a gold one for the zero), a crystal in the middle */
+ const wheel=[];wheel.push(...C(0,0,0,.22,.05,[86,60,150],{ax:'y',n:18}),...C(0,.05,0,.2,.012,[40,28,84],{ax:'y',n:18}));for(let k=0;k<37;k++){const a=k/37*6.2832;wheel.push(...B(Math.cos(a)*.15,.064,Math.sin(a)*.15,.024,.006,.05,k==0?[255,220,120]:k%2?MG:CY,{ry:-a,e:1}))}
+ wheel.push(...C(0,.05,0,.205,.02,ST,{ax:'y',n:18,r2:.215}),...C(0,.06,0,.08,.012,[128,92,199],{ax:'y',n:12}),...C(0,.07,0,.035,.1,[150,140,255],{ax:'y',n:5,r2:.004,e:1}));for(let k=0;k<3;k++)wheel.push(...B(0,.1,0,.11,.01,.01,ST,{ry:k*1.047}));
+ return{horse:drone,dish,ant,dome,beacon,ufo,wheel}}
+/* rooftop pieces for every building (the alien world only), from the fixed layout */
+function wRoofKit(){const W=WEST;const R=[];for(const b of W.b){const N0=b.sd=='n',yy=b.fy+(N0?-.75:1.75),kinds=['dish','ant','dome','beacon'];let k=b.k.length;
+  for(let x=b.x0+1;x<b.x1;x+=2){const kind=kinds[(k++)%4];R.push({x:x+.5,y:yy,z:1.85,wo:kind,yaw:wHash(x,b.y0,71)*6.28,k:1.5})}}return R}
