@@ -36,6 +36,20 @@ function g3dBuild(){
   /* solid boxes for collision */
   const BPl=[],B0=[0],BBb=[],BCls=[];
   const box=(x0,y0,z0,x1,y1,z1,cls)=>{BCls.push(cls||0);BPl.push(1,0,0,x1,-1,0,0,-x0,0,1,0,y1,0,-1,0,-y0,0,0,1,z1,0,0,-1,-z0);B0.push(BPl.length/4);BBb.push(x0,y0,z0,x1,y1,z1)};
+  /* 0.9.300: a box turned about the vertical (a piece of a prop): its four sides, top and bottom, plus the four upright faces of the box around it (so a body,
+     which is an upright box, meets its corners properly) */
+  const obb=(cx,cy,ax,ay,hx,hz,z0,z1,cls)=>{const ex=hx*Math.abs(ax)+hz*Math.abs(ay),ey=hx*Math.abs(ay)+hz*Math.abs(ax),bx=-ay,by=ax,da=ax*cx+ay*cy,db=bx*cx+by*cy;BCls.push(cls||0);
+    BPl.push(ax,ay,0,da+hx,-ax,-ay,0,-da+hx,bx,by,0,db+hz,-bx,-by,0,-db+hz,0,0,1,z1,0,0,-1,-z0,1,0,0,cx+ex,-1,0,0,-(cx-ex),0,1,0,cy+ey,0,-1,0,-(cy-ey));B0.push(BPl.length/4);BBb.push(cx-ex,cy-ey,z0,cx+ex,cy+ey,z1)};
+  /* a piece's eight-sided outline (supports S along the prop's own eight directions) turned to the world, as a brush, with the upright faces of the box around it */
+  const prism=(px,py,yc,ys,S,z0,z1,cls)=>{const N8=[],D8=[];for(let k=0;k<8;k++){const c=Math.cos(k*Math.PI/4),s_=Math.sin(k*Math.PI/4),nx=c*yc+s_*ys,ny=-c*ys+s_*yc;N8.push([nx,ny]);D8.push(S[k]+nx*px+ny*py)}
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(let k=0;k<8;k++){const a=N8[k],b=N8[(k+1)%8],det=a[0]*b[1]-a[1]*b[0];if(Math.abs(det)<1e-9)continue;const X=(D8[k]*b[1]-a[1]*D8[(k+1)%8])/det,Y=(a[0]*D8[(k+1)%8]-D8[k]*b[0])/det;if(X<x0)x0=X;if(X>x1)x1=X;if(Y<y0)y0=Y;if(Y>y1)y1=Y}
+    BCls.push(cls||0);for(let k=0;k<8;k++)BPl.push(N8[k][0],N8[k][1],0,D8[k]);BPl.push(0,0,1,z1,0,0,-1,-z0,1,0,0,x1,-1,0,0,-x0,0,1,0,y1,0,-1,0,-y0);B0.push(BPl.length/4);BBb.push(x0,y0,z0,x1,y1,z1)};
+  /* every piece of the props standing in cell i, at floor height fz (or fz(x,y)); returns the boxes made, or null if there is no prop with a model there */
+  const PIC={};if(typeof PRP!='undefined')for(const p of PRP){if(p.m===undefined)continue;const c=p.cell!==undefined?p.cell:(p.y|0)*n+(p.x|0);(PIC[c]||(PIC[c]=[])).push(p)}
+  const propBoxes=(i,fz,cls)=>{const L=PIC[i];if(!L||typeof propParts!='function')return null;const out=[];
+    for(const p of L){const Q=propParts(p.m);if(!Q)return null;const yw=p.yaw||0,yc=Math.cos(yw),ys=Math.sin(yw),base=typeof fz=='function'?fz(p.x,p.y):fz;
+      for(const q of Q){if(Math.max(q[2],q[3])<.03||q[4]-q[5]<.02)continue;out.push(BCls.length);if(q.s)prism(p.x,p.y,yc,ys,q.s,base+q[5]-(q[5]<.05?.25:0),base+q[4],cls);else{const cx=p.x+q[0]*yc+q[1]*ys,cy=p.y-q[0]*ys+q[1]*yc;obb(cx,cy,yc,-ys,q[2],q[3],base+q[5]-(q[5]<.05?.25:0),base+q[4],cls)}}}
+    return out.length?out:null};
   const CG=typeof GR!='undefined'&&GR&&GR.cq&&typeof COLG!='undefined'&&COLG?COLG:[],CRS=new Set((typeof CR!='undefined'&&CR?CR:[]).map(c=>c.i).concat(CG)),MOV=[],MVB=new Set();
   const lo=[];let zlo=1e9,zhi=-1e9;
   /* ---- floors (merged along x) and the slabs under them ---- */
@@ -85,7 +99,7 @@ function g3dBuild(){
   /* walls as collision boxes: runs along x, solid all the way up so nothing can fly over a wall the old grid kept it behind */
   for(let y=0;y<n;y++){let x=0;while(x<n){if(!g[y*n+x]){x++;continue}let x1=x+1;while(x1<n&&g[y*n+x1])x1++;box(x,y,ZB,x1,y+1,ZT);x=x1}}
   /* props, chests and other blocked cells stop bodies but not bullets (class 1 is skipped by rays; bullets meet props through propHit) */
-  const chb={};for(let i=0;i<n*n;i++)if(!g[i]&&blk[i]&&!pit[i]){const x=i%n,y=(i/n)|0;chb[i]=BCls.length;box(x,y,FH[i],x+1,y+1,FH[i]+1.4,1)}
+  const chb={};for(let i=0;i<n*n;i++)if(!g[i]&&blk[i]&&!pit[i]){const x=i%n,y=(i/n)|0;const pbx=propBoxes(i,FH[i],1);if(pbx){chb[i]=pbx;continue}chb[i]=BCls.length;box(x,y,FH[i],x+1,y+1,FH[i]+1.4,1)}
   box(-3,-3,ZB,n+3,0,ZT);box(-3,n,ZB,n+3,n+3,ZT);box(-3,0,ZB,0,n,ZT);box(n,0,ZB,n+3,n,ZT);
   /* shops are indoors: a tiled ceiling over every open cell */
   if(typeof GR!='undefined'&&GR&&GR.shop&&typeof CEIL!='undefined'&&CEIL){for(let y=0;y<n;y++)for(let x=0;x<n;x++){if(g[y*n+x])continue;const ct2=((x*7+y*13)%4==0)?CEIL[1]:CEIL[0];
@@ -146,6 +160,20 @@ function g3dBuildBR(){
       if(solid)for(const k of t)CTa.push(p[k][0],p[k][1],p[k][2])}};
   const BPl=[],B0=[0],BBb=[],BCls=[];
   const box=(x0,y0,z0,x1,y1,z1,cls)=>{BCls.push(cls||0);BPl.push(1,0,0,x1,-1,0,0,-x0,0,1,0,y1,0,-1,0,-y0,0,0,1,z1,0,0,-1,-z0);B0.push(BPl.length/4);BBb.push(x0,y0,z0,x1,y1,z1)};
+  /* 0.9.300: a box turned about the vertical (a piece of a prop): its four sides, top and bottom, plus the four upright faces of the box around it (so a body,
+     which is an upright box, meets its corners properly) */
+  const obb=(cx,cy,ax,ay,hx,hz,z0,z1,cls)=>{const ex=hx*Math.abs(ax)+hz*Math.abs(ay),ey=hx*Math.abs(ay)+hz*Math.abs(ax),bx=-ay,by=ax,da=ax*cx+ay*cy,db=bx*cx+by*cy;BCls.push(cls||0);
+    BPl.push(ax,ay,0,da+hx,-ax,-ay,0,-da+hx,bx,by,0,db+hz,-bx,-by,0,-db+hz,0,0,1,z1,0,0,-1,-z0,1,0,0,cx+ex,-1,0,0,-(cx-ex),0,1,0,cy+ey,0,-1,0,-(cy-ey));B0.push(BPl.length/4);BBb.push(cx-ex,cy-ey,z0,cx+ex,cy+ey,z1)};
+  /* a piece's eight-sided outline (supports S along the prop's own eight directions) turned to the world, as a brush, with the upright faces of the box around it */
+  const prism=(px,py,yc,ys,S,z0,z1,cls)=>{const N8=[],D8=[];for(let k=0;k<8;k++){const c=Math.cos(k*Math.PI/4),s_=Math.sin(k*Math.PI/4),nx=c*yc+s_*ys,ny=-c*ys+s_*yc;N8.push([nx,ny]);D8.push(S[k]+nx*px+ny*py)}
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(let k=0;k<8;k++){const a=N8[k],b=N8[(k+1)%8],det=a[0]*b[1]-a[1]*b[0];if(Math.abs(det)<1e-9)continue;const X=(D8[k]*b[1]-a[1]*D8[(k+1)%8])/det,Y=(a[0]*D8[(k+1)%8]-D8[k]*b[0])/det;if(X<x0)x0=X;if(X>x1)x1=X;if(Y<y0)y0=Y;if(Y>y1)y1=Y}
+    BCls.push(cls||0);for(let k=0;k<8;k++)BPl.push(N8[k][0],N8[k][1],0,D8[k]);BPl.push(0,0,1,z1,0,0,-1,-z0,1,0,0,x1,-1,0,0,-x0,0,1,0,y1,0,-1,0,-y0);B0.push(BPl.length/4);BBb.push(x0,y0,z0,x1,y1,z1)};
+  /* every piece of the props standing in cell i, at floor height fz (or fz(x,y)); returns the boxes made, or null if there is no prop with a model there */
+  const PIC={};if(typeof PRP!='undefined')for(const p of PRP){if(p.m===undefined)continue;const c=p.cell!==undefined?p.cell:(p.y|0)*n+(p.x|0);(PIC[c]||(PIC[c]=[])).push(p)}
+  const propBoxes=(i,fz,cls)=>{const L=PIC[i];if(!L||typeof propParts!='function')return null;const out=[];
+    for(const p of L){const Q=propParts(p.m);if(!Q)return null;const yw=p.yaw||0,yc=Math.cos(yw),ys=Math.sin(yw),base=typeof fz=='function'?fz(p.x,p.y):fz;
+      for(const q of Q){if(Math.max(q[2],q[3])<.03||q[4]-q[5]<.02)continue;out.push(BCls.length);if(q.s)prism(p.x,p.y,yc,ys,q.s,base+q[5]-(q[5]<.05?.25:0),base+q[4],cls);else{const cx=p.x+q[0]*yc+q[1]*ys,cy=p.y-q[0]*ys+q[1]*yc;obb(cx,cy,yc,-ys,q[2],q[3],base+q[5]-(q[5]<.05?.25:0),base+q[4],cls)}}}
+    return out.length?out:null};
   const cor=(ci,cx,cy,i,j)=>{const f=SF[ci];return f>-90?f:VH[(cy+j)*vk+cx+i]};
   const wallTex=ci=>WTX[ci]?TX[WTX[ci]-1]:RT,faceTex=ci=>{const k=SK[ci];return(k>=2&&k<=4&&WTX[ci])?TX[WTX[ci]-1]:RIS[ci]?TX[RIS[ci]-1]:RT};
   const plank=CT[4],shd=ci=>Math.min(1,SHD[ci]/100);
@@ -181,6 +209,7 @@ function g3dBuildBR(){
   /* props (trees, rocks, crates, chests) stop bodies; bullets meet them through propHit */
   const chc=new Set(),chb={};for(const c of BRCH)if(!c.z)chc.add(c.cell);
   const pb={};for(let i=0;i<n*n;i++)if(!g[i]&&blk[i]){const x=i%n,y=(i/n)|0,h=[cor(i,x,y,0,0),cor(i,x,y,1,0),cor(i,x,y,1,1),cor(i,x,y,0,1)],lo=Math.min(...h),hi=Math.max(...h);
+    if(!chc.has(i)){const fz=(px,py)=>{const u=Math.min(1,Math.max(0,px-x)),v=Math.min(1,Math.max(0,py-y));return (h[0]*(1-u)+h[1]*u)*(1-v)+(h[3]*(1-u)+h[2]*u)*v},pbx=propBoxes(i,fz,1);if(pbx){pb[i]=pbx;continue}}
     if(chc.has(i))chb[i]=BCls.length;else pb[i]=BCls.length;
     box(x,y,lo,x+1,y+1,BKH[i]>hi?BKH[i]:hi+1.4,1)}
   /* the outer wall ring and everything past it */
@@ -216,14 +245,13 @@ function g3dBuildBR(){
   sw.rq={qu,seen:new Map(),qi:qu.length,adj:[],radj:[],body:{x:0,y:0,z:0,vz:0,gr:1},done:true,last:0,dirty:false};
   return{name:'Wilds',n,C:64,S:{o:sw.so,f:sw.f,fl:sw.fl},sp:[[P.x,P.y,cellFloor((P.y|0)*n+(P.x|0),P.x,P.y),P.a||0]],ts:[[],[]],flags:null,ctf:null,bomb:{s:[]},zmin:sw.zmin,zmax:sw.zmax,sw,g3d:1,info:{movers:0,spawns:1,tris:nTri,brushes:nB,cells:qu.length,size:n}}}
 /* a chest was opened and is gone: take its solid box out of the world (the box is moved far away and its first plane made empty) and let bots stand there again */
+function g3dKill(s,b){for(let k=0;k<6;k++)s.BB[b*6+k]=k<3?1e6:1e6+1;s.BP[s.B0[b]*4+3]=-1e9}
 function g3dFreeCell(ci){const s=SW;if(!s||!s.chb)return;const b=s.chb[ci];if(b===undefined)return;delete s.chb[ci];
-  for(let k=0;k<6;k++)s.BB[b*6+k]=k<3?1e6:1e6+1;
-  s.BP[s.B0[b]*4+3]=-1e9;
+  for(const q of Array.isArray(b)?b:[b])g3dKill(s,q);
   if(s.so&&s.fl){const k=s.so[ci];if(k<s.fl.length)s.fl[k]=1}}
 /* battle royale: a tree was cut down: take its solid box out of the world the same way, and let bodies stand there again */
 function g3dFreeProp(ci){const s=SW;if(!s||!s.pb)return;const b=s.pb[ci];if(b===undefined)return;delete s.pb[ci];
-  for(let k=0;k<6;k++)s.BB[b*6+k]=k<3?1e6:1e6+1;
-  s.BP[s.B0[b]*4+3]=-1e9;
+  for(const q of Array.isArray(b)?b:[b])g3dKill(s,q);
   if(s.so&&s.fl){const k=s.so[ci];if(k<s.fl.length)s.fl[k]=1}}
 /* called at the end of startFloor: switch this floor to the 3D world */
 function g3dApply(){
