@@ -18,7 +18,7 @@ function g3dBuild(){
   /* 0.9.270 the railway floor: only the tunnel has a roof (CMASK), every wall has its own height (WHM) and the rock over the tunnel its own (RFH) */
   /* 0.9.275: on city floors the shop-front storey (doors, windows, signs) is 1.5 units tall instead of 1, so doors are 50% taller */
   const SPL=typeof GR!='undefined'&&GR&&GR.city&&top>=2?1.5:1;
-  const RLM=typeof GR!='undefined'&&GR&&GR.rail&&typeof CMASK!='undefined'&&CMASK&&WHM&&RFH&&CMASK.length==n*n;
+  const WST=typeof GR!='undefined'&&GR&&GR.west,RLM=typeof GR!='undefined'&&GR&&(GR.rail||GR.west)&&typeof CMASK!='undefined'&&CMASK&&WHM&&RFH&&CMASK.length==n*n;
   const MT=[],mi=new Map();
   const mat=t=>{if(!t)t=RT;let k=mi.get(t);if(k===undefined){const u=g3dTex(t)||g3dTex(RT);k=MT.length;MT.push(u);mi.set(t,k)}return k};
   const TPo=[],TUv=[],TFc=[],FCls=[],FSh=[],FNx=[],FT0=[],FTn=[],FFl=[],FMt=[];let nTri=0;
@@ -76,6 +76,8 @@ function g3dBuild(){
     }else{
       const t0=TX[g[i]-1],t1=TU?TU[g[i]-1]:t0,tw=RLM?WHM[i]:top;let open=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(G(nx,ny))continue;open=1;const z0=FH[ny*n+nx],tq=RLM&&CMASK[ny*n+nx]?top:tw;
+        /* 0.9.308 the frontier town: the side of a wall that faces into a building is one wallpapered face, floor to ceiling */
+        if(WST&&CMASK[ny*n+nx]&&typeof TIN!='undefined'&&TIN&&TIN[g[i]-1]){const f=bnd(x,y,d,z0,tq,1-z0/tq,0,flipOf(d));quad(f.p,f.u,mat(TIN[g[i]-1]),sideX(d)?.95:.72,[DX[d],DY[d],0]);continue}
         if(z0<SPL||tq<=SPL){const zt=Math.min(SPL,tq);const f=bnd(x,y,d,z0,zt,(SPL-z0)/SPL,(SPL-zt)/SPL,flipOf(d));quad(f.p,f.u,mat(t0),sideX(d)?1:.7,[DX[d],DY[d],0])}
         if(tq>SPL){const za=Math.max(SPL,z0);const f=bnd(x,y,d,za,tq,1-za,1-tq,flipOf(d));quad(f.p,f.u,mat(t1),sideX(d)?1:.7,[DX[d],DY[d],0])}
         /* tall pointed gables over each building face (the alien levels) */
@@ -86,12 +88,12 @@ function g3dBuild(){
   /* the railway: the mountain above the walls and over the tunnel (steps where one column of rock is higher than the next, and the tops), the stone face over each
      mouth of the tunnel, and the tunnel's vault: a slope where every wall meets the roof, closed off where it ends */
   if(RLM){const TOP=j=>g[j]?WHM[j]:CMASK[j]?RFH[j]:-1,rv=typeof RAILV!='undefined'&&RAILV?RAILV:{rock:TX[0],portal:TX[1]||TX[0],vault:CEIL?CEIL[0]:TX[0]},zc=top-.36,ins=.3;
-    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x,Ha=TOP(i);if(Ha<0)continue;const tt=g[i]?TX[g[i]-1]:rv.rock;let show=0;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x,Ha=TOP(i);if(Ha<0)continue;const tt=g[i]?(WST&&TU?TU[g[i]-1]:TX[g[i]-1]):rv.rock;let show=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=n||ny>=n)continue;const j=ny*n+nx,Hb=TOP(j);
         if(Hb<0){show=1;if(!g[i]){const f=bnd(x,y,d,top,Ha,1-top,1-Ha,flipOf(d));quad(f.p,f.u,mat(rv.portal),sideX(d)?1:.7,[DX[d],DY[d],0])}continue}
         if(Hb<Ha-.001){show=1;const f=bnd(x,y,d,Hb,Ha,1-Hb,1-Ha,flipOf(d));quad(f.p,f.u,mat(tt),sideX(d)?.95:.66,[DX[d],DY[d],0])}}
       if(show)quad([[x,y,Ha],[x+1,y,Ha],[x+1,y+1,Ha],[x,y+1,Ha]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(tt),1,[0,0,1]);
-      if(!g[i]&&CMASK[i]){/* the vault */
+      if(!g[i]&&CMASK[i]&&!WST){/* the vault */
         for(let d=0;d<4;d++){if(!G(x+DX[d],y+DY[d]))continue;const ix=-DX[d],iy=-DY[d],A=d==0?[x,y]:d==1?[x+1,y]:d==2?[x,y]:[x,y+1],B=d==0?[x,y+1]:d==1?[x+1,y+1]:d==2?[x+1,y]:[x+1,y+1],ex=B[0]-A[0],ey=B[1]-A[1];
           quad([[A[0],A[1],zc],[B[0],B[1],zc],[B[0]+ix*ins,B[1]+iy*ins,top],[A[0]+ix*ins,A[1]+iy*ins,top]],[[0,0],[1,0],[1,ins*1.6],[0,ins*1.6]],mat(rv.vault),.72,[ix*.7,iy*.7,-.7]);
           for(const[P0,sx,sy]of[[A,-ex,-ey],[B,ex,ey]]){const ax=x+sx,ay=y+sy;if(G(ax,ay))continue;const k=ay*n+ax;if(CMASK[k]&&G(ax+DX[d],ay+DY[d]))continue;
