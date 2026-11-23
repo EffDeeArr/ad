@@ -1141,6 +1141,14 @@ function startServer(port, hostToken, opts) {
             all({ t: 'rvp', fl: num(o.fl, 0, 9999) | 0, to: num(o.to, 0, 1e9) | 0, p: +num(o.p, 0, 1).toFixed(2), p2: id }, id);
             break;
           }
+          case 'ahw': { // co-op: a player's arcade air hockey game (puck, both paddles, score), so the others can watch it on the table; e: it ended
+            if (!running || cfg.mode !== 'coop') break;
+            const pt = a => Array.isArray(a) ? [+num(a[0], -60, 420).toFixed(1), +num(a[1], -60, 620).toFixed(1)] : undefined;
+            const r = { t: 'ahw', fl: num(o.fl, 0, 9999) | 0, p2: id };
+            if (o.e) r.e = 1; else { r.u = pt(o.u); r.p = pt(o.p); r.m = pt(o.m); r.s = Array.isArray(o.s) ? [num(o.s[0], 0, 99) | 0, num(o.s[1], 0, 99) | 0] : [0, 0]; }
+            all(r, id);
+            break;
+          }
           case 'png': { // co-op: a player pinged a monster (k 'e', n its number), a chest (k 'c') or a spot (k 'p'); p says who
             if (!running || cfg.mode !== 'coop' || me.dead) break;
             const k = o.k === 'e' || o.k === 'c' || o.k === 'x' ? o.k : 'p'; // x: the player took their ping away
@@ -1293,7 +1301,7 @@ function startServer(port, hostToken, opts) {
             if (isGG() && killer) { killer.gl = (killer.gl | 0) + 1; if (killer.gl < ggOrder.length) send(killer.ws, { t: 'gg', l: killer.gl }); }
             if (cfg.mode === 'oitc') { me.lv = Math.max(0, (me.lv == null ? 3 : me.lv) - 1); if (me.lv <= 0) me.dead = 1; send(me.ws, { t: 'lv', l: me.lv }); }
             if (cfg.mode === 'royale') { me.lv = 0; me.dead = 1; send(me.ws, { t: 'lv', l: 0 }); }
-            all({ t: 'feed', k: kid, v: id, players: list() });
+            all(Object.assign({ t: 'feed', k: kid, v: id, players: list() }, cfg.mode === 'coop' && !kid && typeof o.cn === 'string' && txt(o.cn, 40) ? { cn: txt(o.cn, 40) } : {}));
             if (cfg.mode === 'ctf') { me.dead = 1; dropCarried(id, me.x, me.y, me.z); }
             if (cfg.mode === 'defuse') { me.dead = 1; dfDrop(id, me); if (DF.act && DF.act.id === id) DF.act = null; dfCheck(); }
             if (cfg.mode === 'infection' && INF.ph === 'live' && !INF.z.has(id)) infInfect(id, 0);
