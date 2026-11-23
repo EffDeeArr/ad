@@ -21,7 +21,7 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
  g=new Uint8Array(n*n).fill(1);ct.fill(0);FH.fill(0);rooms=[];
  CMASK=new Uint8Array(n*n);WHM=new Float32Array(n*n);RFH=new Float32Array(n*n);
  const W=WEST={td:[],tdk:{},b:[],T0:T,town:pk(WNAMES_TOWN),out:{name:pk(WNAMES_OUT),reward:25+5*ri(0,3)},jack:null,coach:null,tw:[],storm:{t:0,next:rr(35,55),on:0,k:0},msg:null,
-  duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
+  doors:[],duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
  /* texture ids: a wall cell's id picks its texture (TX), the part above the first storey (TU) and the side that faces into a building (TIN) */
  const tid=(d)=>{const k=JSON.stringify(d);if(W.tdk[k])return W.tdk[k];W.td.push(d);return W.tdk[k]=W.td.length};
  const MESA=tid({k:'mesa'}),FENCE=tid({k:'fence'});
@@ -53,9 +53,9 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
   open(b.x0,bwy,b.x1,bwy,3,.08);
   for(let x=b.x0;x<=b.x1;x++)for(let y=y0;y<=y1;y++){const fr=y==fy,edge=x==b.x0||x==b.x1||y==y0||y==y1;
    if(!edge){open(x,y,x,y,b.fl);CMASK[at(x,y)]=1;RFH[at(x,y)]=1.85;continue}
-   if(fr){const ix=x-b.x0;wall(x,y,tid({k:'front',b:b.k,i:ix,w:fw,sc:b.sc,tc:b.tc,wp:b.wp,nm:b.nm,dr:b.dr.includes(x+1)||b.dr.includes(x-1)?1:0,pst:b.k=='sheriff'&&x==b.dr[0]+2?1:0}),2)}
+   if(fr){/* the sign is painted a slice per cell, left to right as you face the building: on the south side that is from the east end */const ix=N0?x-b.x0:b.x1-x;wall(x,y,tid({k:'front',b:b.k,i:ix,w:fw,sc:b.sc,tc:b.tc,wp:b.wp,nm:b.nm,dr:b.dr.includes(x+1)||b.dr.includes(x-1)?1:0,pst:b.k=='sheriff'&&x==b.dr[0]+2?1:0}),2)}
    else wall(x,y,SIDE,1.85)}
-  for(const dx of b.dr){const i=at(dx,fy);open(dx,fy,dx,fy,b.fl);CMASK[i]=1;RFH[i]=2}
+  for(const dx of b.dr){const i=at(dx,fy);open(dx,fy,dx,fy,b.fl);CMASK[i]=1;RFH[i]=2;/* 0.9.313: the doorway is a storey tall; above it the false front (and its sign) carries on */W.doors.push({i,sd:b.sd,id:tid({k:'front',b:b.k,i:N0?dx-b.x0:b.x1-dx,w:fw,sc:b.sc,tc:b.tc,wp:b.wp,nm:b.nm,dr:0,pst:0})})}
   if(b.bk!=null){const i=at(b.bk,by);open(b.bk,by,b.bk,by,b.fl);CMASK[i]=1;RFH[i]=1.85}}
  /* inside walls */
  const IW=(b,x,y)=>{wall(x,y,tid({k:'side',sc:b.sc,tc:b.tc,wp:b.wp}),1.85)};
@@ -523,3 +523,12 @@ function westLights(){const W=WEST;const az=-1.1,el=1.18,D=70,c0=N/2;LT.push({x:
   for(let d=0;d<4;d++){const dx=dx4[d],dy=dy4[d];if(!g[(y+dy)*N+x+dx]||blk[i])continue;const lx=x+.5+dx*.34,ly=y+.5+dy*.34;let ok=LT.length<34;for(const l of LAMPS)if(Math.hypot(l.x-lx,l.y-ly)<4.2){ok=false;break}if(!ok)continue;
    LAMPS.push({x:x+.5+dx*.46,y:y+.5+dy*.46,yaw:Math.atan2(-dx,-dy),cool:0,hi:0});LT.push({x:lx,y:ly,z:1.05,r:5.5,c:[1,.66,.34],k:1.15,dx:-dx,dy:-dy,fk:.08,ph:wHash(x,y,d)*30})}}
  for(const p of PRP)if(p.m===3023)LT.push({x:p.x,y:p.y+.16,z:1.12,r:3.5,c:[1,.75,.4],k:.9,dx:0,dy:0,fk:.05,ph:p.x})}
+
+/* the lintel over every street door (called from g3dBuild): the false front with its sign over the doorway, wallpaper on the inside, a solid block */
+const W_DH=1.02;
+function westG3d(o){const W=WEST;if(!W||!W.doors)return;const DH=W_DH,top=o.top;
+ for(const d of W.doors){const x=d.i%N,y=(d.i/N)|0,k=d.id-1,ds=d.sd=='n'?3:2,di=d.sd=='n'?2:3;
+  let f=o.bnd(x,y,ds,DH,2,1-DH,-1,o.flipOf(ds));o.quad(f.p,f.u,o.mat(TU[k]),.72,[o.DX[ds],o.DY[ds],0]);
+  f=o.bnd(x,y,di,DH,top,1-DH/top,0,o.flipOf(di));o.quad(f.p,f.u,o.mat(TIN[k]),.72,[o.DX[di],o.DY[di],0]);
+  o.quad([[x,y,DH],[x+1,y,DH],[x+1,y+1,DH],[x,y+1,DH]],[[0,0],[1,0],[1,1],[0,1]],o.mat(RT),.55,[0,0,-1]);
+  o.box(x,y,DH,x+1,y+1,top)}}

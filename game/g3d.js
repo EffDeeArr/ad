@@ -90,7 +90,7 @@ function g3dBuild(){
   if(RLM){const TOP=j=>g[j]?WHM[j]:CMASK[j]?RFH[j]:-1,rv=typeof RAILV!='undefined'&&RAILV?RAILV:{rock:TX[0],portal:TX[1]||TX[0],vault:CEIL?CEIL[0]:TX[0]},zc=top-.36,ins=.3;
     for(let y=0;y<n;y++)for(let x=0;x<n;x++){const i=y*n+x,Ha=TOP(i);if(Ha<0)continue;const tt=g[i]?(WST&&TU?TU[g[i]-1]:TX[g[i]-1]):rv.rock;let show=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=n||ny>=n)continue;const j=ny*n+nx,Hb=TOP(j);
-        if(Hb<0){show=1;if(!g[i]){const f=bnd(x,y,d,top,Ha,1-top,1-Ha,flipOf(d));quad(f.p,f.u,mat(rv.portal),sideX(d)?1:.7,[DX[d],DY[d],0])}continue}
+        if(Hb<0){show=1;if(!g[i]&&!(WST&&WEST&&WEST.doors.some(q=>q.i==i))){const f=bnd(x,y,d,top,Ha,1-top,1-Ha,flipOf(d));quad(f.p,f.u,mat(rv.portal),sideX(d)?1:.7,[DX[d],DY[d],0])}continue}
         if(Hb<Ha-.001){show=1;const f=bnd(x,y,d,Hb,Ha,1-Hb,1-Ha,flipOf(d));quad(f.p,f.u,mat(tt),sideX(d)?.95:.66,[DX[d],DY[d],0])}}
       if(show)quad([[x,y,Ha],[x+1,y,Ha],[x+1,y+1,Ha],[x,y+1,Ha]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(tt),1,[0,0,1]);
       if(!g[i]&&CMASK[i]&&!WST){/* the vault */
@@ -98,6 +98,7 @@ function g3dBuild(){
           quad([[A[0],A[1],zc],[B[0],B[1],zc],[B[0]+ix*ins,B[1]+iy*ins,top],[A[0]+ix*ins,A[1]+iy*ins,top]],[[0,0],[1,0],[1,ins*1.6],[0,ins*1.6]],mat(rv.vault),.72,[ix*.7,iy*.7,-.7]);
           for(const[P0,sx,sy]of[[A,-ex,-ey],[B,ex,ey]]){const ax=x+sx,ay=y+sy;if(G(ax,ay))continue;const k=ay*n+ax;if(CMASK[k]&&G(ax+DX[d],ay+DY[d]))continue;
             quad([[P0[0],P0[1],zc],[P0[0],P0[1],top],[P0[0]+ix*ins,P0[1]+iy*ins,top],[P0[0]+ix*ins*.5,P0[1]+iy*ins*.5,top-.18]],[[0,1-zc],[0,1-top],[ins,1-top],[ins*.5,1-top+.18]],mat(CMASK[k]?TX[2]||rv.portal:rv.portal),.8,[sx,sy,0])}}}}}
+  if(WST&&typeof westG3d=='function')westG3d({quad,box,mat,bnd,flipOf,DX,DY,top});
   /* walls as collision boxes: runs along x, solid all the way up so nothing can fly over a wall the old grid kept it behind */
   for(let y=0;y<n;y++){let x=0;while(x<n){if(!g[y*n+x]){x++;continue}let x1=x+1;while(x1<n&&g[y*n+x1])x1++;box(x,y,ZB,x1,y+1,ZT);x=x1}}
   /* props, chests and other blocked cells stop bodies but not bullets (class 1 is skipped by rays; bullets meet props through propHit) */
