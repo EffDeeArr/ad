@@ -11,6 +11,16 @@
    Everything for the floor lives here; index.html calls genWest / westTex / westSpawn / westProps / westStep / westList / westHud / westFire / westUse.
    The layout and the people come from the seed (every co-op player gets the same town); the duel and the heist are single player only. */
 let WEST=null;
+/* the buildings: [name, x0, x1, side (n: north of the street, s: south), siding colour, trim colour, wallpaper, floor, doors (x), back door x]; fixed, so their textures can be made ahead of time */
+const WBD=[
+  {k:'sheriff',nm:'SHERIFF',x0:4,x1:11,sd:'n',sc:[184,150,104],tc:[110,62,40],wp:'plaster',fl:7,dr:[8],bk:null},
+  {k:'saloon',nm:'SALOON',x0:14,x1:27,sd:'n',sc:[168,66,52],tc:[236,204,120],wp:'damask',fl:4,dr:[20,21],bk:25},
+  {k:'hotel',nm:'HOTEL',x0:30,x1:43,sd:'n',sc:[86,122,104],tc:[236,226,196],wp:'stripe',fl:5,dr:[36],bk:null},
+  {k:'store',nm:'GENERAL STORE',x0:4,x1:12,sd:'s',sc:[198,170,118],tc:[120,70,44],wp:'plank',fl:8,dr:[8],bk:10},
+  {k:'smith',nm:'GUNSMITH',x0:15,x1:22,sd:'s',sc:[96,92,104],tc:[214,170,82],wp:'plank',fl:8,dr:[18],bk:null},
+  {k:'bank',nm:'BANK',x0:25,x1:35,sd:'s',sc:[150,84,62],tc:[236,226,206],wp:'plaster',fl:6,dr:[30],bk:null},
+  {k:'under',nm:'UNDERTAKER',x0:38,x1:43,sd:'s',sc:[62,58,64],tc:[200,196,190],wp:'plank',fl:8,dr:[40],bk:null},
+  {k:'livery',nm:'LIVERY',x0:46,x1:51-2,sd:'s',sc:[150,58,44],tc:[236,226,206],wp:'barn',fl:9,dr:[46+1,46+2],bk:null}];
 const WESTT={n:'Frontier Town',west:1,w:[],f:1,c:32,cl:.1,fk:.07};
 const WNAMES_OUT=['Black Bart Morrow','"Snake-Eye" Pete Varga','Dutch Holloway','Cal "the Rattler" Reyes','Mad Jesse Kincaid','One-Ear Abe Turlow','Wild Hank Delano','Lefty Joe Carrow'];
 const WNAMES_TOWN=['Dry Gulch','Coyote Springs','Tumbleweed','Redrock','Dead Horse Flats','Copper Creek','Sundown','Rattlesnake Bend'];
@@ -37,15 +47,7 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
  /* the main street (dirt) runs from one end of the map to the other, the boardwalks along both sides */
  const SY0=22,SY1=27;W.SY0=SY0;W.SY1=SY1;open(1,SY0,n-2,SY1,1);
  /* buildings: [name, x0, x1, side (n: north of the street, s: south), siding colour, trim colour, wallpaper, floor, doors (x), back door x] */
- const BD=[
-  {k:'sheriff',nm:'SHERIFF',x0:4,x1:11,sd:'n',sc:[184,150,104],tc:[110,62,40],wp:'plaster',fl:7,dr:[8],bk:null},
-  {k:'saloon',nm:'SALOON',x0:14,x1:27,sd:'n',sc:[168,66,52],tc:[236,204,120],wp:'damask',fl:4,dr:[20,21],bk:25},
-  {k:'hotel',nm:'HOTEL',x0:30,x1:43,sd:'n',sc:[86,122,104],tc:[236,226,196],wp:'stripe',fl:5,dr:[36],bk:null},
-  {k:'store',nm:'GENERAL STORE',x0:4,x1:12,sd:'s',sc:[198,170,118],tc:[120,70,44],wp:'plank',fl:8,dr:[8],bk:10},
-  {k:'smith',nm:'GUNSMITH',x0:15,x1:22,sd:'s',sc:[96,92,104],tc:[214,170,82],wp:'plank',fl:8,dr:[18],bk:null},
-  {k:'bank',nm:'BANK',x0:25,x1:35,sd:'s',sc:[150,84,62],tc:[236,226,206],wp:'plaster',fl:6,dr:[30],bk:null},
-  {k:'under',nm:'UNDERTAKER',x0:38,x1:43,sd:'s',sc:[62,58,64],tc:[200,196,190],wp:'plank',fl:8,dr:[40],bk:null},
-  {k:'livery',nm:'LIVERY',x0:46,x1:51-2,sd:'s',sc:[150,58,44],tc:[236,226,206],wp:'barn',fl:9,dr:[46+1,46+2],bk:null}];
+ const BD=WBD.map(b=>Object.assign({},b,{dr:b.dr.slice()}));
  for(const b of BD){const N0=b.sd=='n',fy=N0?SY0-2:SY1+2,by=N0?fy-8:fy+8,y0=Math.min(fy,by),y1=Math.max(fy,by),bwy=N0?SY0-1:SY1+1;
   b.fy=fy;b.by=by;b.y0=y0;b.y1=y1;b.ix0=b.x0+1;b.ix1=b.x1-1;b.iy0=y0+1;b.iy1=y1-1;b.bwy=bwy;W.b.push(b);W.rooms[b.k]=b;
   const SIDE=tid({k:'side',sc:b.sc,tc:b.tc,wp:b.wp}),fw=b.x1-b.x0+1;
@@ -144,15 +146,14 @@ function wPoster(g,o){/* the wanted poster: the outlaw's face from his own model
  fit('DEAD OR ALIVE',-hh+35,4.6,PW-6);const nm=(o.name||'').toUpperCase().replace(/"/g,'');fit(nm,-hh+41.5,4.4,PW-5);fit('$'+(o.reward||25)+' REWARD',-hh+48.5,6,PW-6);
  g.fillStyle='#6a5a44';g.fillRect(-1,-hh,2,2);g.restore()}
 function wFront(d,up,face){/* one cell of a building's street front: the first storey (windows, lamps, the poster) or the false front above it (the sign) */
- const b=WEST.rooms[d.b],sd=d.i*17+d.b.length*3;
+ const b=WBD.find(x=>x.k==d.b),s0=Math.max(1,Math.floor((d.w-Math.min(d.w-2,7))/2)),s1=d.w-1-s0,inS=d.i>=s0&&d.i<=s1,sd=up&&!inS?d.b.length*3:d.i*17+d.b.length*3;
  if(!up)return mkT(g=>{wSiding(g,b,sd);if(d.pst){wPoster(g,{face,name:WEST.out.name,reward:WEST.out.reward});return}
   if(d.dr){/* beside the door: a lantern on a bracket */g.fillStyle='#2a2420';g.fillRect(28,12,8,2);g.fillRect(31,12,2,6);g.fillStyle='#3a3430';g.fillRect(28,18,8,12);g.fillStyle='#ffcc66';g.fillRect(29.5,19.5,5,9);g.fillStyle='#3a3430';g.fillRect(27,17,10,2);g.fillRect(27,29,10,2);return}
   const wide=d.b=='store'||d.b=='smith'||d.b=='bank'||d.b=='livery';if(d.i==0||d.i==d.w-1)return;
   if(d.b=='livery'){g.fillStyle='#e8e0cc';g.fillRect(4,10,56,3);g.fillRect(4,10,3,46);g.fillRect(57,10,3,46);g.beginPath();g.moveTo(7,13);g.lineTo(57,53);g.lineTo(57,56);g.lineTo(7,16);g.fill();return}
   if(wide)wWin(g,8,10,48,34,b.tc,{six:1,lit:d.b!='bank'&&(d.i%2==0)});else wWin(g,16,10,32,30,b.tc,{curt:d.b=='saloon'?[150,30,40]:d.b=='hotel'?[230,220,190]:null,lit:d.b=='saloon'})});
  return mkT(g=>{wPlanks(g,0,64,b.sc,sd+5,{nails:1});/* the cornice along the top of the false front */g.fillStyle=wcss(b.tc);g.fillRect(0,0,64,7);g.fillStyle=wcss(wdk(b.tc,.6));for(let x=2;x<64;x+=6)g.fillRect(x,7,3,3);g.fillRect(0,10,64,1.2);
-  const s0=Math.max(1,Math.floor((d.w-Math.min(d.w-2,7))/2)),s1=d.w-1-s0;
-  if(d.i>=s0&&d.i<=s1){g.save();g.translate(-(d.i-s0)*64,0);wSignBoard(g,(s1-s0+1)*64,b);g.restore()}
+  if(inS){g.save();g.translate(-(d.i-s0)*64,0);wSignBoard(g,(s1-s0+1)*64,b);g.restore()}
   else if(d.i>0&&d.i<d.w-1&&d.b!='livery')wWin(g,22,22,20,24,b.tc,{});
   g.fillStyle=wcss(wdk(b.sc,.7));if(d.i==0)g.fillRect(0,0,3,64);if(d.i==d.w-1)g.fillRect(61,0,3,64)})}
 function wFloorTex(){const rn=wRng(77),F={};
@@ -174,7 +175,7 @@ function wFloorTex(){const rn=wRng(77),F={};
  F.grave=mkT(g=>{g.fillStyle='#5a4030';g.fillRect(0,0,64,64);const r=wRng(91);for(let i=0;i<90;i++){g.fillStyle=r()<.5?'rgba(40,26,18,.5)':'rgba(130,100,70,.4)';g.fillRect(r()*64,r()*64,1+r()*3,1+r()*2)}for(let i=0;i<5;i++){g.strokeStyle='rgba(30,20,14,.6)';g.lineWidth=.8;g.beginPath();const y=r()*64;g.moveTo(0,y);g.lineTo(64,y+r()*6-3);g.stroke()}});
  F.cave=mkT(g=>{g.fillStyle='#6a4a3a';g.fillRect(0,0,64,64);const r=wRng(57);for(let i=0;i<26;i++){const x=r()*64,y=r()*64,s=3+r()*7;g.fillStyle=`rgb(${90+r()*30|0},${64+r()*22|0},${50+r()*18|0})`;g.beginPath();g.ellipse(x,y,s,s*.7,r()*3,0,7);g.fill()}for(let i=0;i<60;i++){g.fillStyle='rgba(30,18,12,.5)';g.fillRect(r()*64,r()*64,1.5,1.5)}});
  return F}
-function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');if(!WTXC||WTXC.k!==k)WTXC={k,F:wFloorTex(),m:{}};const C=WTXC,F=C.F,M=C.m;
+function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');if(!WTXC||WTXC.k!==k)WTXC={k,F:null,m:{}};if(!WTXC.F)WTXC.F=wFloorTex();const C=WTXC,F=C.F,M=C.m;
  const memo=(key,f)=>M[key]||(M[key]=f());
  const mesa=memo('mesa',()=>mkT(g=>{const r=wRng(19),band=[[196,104,70],[214,132,84],[176,86,60],[226,152,98],[188,96,66],[204,120,78]];let y=0,k=0;while(y<64){const h2=6+r()*9;g.fillStyle=wcss(band[k++%band.length]);g.fillRect(0,y,64,h2+1);y+=h2}
   for(let i=0;i<5;i++){const x=r()*64;g.strokeStyle='rgba(80,36,24,.55)';g.lineWidth=.9;g.beginPath();g.moveTo(x,0);g.lineTo(x+r()*6-3,20);g.lineTo(x+r()*8-4,44);g.lineTo(x+r()*6-3,64);g.stroke()}
@@ -187,13 +188,25 @@ function westTex(h){const W=WEST;if(!W)return;const k='w'+TSZ+(window.ANIME&&ANI
   else if(d.k=='fence'){lo=up=inn=fence}
   else if(d.k=='vault'){lo=up=inn=vaultW}
   else if(d.k=='side'){const kk='side'+d.sc+d.wp;lo=up=memo(kk,()=>mkT(g=>wSiding(g,{sc:d.sc},d.sc[0])));inn=memo('wp'+d.wp,()=>mkT(g=>wWallpaper(g,d.wp,d.sc[1])))}
-  else if(d.k=='front'){const kl='fl'+d.b+(d.pst?'p':d.dr?'d':(d.i==0||d.i==d.w-1)?'e':'w');lo=d.pst?wFront(d,0,face):memo(kl,()=>wFront(d,0,null));up=wFront(d,1);inn=memo('wp'+d.wp,()=>mkT(g=>wWallpaper(g,d.wp,d.sc[1])))}
+  else if(d.k=='front'){const kl=wLoKey(d);lo=d.pst?wFront(d,0,face):memo(kl,()=>wFront(d,0,null));up=memo(wUpKey(d),()=>wFront(d,1));inn=memo('wp'+d.wp,()=>mkT(g=>wWallpaper(g,d.wp,d.sc[1])))}
   TXa.push(lo);TUa.push(up);TINa.push(inn)}
  TX=TXa;TU=TUa;TIN=TINa;RT=memo('riser',()=>mkT(g=>wPlanks(g,0,64,[150,108,70],7,{clean:1})));
  CT=[null,F.road,F.sand,F.boards,F.saloon,F.hotel,F.bank,F.jail,F.store,F.barn,F.vault,F.sand2,F.grave,F.cave];FT=F.sand;RTS={0:F.grave};
  const roof=memo('roof',()=>mkT(g=>{g.fillStyle='#5a4a42';g.fillRect(0,0,64,64);for(let y=0;y<64;y+=8)for(let x=((y/8)&1)*5;x<64;x+=10){g.fillStyle=`rgb(${88+(x*7+y)%20},${70+(x*3+y)%16},${58+(x+y)%14})`;g.fillRect(x,y,9,7.4)}}));
  const ceil=memo('ceil',()=>mkT(g=>{wBoards(g,0,64,0,64,[128,92,60],23,8);g.fillStyle='#4a3424';g.fillRect(0,26,64,10);g.fillStyle='#5e4430';g.fillRect(0,27,64,3)}));
  CEIL=[ceil,ceil];RAILV={vault:ceil,rock:roof,portal:memo('portal',()=>mkT(g=>wPlanks(g,0,64,[150,120,90],15,{nails:1})))}}
+/* textures are kept for the whole session (they depend only on the fixed buildings), keyed by what they show: a slice of a sign, or the plain left/middle/right of a false front */
+function wUpKey(d){const s0=Math.max(1,Math.floor((d.w-Math.min(d.w-2,7))/2)),s1=d.w-1-s0;return 'up'+d.b+(d.i>=s0&&d.i<=s1?d.i:d.i==0?'L':d.i==d.w-1?'R':'M')}
+function wLoKey(d){return 'fl'+d.b+(d.dr?'d':(d.i==0||d.i==d.w-1)?'e':'w')}
+/* every texture the town will need, as [key, maker] jobs */
+function westTexJobs(){const J=[];const k='w'+TSZ+(window.ANIME&&ANIME.on?'a':'');
+ for(const b of WBD){const w=b.x1-b.x0+1;for(let x=b.x0;x<=b.x1;x++){const d={k:'front',b:b.k,i:x-b.x0,w,sc:b.sc,tc:b.tc,wp:b.wp,nm:b.nm,dr:b.dr.includes(x+1)||b.dr.includes(x-1)?1:0,pst:0};const N0=b.sd=='n';d.i=N0?x-b.x0:b.x1-x;J.push([wUpKey(d),()=>wFront(d,1)]);J.push([wLoKey(d),()=>wFront(d,0,null)])}
+  J.push(['side'+b.sc+b.wp,()=>mkT(g=>wSiding(g,{sc:b.sc},b.sc[0]))]);J.push(['wp'+b.wp,()=>mkT(g=>wWallpaper(g,b.wp,b.sc[1]))])}
+ return{k,J}}
+/* made ahead: while the player is picking a power before a Frontier Town floor, the textures are made a few at a time so entering the town doesn't stall */
+let WWARM=null;
+function westWarm(){if(WWARM)return;let jobs;try{jobs=westTexJobs()}catch(er){return}if(!WTXC||WTXC.k!==jobs.k)WTXC={k:jobs.k,F:null,m:{}};const C=WTXC,J=jobs.J;let i=0;WWARM=1;
+ const step=()=>{if(!WTXC||WTXC!==C){WWARM=null;return}const t0=performance.now();if(!C.F){C.F=wFloorTex()}while(i<J.length&&performance.now()-t0<12){const[key,f]=J[i++];if(!C.m[key])try{C.m[key]=f()}catch(er){}}if(i<J.length)setTimeout(step,8);else WWARM=null};setTimeout(step,30)}
 /* the outlaw's face for the poster: the head of his own drawn figure, from the front */
 function wFace(e){const sp=e.fr.spec,img=hmRender(sp,0,0);const S=Math.round(Math.sqrt(img.length));const c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');const id=x.createImageData(S,S);new Uint32Array(id.data.buffer).set(img);x.putImageData(id,0,0);
  const o=document.createElement('canvas');o.width=40;o.height=34;const q=o.getContext('2d');q.fillStyle='#bca478';q.fillRect(0,0,40,34);q.imageSmoothingEnabled=true;const hs=S*.3;q.drawImage(c,S/2-hs/2,0,hs,hs*.85,0,0,40,34);
