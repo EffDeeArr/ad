@@ -930,13 +930,13 @@ function startServer(port, hostToken, opts) {
             all({ t: 'bxn', id, b: Math.round(num(o.b, 0, 2e9)), x: num(o.x, 0, 256), y: num(o.y, 0, 256), z: num(o.z, -20, 60), yw: num(o.yw, -10, 10), vx: num(o.vx, -20, 20), vy: num(o.vy, -20, 20), vz: num(o.vz, -20, 20) }, id);
             break;
           }
-          case 'bx': case 'bxh': case 'bxb': { // a box moved / was hit / broke (at most 200 a second from one player)
-            if (!running || cfg.mode !== 'royale' || me.spec) break;
+          case 'bx': case 'bxh': case 'bxb': { // a box moved / was hit / broke (at most 200 a second from one player); co-op too (0.9.338)
+            if (!running || (cfg.mode !== 'royale' && cfg.mode !== 'coop') || me.spec) break;
             if (now - (me.bxW || 0) > 1000) { me.bxW = now; me.bxC = 0 } if (++me.bxC > 200) break;
             const b = Math.round(num(o.b, 0, 2e9));
             if (o.t === 'bx') all({ t: 'bx', id, b, x: num(o.x, 0, 256), y: num(o.y, 0, 256), z: num(o.z, -20, 60), yw: num(o.yw, -10, 10) }, id);
             else if (o.t === 'bxh') all({ t: 'bxh', id, b, d: num(o.d, 0, 1000), vx: num(o.vx, -50, 50), vy: num(o.vy, -50, 50) }, id);
-            else { if (BR.boxGone.size < 50000) BR.boxGone.add(b); all({ t: 'bxb', id, b, vx: num(o.vx, -50, 50), vy: num(o.vy, -50, 50) }, id) }
+            else { if (cfg.mode === 'royale' && BR.boxGone.size < 50000) BR.boxGone.add(b); all({ t: 'bxb', id, b, vx: num(o.vx, -50, 50), vy: num(o.vy, -50, 50) }, id) }
             break;
           }
           case 'bxd': { // someone picks a box up: first message wins
@@ -1114,7 +1114,7 @@ function startServer(port, hostToken, opts) {
           case 'es': { // monster positions + hostile bullets, host only
             if (id !== hostId || !running || cfg.mode !== 'coop' || !Array.isArray(o.e) || !Array.isArray(o.b)) break;
             const e = o.e.slice(0, 36).filter(r => Array.isArray(r) && r.length >= 7).map(r => [num(r[0], 0, 99999) | 0, +num(r[1], -1, 400).toFixed(2), +num(r[2], -1, 400).toFixed(2), +num(r[3], -400, 800).toFixed(2), Math.round(num(r[4], -1, 99999)), +num(r[5], -10, 10).toFixed(2), num(r[6], 0, 1023) | 0, num(r[7], 0, 65535) | 0]);
-            const b = o.b.slice(0, 26).filter(r => Array.isArray(r) && r.length >= 4).map(r => [+num(r[0], -1, 400).toFixed(2), +num(r[1], -1, 400).toFixed(2), +num(r[2], -60, 60).toFixed(1), +num(r[3], -60, 60).toFixed(1), +num(r[4], -400, 800).toFixed(2)]);
+            const b = o.b.slice(0, 26).filter(r => Array.isArray(r) && r.length >= 4).map(r => [+num(r[0], -1, 400).toFixed(2), +num(r[1], -1, 400).toFixed(2), +num(r[2], -60, 60).toFixed(1), +num(r[3], -60, 60).toFixed(1), +num(r[4], -400, 800).toFixed(2), r[5] ? 1 : 0]);
             all({ t: 'es', fl: num(o.fl, 0, 9999) | 0, e, b }, id);
             break;
           }
@@ -1160,6 +1160,46 @@ function startServer(port, hostToken, opts) {
             all({ t: 'png', fl: num(o.fl, 0, 9999) | 0, k, x: +num(o.x, -50, 500).toFixed(2), y: +num(o.y, -50, 500).toFixed(2), z: +num(o.z, -60, 60).toFixed(2), n: num(o.n, -1, 999999) | 0, p: id }, id);
             break;
           }
+          case 'wwk': case 'wbd': case 'wbh': case 'wtp': case 'wgd': case 'wof': case 'wcg': case 'wco': case 'wdl': { // co-op (0.9.338): the Frontier Town
+            if (!running || cfg.mode !== 'coop') break;
+            if ((o.t === 'wbh' || o.t === 'wco') && id !== hostId) break; // the host's word only
+            if (now - (me.wW || 0) > 1000) { me.wW = now; me.wC = 0 } if (++me.wC > 120) break;
+            const ST = { wco: ['rear', 'park'], wdl: ['go', 'won', 'lost', 'foul', 'end'] };
+            const m = { t: o.t, fl: num(o.fl, 0, 9999) | 0 };
+            if (o.t === 'wwk') m.g = txt(o.g, 12);
+            if (o.t === 'wbd' || o.t === 'wbh' || o.t === 'wtp' || o.t === 'wgd') m.i = num(o.i, 0, 500) | 0;
+            if (o.t === 'wbd') m.d = Math.round(num(o.d, 0, 5000));
+            if (o.t === 'wbh') m.hp = Math.round(num(o.hp, 0, 5000));
+            if (o.t === 'wtp') m.f = +num(o.f, 0, 3).toFixed(2);
+            if (ST[o.t]) { if (!ST[o.t].includes(o.st)) break; m.st = o.st }
+            all(m, id);
+            break;
+          }
+          case 'wrb': case 'wrs': case 'wpn': case 'wal': case 'aly': case 'alh': case 'pfx': case 'pfp': { // co-op (0.9.339): the shared roulette table and piano, the hired partner, the pet fox
+            if (!running || cfg.mode !== 'coop') break;
+            if ((o.t === 'wpn' || o.t === 'alh' || o.t === 'pfx') && id !== hostId) break; // the host's word only
+            if (now - (me.xW || 0) > 1000) { me.xW = now; me.xC = 0 } if (++me.xC > 80) break;
+            const m = { t: o.t, fl: num(o.fl, 0, 9999) | 0, id };
+            if (o.t === 'wrb') { if (!Array.isArray(o.b)) break; m.b = o.b.slice(0, 60).filter(q => Array.isArray(q) && q.length === 2).map(q => [txt(q[0], 6), Math.round(num(q[1], 0, 500))]) }
+            else if (o.t === 'wrs') { m.a = +num(o.a, -1e6, 1e6).toFixed(3); m.v = +num(o.v, 0, 10).toFixed(3); m.ba = +num(o.ba, -1e6, 1e6).toFixed(3); m.bw = +num(o.bw, -20, 0).toFixed(3) }
+            else if (o.t === 'wpn') m.p = +num(o.p, 0, 1e7).toFixed(3);
+            else if (o.t === 'aly') { m.x = +num(o.x, -1, 400).toFixed(2); m.y = +num(o.y, -1, 400).toFixed(2); m.z = +num(o.z, -400, 800).toFixed(2); m.fa = +num(o.fa, -10, 10).toFixed(2); m.af = num(o.af, 0, 3) | 0; m.hp = Math.round(num(o.hp, 0, 9999)); m.sh = o.sh ? 1 : 0 }
+            else if (o.t === 'alh') { m.to = num(o.to, 0, 1e9) | 0; m.d = Math.round(num(o.d, 0, 5000)) }
+            else if (o.t === 'pfx') { if (!Array.isArray(o.f)) break; m.f = o.f.slice(0, 4).filter(Array.isArray).map(q => [+num(q[0], 0, 400).toFixed(2), +num(q[1], 0, 400).toFixed(2), +num(q[2], -10, 10).toFixed(2), num(q[3], 0, 3) | 0, q[4] ? 1 : 0]) }
+            else if (o.t === 'pfp') { m.i = num(o.i, 0, 9) | 0; m.on = o.on ? 1 : 0 }
+            all(m, id);
+            break;
+          }
+          case 'acp': { // co-op (0.9.337): the host's acid bots left a puddle
+            if (id !== hostId || !running || cfg.mode !== 'coop') break;
+            all({ t: 'acp', fl: num(o.fl, 0, 9999) | 0, x: +num(o.x, -1, 400).toFixed(2), y: +num(o.y, -1, 400).toFixed(2), r: +num(o.r, .3, 3).toFixed(2) }, id);
+            break;
+          }
+          case 'hku': case 'hkr': { // co-op (0.9.337): someone is hacking the Lab terminal (hku), and how it went (hkr, w 1 = success)
+            if (!running || cfg.mode !== 'coop') break;
+            all(o.t === 'hku' ? { t: 'hku', fl: num(o.fl, 0, 9999) | 0 } : { t: 'hkr', fl: num(o.fl, 0, 9999) | 0, w: o.w ? 1 : 0 }, id);
+            break;
+          }
           case 'tcg': { // co-op floor 20: someone grabbed the Time Component
             if (!running || cfg.mode !== 'coop' || me.dead) break;
             all({ t: 'tcg', fl: num(o.fl, 0, 9999) | 0, n: txt(o.n, 16) }, id);
@@ -1198,7 +1238,7 @@ function startServer(port, hostToken, opts) {
           }
           case 'en': { // how to build monsters the others do not have yet (a seed makes the copy identical)
             if (id !== hostId || !running || cfg.mode !== 'coop' || !Array.isArray(o.e)) break;
-            const e = o.e.slice(0, 12).filter(r => r && typeof r === 'object').map(r => ({ n: num(r.n, 0, 99999) | 0, x: +num(r.x, -1, 400).toFixed(2), y: +num(r.y, -1, 400).toFixed(2), z: +num(r.z, -400, 800).toFixed(2), sd: num(r.sd, 0, 2e9) | 0, f: num(r.f, 0, 999) | 0, k: num(r.k, 0, 3) | 0, p: num(r.p, -1, 99999) | 0, hp: Math.round(num(r.hp, 0, 99999)), sc: +num(r.sc, .1, 4).toFixed(2), c: r.c ? 1 : 0, kd: num(r.kd, -1, 9, -1) | 0 }));
+            const e = o.e.slice(0, 12).filter(r => r && typeof r === 'object').map(r => ({ n: num(r.n, 0, 99999) | 0, x: +num(r.x, -1, 400).toFixed(2), y: +num(r.y, -1, 400).toFixed(2), z: +num(r.z, -400, 800).toFixed(2), sd: num(r.sd, 0, 2e9) | 0, f: num(r.f, 0, 999) | 0, k: num(r.k, 0, 3) | 0, p: num(r.p, -1, 99999) | 0, hp: Math.round(num(r.hp, 0, 99999)), sc: +num(r.sc, .1, 4).toFixed(2), c: r.c ? 1 : 0, w: r.w ? 1 : 0, kd: num(r.kd, -1, 9, -1) | 0 }));
             all({ t: 'en', fl: num(o.fl, 0, 9999) | 0, e }, id);
             break;
           }

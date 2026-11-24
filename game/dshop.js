@@ -25,7 +25,7 @@ const fl=[[0,0],[2,-3],[-2,2]][f];const fs=[['#d02800',22,18],['#ff7a10',17,13],
 for(const[c,h,w]of fs){g.fillStyle=c;g.beginPath();g.moveTo(32-w+fl[0],56);g.quadraticCurveTo(32-w*.9,56-h*.6,32+fl[0]*1.5,56-h-fl[1]);g.quadraticCurveTo(32+w*.9,56-h*.6,32+w+fl[0],56);g.closePath();g.fill()}
 g.globalAlpha=.25;const gr=g.createRadialGradient(32,46,2,32,46,26);gr.addColorStop(0,'#ffb040');gr.addColorStop(1,'rgba(255,120,0,0)');g.fillStyle=gr;g.fillRect(0,20,64,44)}));
 return DSHS={table,keeper,fire}}
-function dshopInit(skip){DSH=null;if(skip||DM||NET||SW||MAPT||bossFl||cq0()||TH.n!='Dungeon'||R()>=.5)return;
+function dshopInit(skip){DSH=null;if(skip||((DM||NET)&&!CO())||SW||MAPT||bossFl||cq0()||TH.n!='Dungeon'||R()>=.5)return;
 const ok=(x,y)=>x>0&&y>0&&x<N-1&&y<N-1&&!g[y*N+x]&&!pit[y*N+x]&&(TH.mine||!brg[y*N+x])&&!CH.some(c=>(c.x|0)==x&&(c.y|0)==y)&&!PRP.some(p=>(p.x|0)==x&&(p.y|0)==y&&(p.hk||p.m===undefined&&p.id===undefined&&!p.rock&&0));
 const ins=(r,x,y)=>x>=r.x&&x<r.x+r.w&&y>=r.y&&y<r.y+r.h;
 let pool=rooms.slice(1).filter(r=>!r.gap&&r.w>=4&&r.h>=4&&!ins(r,P.x|0,P.y|0)&&!ins(r,ex.x|0,ex.y|0)&&!PRP.some(p=>p.hk));

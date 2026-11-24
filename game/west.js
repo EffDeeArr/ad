@@ -379,7 +379,39 @@ function westPas(e,dt){if(!e.pac)return false;e.af=0;if(e.darts){westDarts(e,dt)
 /* the group wakes up: everybody in it stands up and fights */
 function westWake(e,quiet){const W=WEST;if(!W||!e||!e.pac)return;const grp=e.grp;let any=0;for(const o of W.pac){if(!o.pac||o.dead||o.grp!==grp)continue;o.pac=0;o.aggro=1;if(o.sit){o.sit=0;if(o.frS)o.fr=o.frS}o.cd=rr(.4,1.1);any=1}
  if(any&&!quiet){if(grp=='saloon'){wMsg('SALOON BRAWL!',2.4);snd(220,.5,'sawtooth',.06,-120);for(let i=0;i<3;i++)setTimeout(()=>snd(600+Math.random()*400,.08,'square',.04,-300),i*90)}else if(grp=='store')wMsg('The storekeeper reaches for his scattergun!',2.2);else wMsg('The gunsmith pulls a rifle!',2.2)}
- if(HOSTCO&&HOSTCO())try{netSend({t:'wwk',fl,g:grp})}catch(er){}}
+ if(!W.netIn&&typeof CO=='function'&&CO())try{netSend({t:'wwk',fl,g:grp})}catch(er){}}
+
+/* ---------------- co-op (0.9.338) ----------------
+   Everyone's game builds the same town (the same seeded dice). The host's game owns the people in it, like every other monster; on top of that:
+   a wake-up (a brawl) goes from whoever starts it to everyone (wwk); a hit on a door, the vault or a dynamite stick goes to the host, who keeps the
+   count and tells everyone (wbd / wbh); a trap set off (wtp), a sack of gold picked up (wgd) and the wanted man flushed out (wof) go to everyone;
+   the host starts and parks the stagecoach (wco; a guest who spooks it asks, wcg); a duel is fought by one player at a time, in their own game,
+   with McCassidy brought out into the street by the host and the rest of the town holding its breath until it is over (wdl). The shops, the
+   roulette wheel and the piano are each player's own; Dusty won't hire on with a posse. */
+function wNet(t,o){try{if(typeof CO=='function'&&CO()&&!(WEST&&WEST.netIn))netSend(Object.assign({t,fl},o))}catch(er){}}
+function allyNet(o){if(o.t=='aly'){if(o.fl!==fl)return;const q=RALLY[o.id]||(RALLY[o.id]={own:o.id,name:ALLY_NAME,mhp:ALLY_HP});Object.assign(q,{x:+o.x,y:+o.y,z:+o.z,fa:+o.fa,af:o.af|0,hp:+o.hp,t:T});if(o.sh&&q.h&&T-(q.shS||0)>.3){q.shS=T;snd(240,.12,'sawtooth',.05,-120,q.h)}return}
+ if(o.t=='alh'){if(o.fl!==fl||o.to!==myId||!ALLY)return;allyHurt(ALLY,+o.d||0)}}
+function westNet(o){const W=WEST;if(!W||o.fl!==fl)return;W.netIn=1;try{const H=typeof HOSTCO=='function'&&HOSTCO();switch(o.t){
+ case'wwk':{const e=W.pac.find(q=>q.pac&&!q.dead&&q.grp===o.g);if(e)westWake(e);break}
+ case'wrb':{const r=W.roul;if(!r||!r.bets)break;const m={};if(Array.isArray(o.b))for(const[k,v]of o.b)if(typeof k=='string'&&v>0)m[k]=v;r.ob=r.ob||{};r.ob[o.id]=m;r.mv=null;break}
+ case'wrs':{if(W.roul&&W.roul.bets)roulGo(o);break}
+ case'wpn':{if(!H)PNO.sync={p:+o.p||0,at:AC?AC.currentTime:0};break}
+ case'wal':{const d=W.darts;if(d){ALLYFR=d.fr;if(d.fr&&d.fr.spec&&d.fr.spec.ng){const sp=d.fr.spec;sp.ng=0;sp.gm=null;sp.m3=null;sp.c={}}W.pac=W.pac.filter(q=>q!==d);E=E.filter(q=>q!==d);d.dead=1;W.darts=null}RALLY[o.id]={x:d?d.x:0,y:d?d.y:0,z:d?d.z:0,fa:0,af:0,hp:ALLY_HP,mhp:ALLY_HP,t:T,own:o.id,name:ALLY_NAME};break}
+ case'wbd':{if(!H)break;const b=W.brk[o.i|0];if(b&&b.hp>0){W.netIn=0;westBrkDmg(b.p,o.d)}break}
+ case'wbh':{if(H)break;const b=W.brk[o.i|0];if(!b||b.done)break;b.hp=Math.min(b.hp,o.hp);b.t=T;if(b.hp<=0){b.hp=0;b.done=1;b.on()}break}
+ case'wtp':{const t=W.traps&&W.traps[o.i|0];if(t)trapFire(t,o.f,1);break}
+ case'wgd':{const p=W.gb&&W.gb[o.i|0];if(p&&!p.taken){p.taken=1;PRP=PRP.filter(q=>q!==p)}break}
+ case'wof':{if(!W.outFree){W.outFree=1;const ol=W.outlaw;if(ol&&!ol.dead)ol.aggro=1}break}
+ case'wcg':{if(H){W.netIn=0;coachGo('spooked')}break}
+ case'wco':{const c=W.coach;if(!c)break;if(o.st=='rear'){if(c.st=='park')coachGo('',1)}else if(o.st=='park'&&c.st!='park'){c.st='park';c.t=0;c.wait=1e9}break}
+ case'wdl':{const j=W.jack;if(o.st=='go'){W.duelOn=T;if(H&&j&&!j.dead&&j.pac){j.x=28.5;j.y=W.SY0+2.5;j.fa=Math.PI;j.tx=j.x;j.ty=j.y}}
+  else if(o.st=='won'){W.duelDone=1;if(H&&j&&!j.dead){j.pac=0;j.hp=0;kill(j)}}
+  else if(o.st=='lost'){W.duelDone=1}
+  else if(o.st=='foul'){W.duelDone=1;if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1}}
+  else if(o.st=='end'){W.duelOn=0;if(H&&j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}}break}}}catch(er){console.error(er)}finally{W.netIn=0}}
+/* a deputy of the posse, built the same in every game from its seed (the host sends the seed with the monster) */
+function westDeputy(x,y){const e=westHuman(x+rr(-.3,.3),y+rr(-.3,.3),{gun:pk(['rifle','shotgun','pistol']),hat:3,hatc:[214,196,160],cl:[110,96,80],pn:[60,60,70],vest:[[40,40,46]],nm:'Deputy '+pk(['Hollis','Pike','Barlow','Tate','McCoy','Briggs','Fenton','Quill'])});e.aggro=1;e.posse=1;e.vest=1;if(SW&&SW.g3d)e.z=FH[(e.y|0)*N+(e.x|0)]||0;return e}
+function dynWest(a,sd,x,y){a.nid=NID++;a.pup=0;NIDMAP[a.nid]=a;const d={n:a.nid,x:+x.toFixed(2),y:+y.toFixed(2),z:SW&&a.z!==undefined?+a.z.toFixed(2):0,sd,f:fl,k:0,p:-1,hp:Math.round(a.hp),sc:a.sc,w:1};DYN.push(d);sendDyn([d])}
 
 /* ---------------- the props ---------------- */
 function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[];
@@ -440,11 +472,11 @@ const wAng=(a,b)=>{let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.283
 const W_PM_PRICE=100;
 /* what the use key would do here, if anything: {k, t (the prompt)} */
 function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const px=P.x,py=P.y;
- const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!DM&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE '+wNm('MCCASSIDY')+' TO A DUEL'}:{k:'noduel',t:wNm('MCCASSIDY')+' ONLY DUELS SOMEONE WITH A GUN'};
+ const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!W.duelOn&&!(DM&&!CO())&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE '+wNm('MCCASSIDY')+' TO A DUEL'}:{k:'noduel',t:wNm('MCCASSIDY')+' ONLY DUELS SOMEONE WITH A GUN'};
  if(W.robbed){const near=(e,r)=>e&&!e.dead&&e.pac&&Math.hypot(e.x-px,e.y-py)<r;if(near(W.smithE,2.4)||near(W.storeE,2.4)||near(W.darts,1.8)||(W.roul&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.4))return{k:'robbed',t:'NOBODY IN THIS TOWN WILL DEAL WITH A BANK ROBBER'}}
  const sm=W.smithE;if(sm&&sm.pac&&!sm.dead&&W.smithC&&Math.hypot(W.smithC.x-px,W.smithC.y-py)<1.6)return{k:'smith',t:W.pmSold?'THE GUNSMITH: "ENJOY IT, PARTNER"':'BUY THE PEACEMAKER  -  $'+W_PM_PRICE};
- if(W.roul&&W.roul.bets&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.6&&!DM&&roulTotal()>0&&!roulBusy())return{k:'roul',t:'SPIN THE WHEEL'};
- const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!DM&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+wNm(ALLY_NAME.toUpperCase())+'  -  $'+ALLY_PRICE};
+ if(W.roul&&W.roul.bets&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.6&&!(DM&&!CO())&&roulTotal()>0&&!roulBusy())return{k:'roul',t:'SPIN THE WHEEL'};
+ const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!(DM&&!CO())&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+wNm(ALLY_NAME.toUpperCase())+'  -  $'+ALLY_PRICE};
  const st=W.storeE;if(st&&st.pac&&!st.dead&&W.storeC&&Math.hypot(W.storeC.x-px,W.storeC.y-py)<1.6)return{k:'store',t:'BROWSE THE GENERAL STORE'};
  return null}
 /* the use key (called from chest()): true if the town took it */
@@ -454,7 +486,7 @@ function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNe
  if(q.k=='noduel'){wMsg('"Come back when you\'re carryin\' a real iron, partner."',2.6);return true}
  if(q.k=='smith'){if(W.pmSold){wMsg('"Take good care of her."',2);return true}
   const cur=Wp&&Wp.name||'your gun';snd(620,.12,'triangle',.06,200);
-  choose('Gunsmith','"A Peacemaker. Single action, six shots, and the hardest-hitting iron in the territory. Wait a moment between shots and she never misses." You have $'+(P.money|0)+'.',
+  WEST.live=1;choose('Gunsmith','"A Peacemaker. Single action, six shots, and the hardest-hitting iron in the territory. Wait a moment between shots and she never misses." You have $'+(P.money|0)+'.',
    [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Heavier hits than the Hand cannon. Dead Eye: the first shot after a short pause does 60% more damage and goes exactly where you aim. Replaces the '+cur+' you are holding.'},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<W_PM_PRICE){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
     P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
@@ -462,7 +494,7 @@ function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNe
  if(q.k=='roul'){roulSpin();return true}
  if(q.k=='hire'){if(ALLY){wMsg('"One partner\'s plenty, friend."',2);return true}snd(620,.12,'triangle',.06,200);
   choose(wNm(ALLY_NAME),'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+wNm(ALLY_NAME)+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
-   k=>{state='play';if(k!==0)return;if((P.money|0)<ALLY_PRICE){wMsg('"Money first, partner."',2.4);snd(160,.2,'square',.06,-60);return}P.money-=ALLY_PRICE;try{moneySync()}catch(er){}allyHire(W.darts);wMsg('"Let\'s ride."',2.4);snd(520,.12,'triangle',.08,300)});return true}
+   k=>{state='play';if(k!==0)return;if((P.money|0)<ALLY_PRICE){wMsg('"Money first, partner."',2.4);snd(160,.2,'square',.06,-60);return}P.money-=ALLY_PRICE;try{moneySync()}catch(er){}const dd=W.darts;allyHire(dd);wNet('wal',{});wMsg('"Let\'s ride."',2.4);snd(520,.12,'triangle',.08,300)});return true}
  return false}
 /* the general store's stock: frontier clothes (yours to keep) and Quickdraw */
 const W_QD_PRICE=90;
@@ -470,7 +502,7 @@ function westStore(){const W=WEST,items=[];snd(620,.12,'triangle',.06,200);
  for(const[id,pr]of WSTORE_COS()){const c=COS[id],has=LOOT.o.includes(id);items.push({n:c.n+'  —  '+(has?'owned':'$'+pr),d:(c.k=='hat'?'Hat. ':c.k=='cape'?'Cape. ':'Title. ')+c.d+(has?' You already have it.':' Yours to keep.'),buy:has?null:()=>{secretGive(id);HATNEW=id;wMsg(c.n.toUpperCase()+' BOUGHT. WEAR IT FROM COSMETICS',3)},pr})}
  const qd=P.pw.qdraw|0,qdOk=qd<2&&!W.qdSold;items.push({n:'Quickdraw  —  '+(qdOk?'$'+W_QD_PRICE:qd>=2?'maxed':'sold out'),d:'Power: +20% fire and swing rate. One per Frontier Town, stacks up to 2 times. You have '+qd+'.',buy:qdOk?()=>{give(POW.find(p=>p.id=='qdraw'));W.qdSold=1;wMsg('QUICKDRAW x'+(P.pw.qdraw|0),2.6)}:null,pr:W_QD_PRICE});
  items.push({n:'Leave',d:'Keep your money.'});
- choose('General Store','"Howdy! Finest goods west of the river." You have $'+(P.money|0)+'.',items,k=>{state='play';const it=items[k];if(!it||!it.buy)return;
+ WEST.live=1;choose('General Store','"Howdy! Finest goods west of the river." You have $'+(P.money|0)+'.',items,k=>{state='play';const it=items[k];if(!it||!it.buy)return;
   if((P.money|0)<it.pr){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
   P.money-=it.pr;try{moneySync()}catch(er){}it.buy();snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(780,.2,'triangle',.08,200),110)})}
 /* the Peacemaker: a Hand cannon underneath (its sounds, its reload), with its own look and numbers */
@@ -487,27 +519,27 @@ function westFire(){const W=WEST;if(!W||state!='play')return;
  const sm=W.smith;if(wIn(sm,P.x,P.y,.2)&&W.smithE&&W.smithE.pac&&!W.smithE.dead){wMsg('"Not in my shop!"',2)}
  const c=W.coach;if(c&&c.st=='park'&&Math.hypot(c.x-P.x,c.y-P.y)<7){coachGo('spooked')}}
 /* a passive person was hit */
-function westHit(e){const W=WEST;if(!W)return;if(e.bty){W.outFree=1;return}if(W.duel&&e.jack){duelHitJack(e);return}if(e.jack){e.grp='jack'}westWake(e)}
+function westHit(e){const W=WEST;if(!W)return;if(e.bty){if(!W.outFree)wNet('wof',{});W.outFree=1;return}if(W.duel&&e.jack){duelHitJack(e);return}if(e.jack){e.grp='jack'}westWake(e)}
 /* someone died */
 function westKill(e){const W=WEST;if(!W)return;
  if(e.bty&&!W.btyDone){W.btyDone=1;const v=W.out.reward;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}wMsg('BOUNTY COLLECTED: '+W.out.name.toUpperCase()+'  +$'+v,4);snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}
  if(e.jack&&!W.duel&&!W.jackDead){W.jackDead=1}}
 
 /* ---------------- the runaway stagecoach ---------------- */
-function coachGo(why){const c=WEST.coach;if(!c||c.st!='park')return;c.st='rear';c.t=0;c.hit=new Set();
+function coachGo(why,net){const c=WEST.coach;if(!c||c.st!='park')return;if(!net&&typeof CLI=='function'&&CLI()){wNet('wcg',{});return}if(!net)wNet('wco',{st:'rear'});c.st='rear';c.t=0;c.hit=new Set();
  snd(700,.35,'sawtooth',.06,600,{x:c.x,y:c.y});setTimeout(()=>snd(900,.3,'sawtooth',.05,-500,{x:c.x,y:c.y}),120);}
 function coachStep(dt){const W=WEST,c=W.coach;if(!c)return;c.t+=dt;const L=W.SY0+2.5;
- if(c.st=='park'){c.x=N-3.4;c.y=L;c.v=0;if(!W.duel&&c.t>c.wait)coachGo();
+ if(c.st=='park'){c.x=N-3.4;c.y=L;c.v=0;if(!W.duel&&c.t>c.wait&&!(typeof CLI=='function'&&CLI()))coachGo();
   /* a parked coach is solid: push the player out of it */const dx=P.x-(c.x-.9),dy=P.y-c.y;if(Math.abs(dx)<1.9&&Math.abs(dy)<.75){P.y=c.y+(dy<0?-.76:.76)}return}
  if(c.st=='rear'){if(c.t>.9){c.st='run';c.t=0;c.v=2}return}
- if(c.st=='gone'){if(c.t>c.wait){c.st='park';c.t=0;c.wait=rr(32,48);for(let i=0;i<10;i++)ptcPush({x:N-3.4+rr(-1,1),y:L+rr(-.6,.6),z:.1,vx:rr(-.5,.5),vy:rr(-.5,.5),vz:.4,life:1,l0:1,t:S.dust,s:.5,g:0},0)}return}
+ if(c.st=='gone'){if(c.t>c.wait&&!(typeof CLI=='function'&&CLI())){wNet('wco',{st:'park'});c.st='park';c.t=0;c.wait=rr(32,48);for(let i=0;i<10;i++)ptcPush({x:N-3.4+rr(-1,1),y:L+rr(-.6,.6),z:.1,vx:rr(-.5,.5),vy:rr(-.5,.5),vz:.4,life:1,l0:1,t:S.dust,s:.5,g:0},0)}return}
  /* running: speeds up to 10 tiles a second, westward down the middle of the street */
  c.v=Math.min(10,c.v+dt*9);c.x-=c.v*dt;c.y=L+Math.sin(c.t*3)*.08;
  if(Math.random()<dt*30)ptcPush({x:c.x+rr(.2,1.2),y:c.y+rr(-.5,.5),z:.05,vx:rr(.5,2),vy:rr(-.4,.4),vz:rr(.2,.6),life:.9,l0:.9,t:S.dust,s:rr(.3,.55),g:0},0);
  if(Math.random()<dt*7)snd(90+Math.random()*30,.06,'square',.05,-20,{x:c.x,y:c.y});
  /* the horses' front is at x-1.6, the coach's back at x+.7 */const x0=c.x-1.7,x1=c.x+.75;
  if(!c.hit.has(P)&&P.x>x0&&P.x<x1&&Math.abs(P.y-c.y)<.8&&!(P.deadT>0)&&(P.z||0)+(P.jz||0)<.9){c.hit.add(P);hb(null);cause='a runaway stagecoach';hurt(P.mhp*.45);const s=P.y<c.y?-1:1;push(P,-.35,s,4.2);P.hurt=.5;snd(70,.4,'sawtooth',.12,-30);snd(160,.2,'square',.08,-90)}
- for(const e of E){if(e.dead||c.hit.has(e)||e.x<x0||e.x>x1||Math.abs(e.y-c.y)>.8)continue;c.hit.add(e);if(e.pac)westWake(e,1);e.hp-=Math.max(150,e.mhp*.8);e.flash=.1;e.aggro=1;burst(e,S.blood,12);push(e,-.3,e.y<c.y?-1:1,3);snd(80,.3,'sawtooth',.1,-40,e);if(e.hp<=0)kill(e)}
+ for(const e of E){if(e.dead||e.pup||c.hit.has(e)||e.x<x0||e.x>x1||Math.abs(e.y-c.y)>.8)continue;c.hit.add(e);if(e.pac)westWake(e,1);e.hp-=Math.max(150,e.mhp*.8);e.flash=.1;e.aggro=1;burst(e,S.blood,12);push(e,-.3,e.y<c.y?-1:1,3);snd(80,.3,'sawtooth',.1,-40,e);if(e.hp<=0)kill(e)}
  for(const t of W.tw)if(!t.dead&&t.x>x0&&t.x<x1&&Math.abs(t.y-c.y)<.9){t.dead=1;twBurst(t)}
  if(c.x<4){c.st='gone';c.t=0;c.wait=rr(14,22);for(let i=0;i<26;i++){const a=Math.random()*6.28,v=rr(1,4);ptcPush({x:c.x,y:c.y,z:.2,vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(.3,1.5),life:1.4,l0:1.4,t:S.dust,s:rr(.4,.8),g:1},0)}snd(60,.6,'sawtooth',.12,-20,{x:c.x,y:c.y});snd(240,.3,'square',.06,-150,{x:c.x,y:c.y})}}
 
@@ -544,7 +576,7 @@ function stormStep(dt){const W=WEST,st=W.storm;st.t+=dt;
   if(PTC.length<700&&Math.random()<dt*40*ko){const a=P.a+rr(-1,1),r=rr(1,5);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.4),vx:W.wind*rr(3,6),vy:rr(-.5,.5),vz:rr(-.2,.2),life:.8,l0:.8,t:S.dust,s:rr(.25,.55),g:0},0)}}}
 
 /* ---------------- the duel ---------------- */
-function duelStart(){const W=WEST,j=W.jack;if(!j||W.duel)return;W.duel={st:'fade',t:0,fd:0};snd(300,.3,'triangle',.06,-100);wMsg("\"Well, it's high noon somewhere.\"",2.6)}
+function duelStart(){const W=WEST,j=W.jack;if(!j||W.duel||W.duelOn)return;W.duel={st:'fade',t:0,fd:0};wNet('wdl',{st:'go'});snd(300,.3,'triangle',.06,-100);wMsg("\"Well, it's high noon somewhere.\"",2.6)}
 function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;D.t+=dt;const L=W.SY0+2.5,PX=16.5,JX=28.5;
  if(!j||j.dead&&D.st!='won'){W.duel=null;return}
  if(D.st=='fade'){D.fd=Math.min(1,D.t/.7);if(D.t>=.8){/* out in the street: the player at one end, Jack at the other; everything else waits */
@@ -554,18 +586,18 @@ function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;D.t+=dt;const L=W.SY0+2.5,P
  D.fd=Math.max(0,D.fd-dt*2);
  if(D.st=='wait'){const k=Math.floor(D.t/1.1);if(k>D.toll&&D.toll<3){D.toll=k;snd(330,1.4,'triangle',.08,-4);snd(660,.9,'sine',.03,-4)}if(D.t>3.7){D.st='cue';D.t=0}return}
  if(D.st=='cue'){if(D.t>D.cue){D.st='draw';D.t=0;snd(1200,.12,'square',.06,-200)}return}
- if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,-1);W.duelDone=1;setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
+ if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,-1);W.duelDone=1;wNet('wdl',{st:'lost'});setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
  if(D.st=='won'||D.st=='lost'||D.st=='foul'){if(D.t>2.6){D.st='out';D.t=0}return}
- if(D.st=='out'){D.fd=Math.min(1,D.t/.5);if(D.t>.6){if(j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}W.duel=null}}}
+ if(D.st=='out'){D.fd=Math.min(1,D.t/.5);if(D.t>.6){if(j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}W.duel=null;wNet('wdl',{st:'end'})}}}
 function jackShoots(j,k){snd(260,.14,'sawtooth',.1,-120,j);snd(90,.2,'square',.08,-40,j);try{ltPush(j.x,j.y,.7,3,[1,.8,.5],.12)}catch(er){}for(let i=0;i<6;i++)ptcPush({x:j.x+Math.cos(j.fa)*.35,y:j.y+Math.sin(j.fa)*.35,z:.62,vx:Math.cos(j.fa)*rr(1,3),vy:Math.sin(j.fa)*rr(1,3)+rr(-.5,.5),vz:rr(-.2,.4),life:.2,l0:.2,t:S.spark,s:.12,g:0},0);
  P.inv=0;hb(j);cause=wNm('McCassidy');if(k<0){/* outdrawn: the shot is fatal (shields, overheal and the Aegis don't stop it) */P.shd=0;P.oh=0;if(P.pw.aegis)P.ag=Math.max(P.ag||0,.01);hurt(P.mhp*100)}else hurt(P.mhp*k);P.hurt=.6}
 function duelFire(){const W=WEST,D=W.duel,j=W.jack;if(!D)return;
- if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1}},800);W.duelDone=1}}
+ if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1;wNet('wdl',{st:'foul'})}},800);W.duelDone=1}}
 /* a flashbang: a bang, a white-out, and your hands shake for a moment */
 function jackFlash(j){const W=WEST;W.flash=1;snd(1800,.25,'square',.08,-1600,j);snd(80,.3,'sawtooth',.1,-40,j);P.cd=Math.max(P.cd||0,.7);for(let i=0;i<14;i++){const a=Math.random()*6.28,v=rr(1,3);ptcPush({x:j.x+Math.cos(j.fa)*.6,y:j.y+Math.sin(j.fa)*.6,z:.5,vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(0,1),life:.3,l0:.3,t:S.spark,s:.2,g:0},0)}}
 /* Jack in a straight fight: every few seconds he rolls to one side and comes up with a fresh cylinder */
 function westJackAI(e,dt){if(e.pac||e.dead||!e.aggro)return;e.rlT=(e.rlT===undefined?rr(2,4):e.rlT)-dt;if(e.rlT>0)return;e.rlT=rr(3.5,5.5);const a=Math.atan2(P.y-e.y,P.x-e.x)+(Math.random()<.5?1:-1)*Math.PI/2;let d=0;for(let k=0;k<10;k++){const nx=e.x+Math.cos(a)*.15,ny=e.y+Math.sin(a)*.15,ci=(ny|0)*N+(nx|0);if(g[ci]||blk[ci])break;e.x=nx;e.y=ny;d++}if(d){e.cd=Math.min(e.cd||0,.25);snd(160,.15,'triangle',.05,-60,e);for(let i=0;i<6;i++)ptcPush({x:e.x,y:e.y,z:.05,vx:rr(-.6,.6),vy:rr(-.6,.6),vz:.3,life:.6,l0:.6,t:S.dust,s:.3,g:0},0)}}
-function duelHitJack(j){const W=WEST,D=W.duel;if(D.st=='draw'){D.st='won';D.t=0;j.pac=0;j.hp=Math.min(j.hp,1);W.duelDone=1;
+function duelHitJack(j){const W=WEST,D=W.duel;if(D.st=='draw'){D.st='won';D.t=0;j.pac=0;j.hp=Math.min(j.hp,1);W.duelDone=1;wNet('wdl',{st:'won'});
   const v=80;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}let hat=0;try{hat=secretGive(HAT_JACK);if(hat)HATNEW=HAT_JACK}catch(er){}wMsg('"Huh. Didn\'t see that comin\'."',2.4);setTimeout(()=>wMsg('YOU WIN THE DUEL  +$'+v,3.5),2400);if(hat)setTimeout(()=>wMsg("MCCASSIDY'S BANDANA UNLOCKED",4),5600);setTimeout(()=>snd(523,.2,'triangle',.08,0),200);setTimeout(()=>snd(784,.4,'triangle',.08,0),380)}
  else if(D.st=='foul'){j.pac=0;j.aggro=1}}
 /* Jack during the duel: stands his ground facing you */
@@ -580,13 +612,15 @@ function heistStep(dt){const W=WEST,H=W.heist,v=W.vault;H.t+=dt;
  if(H.st=='alarm'){H.bt=(H.bt||0)-dt;if(H.bt<=0&&H.t<50){H.bt=.5;snd(880,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5});setTimeout(()=>snd(660,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5}),200)}
   const WV=[3,20,40];while(H.w<WV.length&&H.t>=WV[H.w]){heistPosse(H.w);H.w++}}}
 function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[N-3,L-1.5],[N-3,L+1.5],[10.5,42],[40.5,42],[22,8],[47,10]];const n=k==2?5:3+(fl>12?1:0);
- if(k==0)wMsg('THE POSSE IS HERE!',2.6);else wMsg('MORE DEPUTIES!',2.2);snd(500,.25,'sawtooth',.05,300);
- for(let i=0;i<n;i++){const[x,y]=src[(k*3+i)%src.length];if(g[(y|0)*N+(x|0)])continue;const e=westHuman(x+rr(-.3,.3),y+rr(-.3,.3),{gun:pk(['rifle','shotgun','pistol']),hat:3,hatc:[214,196,160],cl:[110,96,80],pn:[60,60,70],vest:[[40,40,46]],nm:'Deputy '+pk(['Hollis','Pike','Barlow','Tate','McCoy','Briggs','Fenton','Quill'])});e.aggro=1;e.posse=1;e.vest=1;if(SW&&SW.g3d)e.z=FH[(e.y|0)*N+(e.x|0)]||0;E.push(e)}
+ if(k==0)wMsg('THE POSSE IS HERE!',2.6);else wMsg('MORE DEPUTIES!',2.2);snd(500,.25,'sawtooth',.05,300);if(typeof CLI=='function'&&CLI())return;/* co-op: the host's deputies come to everyone */
+ for(let i=0;i<n;i++){const[x,y]=src[(k*3+i)%src.length];if(g[(y|0)*N+(x|0)])continue;
+  if(typeof HOSTCO=='function'&&HOSTCO()){const sd=Math.random()*2e9|0,sv=R;R=mul(sd);let d0;try{d0=westDeputy(x,y)}finally{R=sv}dynWest(d0,sd,x,y);E.push(d0);continue}
+  E.push(westDeputy(x,y))}
  }
 /* the gold: picked up by walking over it, it slows you down, and it is paid out at the exit */
 /* the gold: walking over a sack puts its money straight in your pocket */
 function goldStep(dt){const W=WEST;if(!W.gb)return;
- for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);const v=14+(fl>>2);W.gold=(W.gold|0)+1;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD  +$'+v,1.8)}}}
+ for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);wNet('wgd',{i:W.gb.indexOf(p)});const v=14+(fl>>2);W.gold=(W.gold|0)+1;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD  +$'+v,1.8)}}}
 /* nobody moves in a duel */
 function westSpd(){const W=WEST;if(!W)return 1;return W.duel?0:1}
 
@@ -598,7 +632,7 @@ function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;i
  if(wAlien()&&!westIndoors()&&PTC.length<600&&Math.random()<dt*14){const a=Math.random()*6.28,r=rr(1.5,7);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.6),vx:rr(-.2,.2),vy:rr(-.2,.2),vz:rr(.05,.25),life:3,l0:3,t:S.plasma||S.spark,s:rr(.05,.1),g:0},0)}
  if(W.heist)heistStep(dt);goldStep(dt);if(W.traps)trapStep(dt);
  /* the jail's open cell, the hotel's guard: nothing to do; the wanted man reacts if you come into his room */
- const o=W.outlaw;if(o&&!o.dead&&!W.outFree&&W.outRoom){const r=W.outRoom;if(P.x>=r.x0&&P.x<r.x1+1&&P.y>=r.y0&&P.y<r.y1+1.6){W.outFree=1;o.aggro=1;wMsg('"YOU\'LL NEVER TAKE ME ALIVE!"',2.2)}}
+ const o=W.outlaw;if(o&&!o.dead&&!W.outFree&&W.outRoom){const r=W.outRoom,inR=q=>q&&q.x>=r.x0&&q.x<r.x1+1&&q.y>=r.y0&&q.y<r.y1+1.6;if(inR(P)||(typeof RP!='undefined'&&CO()&&RP.some(q=>!q.dead&&inR(q)))){W.outFree=1;o.aggro=1;wNet('wof',{});wMsg('"YOU\'LL NEVER TAKE ME ALIVE!"',2.2)}}
  W.near=westNear()}
 
 /* ---------------- drawing ---------------- */
@@ -653,10 +687,11 @@ const W_VHP=800;
 /* props with health: shots, swings and blasts wear them down; at 0 they give way (the vault door: the alarm goes; a hotel door: it is kicked in) */
 function westBrkAdd(p,hp,name,metal,on){WEST.brk.push({p,hp,max:hp,name,metal,on})}
 function westBrkOf(p){const W=WEST;return p&&W&&W.brk?W.brk.find(b=>b.p===p&&b.hp>0)||null:null}
-function westBrkDmg(p,n){const b=westBrkOf(p);if(!b)return;b.hp-=Math.max(1,+n||1);b.t=T;WEST.brkL=b;const fx=p.x-Math.sin(p.yaw||0)*.45,fy=p.y-Math.cos(p.yaw||0)*.45;
+function westBrkDmg(p,n){const b=westBrkOf(p);if(!b)return;const W=WEST,cli=typeof CLI=='function'&&CLI();if(cli&&W.rep)return;/* an explosion every game plays out by itself: the host's copy counts */
+ if(cli){wNet('wbd',{i:W.brk.indexOf(b),d:Math.round(Math.max(1,+n||1))});b.t=T;W.brkL=b}else{b.hp-=Math.max(1,+n||1);b.t=T;W.brkL=b;if(typeof HOSTCO=='function'&&HOSTCO())wNet('wbh',{i:W.brk.indexOf(b),hp:Math.max(0,Math.round(b.hp))})}const fx=p.x-Math.sin(p.yaw||0)*.45,fy=p.y-Math.cos(p.yaw||0)*.45;
  if(b.metal)snd(900+Math.random()*300,.05,'square',.04,-500,{x:p.x,y:p.y});else snd(140+Math.random()*60,.08,'triangle',.07,-60,{x:p.x,y:p.y});
  for(let k=0;k<3;k++)ptcPush({x:fx+rr(-.3,.3),y:fy+rr(-.1,.1),z:rr(.3,1.2),vx:rr(-1,1),vy:rr(-1,1),vz:rr(0,1),life:.25,l0:.25,t:b.metal?S.spark:S.dust,s:b.metal?.1:.18,g:4},0);
- if(b.hp<=0){b.hp=0;b.on()}}
+ if(b.hp<=0&&!b.done){b.hp=0;b.done=1;b.on()}}
 /* a hotel door gives way: the leaf is gone, the frame stays */
 function westDoorBreak(p,r){const i=p.cell;PRP=PRP.filter(q=>q!==p);blk[i]=0;try{if(SW&&SW.g3d)g3dFreeCell(i)}catch(er){}PRP.push(Object.assign({},p,{m:3028,nb:1}));snd(90,.35,'sawtooth',.12,-40,{x:p.x,y:p.y});snd(260,.2,'square',.06,-180,{x:p.x,y:p.y});
  for(let k=0;k<16;k++){const a=Math.random()*6.28,v=rr(1,3);ptcPush({x:p.x,y:p.y,z:rr(.2,1.1),vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(0,1.5),life:.7,l0:.7,t:S.dust,s:.2,g:5},0)}}
@@ -670,7 +705,7 @@ function westDarts(e,dt){const W=WEST;e.dT-=dt;if(!W.dboard)return;const tx=W.db
 /* ===== the hired partner (0.9.315): hired in Frontier Town's saloon, then follows the player from floor to floor (single player).
    Fights what the player fights with a rifle; monsters that are closer to the partner than to the player go after the partner (the AI's target is swapped
    for a stand-in the same way co-op does it for other players). 200 health, back to full on each new floor; dead is dead. ===== */
-let ALLY=null,ALLYMSG=null,FLN=0;const ALLY_NAME='Dusty Reed',ALLY_PRICE=150,ALLY_HP=200;
+let ALLY=null,ALLYMSG=null,FLN=0,RALLY={},ALLYFR=null,ALYT=0;const ALLY_NAME='Dusty Reed',ALLY_PRICE=150,ALLY_HP=200;
 function allyHire(e){const W=WEST;if(e.fr&&e.fr.spec&&e.fr.spec.ng){const sp=e.fr.spec;sp.ng=0;sp.gm=null;sp.m3=null;sp.c={}}ALLY={id:-7,cmh:ALLY_HP,hue:210,ally:1,hum:1,x:e.x,y:e.y,z:e.z,fa:e.fa,fr:e.fr,sc:e.sc,r:.24,hr:.24,name:e.name,hp:ALLY_HP,mhp:ALLY_HP,af:0,ap:0,cd:1,FN:FLN,flash:0,traits:['rifle'],gun:'rifle'};
  if(W){W.pac=W.pac.filter(o=>o!==e);W.darts=null}E=E.filter(o=>o!==e);e.dead=1}
 /* a new floor: come along, at full health, behind the player */
@@ -681,13 +716,14 @@ function allyMsg(t,d){ALLYMSG={t,d:d||3}}
 /* an enemy goes for the partner when the partner is clearly the closer one */
 function allyTgt(e){const a=ALLY;if(!a||a.FN!==FLN||e.pac||e.dead||!e.aggro||state!='play')return false;e.tAT=(e.tAT||0)-1/60;if(e.tAT<=0){e.tAT=rr(.6,1.2);const da=Math.hypot(a.x-e.x,a.y-e.y),dp=Math.hypot(P.x-e.x,P.y-e.y);e.tAl=(da<9&&da+1.5<dp)||(e.tAl&&da<11&&da<dp)}return !!e.tAl}
 function allyStandIn(){const a=ALLY;return{x:a.x,y:a.y,z:a.z||0,cz:a.z||0,a:a.fa||0,pt:0,pw:{},inv:0,dv:0,deadT:0,hp:a.hp,mhp:a.mhp,am:1,rt:a,mom:0,lk:0,rf:1,sp:1,dm:1,hit:0,hurt:0,last:0}}
-function allyHurt(a,d){if(a!==ALLY||!(d>0)||a.hp<=0)return;a.hp-=d;a.flash=.1;try{burst(a,S.blood,3)}catch(er){}if(a.hp<=0){a.hp=0;try{burst(a,S.blood,14);goreBurst(a)}catch(er){}snd(150,.4,'sawtooth',.08,-100,a);allyMsg(a.name.toUpperCase()+' HAS FALLEN',4);ALLY=null}}
+function allyHurt(a,d){if(a!==ALLY||!(d>0)||a.hp<=0)return;a.hp-=d;a.flash=.1;try{burst(a,S.blood,3)}catch(er){}if(a.hp<=0){a.hp=0;try{burst(a,S.blood,14);goreBurst(a)}catch(er){}snd(150,.4,'sawtooth',.08,-100,a);allyMsg(a.name.toUpperCase()+' HAS FALLEN',4);ALLY=null;wNet('aly',{x:+a.x.toFixed(2),y:+a.y.toFixed(2),z:0,fa:0,af:0,hp:0,sh:0})}}
 /* hostile bullets hit the partner too */
 function allyBul(b,SCF){const a=ALLY;if(!a||a.FN!==FLN||b.rf)return false;if(Math.hypot(a.x-b.x,a.y-b.y)<.35*SCF&&(!SW||b.z===undefined||Math.abs(b.z-((a.z||0)+SW.HH*.55))<SW.HH*.6)){allyHurt(a,b.dmg);return true}return false}
 function allyLos(a,e){if(SW&&typeof swLosPt=='function'){const az=(a.z||0)+SW.HH*.75,ez=(e.z!==undefined?e.z:0)+SW.HH*.6;return swLosPt(a.x,a.y,az,e.x,e.y,ez)}try{const dx=e.x-a.x,dy=e.y-a.y,d=Math.hypot(dx,dy)||1;return dda(a.x,a.y,dx/d,dy/d).d>=d-.3}catch(er){return true}}
 function allyDmg(e,dmg){if(e.dorm&&typeof zWake=='function')zWake(e);if(e.pac||e.bty){if(WEST)westHit(e)}if(e.shd>0){const ab=Math.min(e.shd,dmg);e.shd-=ab;dmg-=ab}e.hp-=dmg;e.aggro=1;e.tAl=1;e.tAT=1.5;e.flash=.08;try{burst(e,e.rb?S.spark:S.blood,3);dnAdd(e,dmg)}catch(er){}if(e.hp<=0)kill(e)}
-function allyStep(dt){const a=ALLY;if(!a||state!='play'||DM||NET)return;if(a.FN!==FLN)allyArrive();if(WEST&&WEST.duel)return;if(P.deadT>0||P.hp<=0)return;
- a.flash=Math.max(0,a.flash-dt);a.cd-=dt;const SCF=SW?SW.SC:1;
+function allyStep(dt){const a=ALLY;if(!a||state!='play'||(DM&&!CO())||(NET&&!CO()))return;if(a.FN!==FLN)allyArrive();
+ if(CO()){ALYT-=dt;if(ALYT<=0){ALYT=.1;wNet('aly',{x:+a.x.toFixed(2),y:+a.y.toFixed(2),z:+(a.z||0).toFixed(2),fa:+(a.fa||0).toFixed(2),af:a.af|0,hp:Math.round(a.hp),sh:a.shT>0?1:0})}}if(WEST&&WEST.duel)return;if(P.deadT>0||P.hp<=0)return;
+ a.flash=Math.max(0,a.flash-dt);a.cd-=dt;a.shT=Math.max(0,(a.shT||0)-dt);const SCF=SW?SW.SC:1;
  /* a target: the nearest hostile it can see */
  if(!a.tg||a.tg.dead||a.tg.pac||!E.includes(a.tg)||a.rtT<=0){a.rtT=.5;let bt=null,bd=11*SCF;for(const e of E){if(e.dead||e.pac||e.dorm||e.peace||e.reg||e.dsp||(e.bty&&WEST&&!WEST.outFree))continue;const d=Math.hypot(e.x-a.x,e.y-a.y);if(d<bd&&allyLos(a,e)){bd=d;bt=e}}a.tg=bt}a.rtT=(a.rtT||0)-dt;
  const dp=Math.hypot(P.x-a.x,P.y-a.y);
@@ -699,10 +735,11 @@ function allyStep(dt){const a=ALLY;if(!a||state!='play'||DM||NET)return;if(a.FN!
  if(!SW&&typeof FH!='undefined')a.z=0;
  /* fire */
  const t=a.tg;if(t){a.fa=Math.atan2(t.y-a.y,t.x-a.x);if(a.cd<=0){a.cd=rr(.65,.95);const d=Math.hypot(t.x-a.x,t.y-a.y),hitC=Math.max(.45,.85-d*.03),dmg=14+2*Math.min(60,fl);
-  snd(240,.12,'sawtooth',.07,-120,a);try{ltPush(a.x,a.y,(a.z||0)+.6,2.5,[1,.8,.5],.08)}catch(er){}const zb=(a.z||0)+(SW?SW.HH*.75:.62);
+  a.shT=.12;snd(240,.12,'sawtooth',.07,-120,a);try{ltPush(a.x,a.y,(a.z||0)+.6,2.5,[1,.8,.5],.08)}catch(er){}const zb=(a.z||0)+(SW?SW.HH*.75:.62);
   for(let i=0;i<4;i++){const k=(i+1)/5;ptcPush({x:a.x+(t.x-a.x)*k,y:a.y+(t.y-a.y)*k,z:zb-.1*k,vx:0,vy:0,vz:0,life:.06,l0:.06,t:S.spark,s:.06,g:0},0)}
   if(Math.random()<hitC)allyDmg(t,dmg)}}}
-function allyList(L){const a=ALLY;if(!a||a.FN!==FLN)return;const it=hum3d(a)?{q:11,h:a,x:a.x,y:a.y,fl:0,fh:a.flash>0,ol:2}:{x:a.x,y:a.y,t:humT(a),s:a.sc,fl:0,fh:a.flash>0,ol:2};if(SW)it.zb=a.z!==undefined?a.z:0;L.push(it)}
+function allyList(L){for(const id in RALLY){const q=RALLY[id];if(q.hp<=0||T-q.t>1.2)continue;if(!q.h){q.h={x:q.x,y:q.y,z:q.z,fa:q.fa,af:0,ap:0,fr:ALLYFR||humFrames(210,'rifle',[],null,'',3,0),sc:.85,r:.24,hr:.24,hum:1,flash:0,traits:['rifle'],name:q.name}}const h=q.h,k=Math.min(1,.25);h.x+=(q.x-h.x)*k;h.y+=(q.y-h.y)*k;h.z=q.z;h.fa=q.fa;h.af=q.af;const it=hum3d(h)?{q:11,h,x:h.x,y:h.y,fl:0,fh:0,ol:2}:{x:h.x,y:h.y,t:humT(h),s:h.sc,fl:0,fh:0,ol:2};if(SW)it.zb=h.z||0;L.push(it)}
+ const a=ALLY;if(!a||a.FN!==FLN)return;const it=hum3d(a)?{q:11,h:a,x:a.x,y:a.y,fl:0,fh:a.flash>0,ol:2}:{x:a.x,y:a.y,t:humT(a),s:a.sc,fl:0,fh:a.flash>0,ol:2};if(SW)it.zb=a.z!==undefined?a.z:0;L.push(it)}
 function allyHud(){const c=ctx;if(ALLYMSG&&ALLYMSG.d>0){ALLYMSG.d-=1/60;c.save();c.textAlign='center';c.textBaseline='alphabetic';c.font='bold 13px "DotGothic16",monospace';c.globalAlpha=Math.min(1,ALLYMSG.d*1.2);c.fillStyle='#000';c.fillText(ALLYMSG.t,LW/2+1,81);c.fillStyle='#8cc8ff';c.fillText(ALLYMSG.t,LW/2,80);c.restore()}
 }
 
@@ -712,13 +749,13 @@ const TRAP_R=2.3;
 function trapStep(dt){const W=WEST,air=(P.jz||0)>.22||(SW&&P.gr===0);for(const t of W.traps){if(t.fired)continue;
  if(t.fuse<0){const inC=(P.x|0)==(t.x|0)&&(P.y|0)==(t.y|0);if(!(P.deadT>0)&&inC&&!air&&(t.k=='w'||Math.hypot(P.x-t.x,P.y-t.y)<.42))trapFire(t,t.k=='w'?.45:.3)}
  else{t.fuse-=dt;if(Math.random()<dt*40){const d=t.dyn;ptcPush({x:d.x+rr(-.1,.1),y:d.y+rr(-.1,.1),z:.3,vx:rr(-.4,.4),vy:rr(-.4,.4),vz:rr(.3,1),life:.25,l0:.25,t:S.spark,s:.08,g:2},0)}if(t.fuse<=0)trapBoom(t)}}}
-function trapFire(t,fuse){if(t.fired||t.fuse>=0)return;t.fuse=fuse;snd(t.k=='w'?1600:300,.08,'square',.05,-800,{x:t.x,y:t.y});snd(900,fuse+.1,'sawtooth',.02,-300,{x:t.x,y:t.y})}
+function trapFire(t,fuse,net){if(t.fired||t.fuse>=0)return;if(!net)wNet('wtp',{i:WEST.traps.indexOf(t),f:+fuse.toFixed(2)});t.fuse=fuse;snd(t.k=='w'?1600:300,.08,'square',.05,-800,{x:t.x,y:t.y});snd(900,fuse+.1,'sawtooth',.02,-300,{x:t.x,y:t.y})}
 function trapBoom(t){const W=WEST;t.fired=1;for(const q of[t.wire,t.plate,t.dyn])if(q)PRP=PRP.filter(p=>p!==q);const b=W.brk.find(b=>b.p===t.dyn);if(b)b.hp=0;
- const z=SW?(swNearFloor(t.x,t.y,1)||0):0;boom(t.x,t.y,TRAP_R*.8,z+.3);snd(55,.8,'sawtooth',.2,-25,{x:t.x,y:t.y});snd(140,.35,'square',.1,-90,{x:t.x,y:t.y});
+ const z=SW?(swNearFloor(t.x,t.y,1)||0):0;W.rep=1;try{boom(t.x,t.y,TRAP_R*.8,z+.3)}finally{W.rep=0}snd(55,.8,'sawtooth',.2,-25,{x:t.x,y:t.y});snd(140,.35,'square',.1,-90,{x:t.x,y:t.y});
  for(let i=0;i<26;i++){const a=Math.random()*6.28,v=rr(1.5,5);ptcPush({x:t.x,y:t.y,z:.3,vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(.5,3),life:.8,l0:.8,t:i%3?S.dust:S.spark,s:i%3?.4:.2,g:5},0)}
  for(let i=0;i<10;i++)ptcPush({x:t.x+rr(-1.5,1.5),y:t.y+rr(-1.5,1.5),z:1.7,vx:0,vy:0,vz:-.5,life:1.2,l0:1.2,t:S.dust,s:.25,g:3},0);
  const dm=35+3*Math.min(60,fl),d=Math.hypot(P.x-t.x,P.y-t.y);if(d<TRAP_R&&!(P.deadT>0)){hb(null);cause='a dynamite trap';hurt(dm*(1-d/(TRAP_R*1.4)));push(P,(P.x-t.x)/(d||1),(P.y-t.y)/(d||1),2.4)}
- for(const e of E){if(e.dead)continue;const de=Math.hypot(e.x-t.x,e.y-t.y);if(de<TRAP_R){if(e.pac)westWake(e,1);e.hp-=dm*1.5*(1-de/(TRAP_R*1.4));e.flash=.1;e.aggro=1;if(e.hp<=0)kill(e)}}
+ for(const e of E){if(e.dead||e.pup)continue;const de=Math.hypot(e.x-t.x,e.y-t.y);if(de<TRAP_R){if(e.pac)westWake(e,1);e.hp-=dm*1.5*(1-de/(TRAP_R*1.4));e.flash=.1;e.aggro=1;if(e.hp<=0)kill(e)}}
  if(typeof ALLY!='undefined'&&ALLY&&ALLY.FN===FLN){const da=Math.hypot(ALLY.x-t.x,ALLY.y-t.y);if(da<TRAP_R)allyHurt(ALLY,dm*(1-da/(TRAP_R*1.4)))}
  for(const o of W.traps)if(!o.fired&&o.fuse<0&&Math.hypot(o.x-t.x,o.y-t.y)<1.6)trapFire(o,.35)}
 
@@ -787,15 +824,17 @@ let RBALL=null;const roulBall=()=>RBALL||(RBALL=[...vmCyl(0,-.011,0,.009,.022,[2
 const rlW=(x,z)=>{const r=WEST.roul;return[r.x-z,r.y+x]},rlL=(X,Y)=>{const r=WEST.roul;return[Y-r.y,r.x-X]};
 function roulBase(){const r=WEST.roul;if(SW){const f=swNearFloor(r.x,r.y,P.z+.5);return f===f?f:0}return FHc(r.x,r.y)}
 /* what the crosshair is on: the box, or null (the view of the last frame drawn) */
-function roulAim(){const W=WEST,r=W&&W.roul,cm=W&&W.cam;if(!r||!cm||T-cm.t>.2||DM)return null;if(Math.hypot(r.x-P.x,r.y-P.y)>2.2)return null;
+function roulAim(){const W=WEST,r=W&&W.roul,cm=W&&W.cam;if(!r||!cm||T-cm.t>.2||(DM&&!CO()))return null;if(Math.hypot(r.x-P.x,r.y-P.y)>2.2)return null;
  const top=roulBase()+RTOP,den=cm.H/2-cm.hH;if(den<=1e-3)return null;const d=(EZ-top)*cm.H/den;if(!(d>0)||d>2.2)return null;
  const X=P.x+cm.dX*d,Y=P.y+cm.dY*d,[x,z]=rlL(X,Y);for(const c of roulCells())if(x>=c.x0&&x<c.x1&&z>=c.z0&&z<c.z1)return c;return null}
+function roulTell(){const r=WEST.roul;wNet('wrb',{b:Object.entries(r.bets).slice(0,60)})}
+function roulOthers(){const ob=WEST.roul.ob||{};for(const id in ob)for(const k in ob[id])if(ob[id][k]>0)return true;return false}
 function roulBusy(){const r=WEST.roul;return r.st=='roll'||r.st=='drop'||r.st=='lock'}
 function roulTotal(){const r=WEST.roul;let s=0;for(const k in r.bets)s+=r.bets[k];return s}
 /* a click on the table: true if it was used (the gun does not fire) */
-function roulClick(btn){const W=WEST;if(!W||!W.roul||state!='play'||DM||PZ)return false;const c=roulAim();if(!c)return false;const r=W.roul;
+function roulClick(btn){const W=WEST;if(!W||!W.roul||state!='play'||(DM&&!CO())||PZ)return false;const c=roulAim();if(!c)return false;const r=W.roul;
  if(W.robbed){wMsg('"We don\'t serve thieves here."',2.2);return true}
- if(btn==2){if(c.k=='bet'&&r.bets[c.id]&&!roulBusy()){P.money=Math.min(MAXM(),(P.money|0)+r.bets[c.id]);delete r.bets[c.id];r.mv=null;try{moneySync()}catch(er){}snd(900,.05,'square',.03,-300)}return true}
+ if(btn==2){if(c.k=='bet'&&r.bets[c.id]&&!roulBusy()){P.money=Math.min(MAXM(),(P.money|0)+r.bets[c.id]);delete r.bets[c.id];r.mv=null;roulTell();try{moneySync()}catch(er){}snd(900,.05,'square',.03,-300)}return true}
  if(btn!==0)return false;
  if(c.k=='chip'){r.chip=+c.id.slice(2);r.mv=null;snd(1200,.04,'square',.03,-200);return true}
  if(c.k=='spin'){roulSpin();return true}
@@ -803,26 +842,34 @@ function roulClick(btn){const W=WEST;if(!W||!W.roul||state!='play'||DM||PZ)retur
  const v=RCHIPS[r.chip];if((P.money|0)<v){wMsg('"You\'re short, friend."',1.6);snd(160,.15,'square',.04,-60);return true}
  if(roulTotal()+v>RLIM){wMsg('THE TABLE LIMIT IS $'+RLIM,1.6);return true}
  if(r.st=='done'){r.st='idle';r.win=null}
- r.bets[c.id]=(r.bets[c.id]||0)+v;P.money-=v;r.mv=null;try{moneySync()}catch(er){}snd(1500,.03,'square',.03,-500);setTimeout(()=>snd(1900,.025,'square',.025,-500),40);return true}
-function roulSpin(){const r=WEST.roul;if(roulBusy())return;if(!roulTotal()){wMsg('"Place a bet first, partner."',1.6);return}
- r.st='roll';r.v=Math.max(r.v,rr(2.2,2.8));r.bA=Math.random()*6.2832;r.bW=-rr(10,12.5);r.bR=.196;r.t=0;r.win=null;r.mv=null;wMsg('"NO MORE BETS!"',1.4);snd(300,.25,'sawtooth',.03,600,{x:r.x,y:r.y})}
-function roulStep(dt){const W=WEST,r=W.roul;if(!r)return;if(!r.bets){r.bets={};r.chip=1;r.st='idle'}
+ r.bets[c.id]=(r.bets[c.id]||0)+v;P.money-=v;r.mv=null;roulTell();try{moneySync()}catch(er){}snd(1500,.03,'square',.03,-500);setTimeout(()=>snd(1900,.025,'square',.025,-500),40);return true}
+function roulSpin(){const r=WEST.roul;if(roulBusy())return;if(!roulTotal()&&!roulOthers()){wMsg('"Place a bet first, partner."',1.6);return}
+ const sp={a:+r.a.toFixed(3),v:+Math.max(r.v,2.2+Math.random()*.6).toFixed(3),ba:+(Math.random()*6.2832).toFixed(3),bw:+(-10-Math.random()*2.5).toFixed(3)};wNet('wrs',sp);roulGo(sp)}
+/* the ball is sent (by whoever pulled the lever; every game then rolls it the same way) */
+function roulGo(sp){const r=WEST.roul;if(!r||!r.bets)return;if(r.st=='done'){r.st='idle';r.win=null}
+ r.a=sp.a;r.v=sp.v;r.bA=sp.ba;r.bW=sp.bw;r.acc=0;r.st='roll';r.bR=.196;r.t=0;r.win=null;r.mv=null;wMsg('"NO MORE BETS!"',1.4);snd(300,.25,'sawtooth',.03,600,{x:r.x,y:r.y})}
+function roulStep(dt0){const W=WEST,r=W.roul;if(!r)return;if(!r.bets){r.bets={};r.chip=1;r.st='idle';r.ob={}}
+ /* in steps of 1/120 s while the ball is out, so every player's game lands it in the same pocket */
+ if(roulBusy()){r.acc=(r.acc||0)+dt0;let n=0;while(r.acc>=1/120&&n<60){r.acc-=1/120;n++;roulStep1(1/120)}return}roulStep1(dt0)}
+function roulStep1(dt){const r=WEST.roul;
  r.a+=r.v*dt;r.v=Math.max(roulBusy()?.5:0,r.v-dt*(roulBusy()?.16:.35));if(!r.st||r.st=='idle')return;r.t+=dt;
  if(r.st=='roll'){r.bA+=r.bW*dt;r.bW*=Math.exp(-.3*dt);/* the ball clicking round the rim */r.ck=(r.ck||0)+Math.abs(r.bW)*dt;if(r.ck>2.2){r.ck=0;snd(2600,.012,'square',.012,-900,{x:r.x,y:r.y,r:2})}
   if(Math.abs(r.bW+r.v)<2.6){r.st='drop';r.t=0}}
  else if(r.st=='drop'){const u=Math.min(1,r.t/.8);r.bW+=(r.v-r.bW)*Math.min(1,dt*3);r.bA+=r.bW*dt;r.bR=.15+.046*(1-u)*Math.abs(Math.cos(u*Math.PI*2.5));
-  if(r.t>.1&&Math.random()<dt*9)snd(1800+Math.random()*900,.02,'square',.025,-1200,{x:r.x,y:r.y,r:2});
+  if(r.t>.1&&((r.t*97)%1)<dt*9)snd(1800+Math.random()*900,.02,'square',.025,-1200,{x:r.x,y:r.y,r:2});
   if(u>=1){const k=((Math.round((r.bA+r.a)/6.2832*37)%37)+37)%37;r.k=k;r.n=WSEQ[k];r.st='lock';r.t=0;r.bR=.15;snd(1300,.03,'square',.03,-700,{x:r.x,y:r.y,r:2})}}
  else if(r.st=='lock'){r.bA=r.k/37*6.2832-r.a;if(r.t>.9)roulPay()}
  else if(r.st=='done'){r.bA=r.k/37*6.2832-r.a}}
 function roulPay(){const r=WEST.roul,n=r.n,col=n==0?'GREEN':WR_RED.has(n)?'RED':'BLACK';let won=0,back=0;
  for(const c of roulCells()){const b=r.bets[c.id];if(!b||!c.f)continue;if(c.f(n)){won+=b*c.pay;back+=b*(c.pay+1)}}
- r.st='done';r.win='n'+n;r.bets={};r.mv=null;
+ r.st='done';r.win='n'+n;const had=roulTotal()>0;r.bets={};r.ob={};r.mv=null;
+ if(!had){wMsg(n+' '+col,2.4);return}
  if(back){P.money=Math.min(MAXM(),(P.money|0)+back);try{moneySync()}catch(er){}wMsg(n+' '+col+'!  YOU WIN $'+won,3.2);snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}
  else{wMsg(n+' '+col+'.  THE HOUSE WINS',2.8);snd(160,.25,'square',.05,-60)}}
 /* what is drawn on the table: chips on the bets, the frame round the aimed box, the marker on the last number, the ball */
-function roulList(L){const W=WEST,r=W.roul;if(!r||!r.bets)return;if((r.x-P.x)**2+(r.y-P.y)**2>400)return;const base=roulBase(),aim=state=='play'?roulAim():null,key=JSON.stringify(r.bets)+'|'+r.chip+'|'+(aim?aim.id:'')+'|'+r.win;
- if(r.mvK!==key||!r.mv){const m=[];for(const c of roulCells()){const b=r.bets[c.id];if(b){let left=b,j=0;/* stacks by value, biggest first, side by side */for(let i=RCHIPS.length-1;i>=0&&j<3;i--){const n=Math.floor(left/RCHIPS[i]);if(!n)continue;left-=n*RCHIPS[i];const cx=(c.x0+c.x1)/2+(j-.5)*.012,cz=(c.z0+c.z1)/2+(j%2)*.01;for(const f of roulStack(i,Math.min(6,n)))m.push(Object.assign({},f,{p:f.p.map(p=>[p[0]+cx,p[1]+RTOP+.002,p[2]+cz])}));j++}}}
+function roulList(L){const W=WEST,r=W.roul;if(!r||!r.bets)return;if((r.x-P.x)**2+(r.y-P.y)**2>400)return;const base=roulBase(),aim=state=='play'?roulAim():null,key=JSON.stringify(r.bets)+JSON.stringify(r.ob||{})+'|'+r.chip+'|'+(aim?aim.id:'')+'|'+r.win;
+ if(r.mvK!==key||!r.mv){const m=[],ob=r.ob||{};for(const c of roulCells()){let k2=0;for(const id in ob){const b2=ob[id][c.id];if(!b2)continue;k2++;let i2=RCHIPS.length-1;while(i2>0&&RCHIPS[i2]>b2)i2--;const cx=(c.x0+c.x1)/2+.016*(k2%2?1:-1),cz=(c.z0+c.z1)/2-.014*k2;for(const f of roulStack(i2,Math.min(6,Math.max(1,Math.round(b2/RCHIPS[i2])))))m.push(Object.assign({},f,{p:f.p.map(p=>[p[0]+cx,p[1]+RTOP+.002,p[2]+cz])}))}
+  const b=r.bets[c.id];if(b){let left=b,j=0;/* stacks by value, biggest first, side by side */for(let i=RCHIPS.length-1;i>=0&&j<3;i--){const n=Math.floor(left/RCHIPS[i]);if(!n)continue;left-=n*RCHIPS[i];const cx=(c.x0+c.x1)/2+(j-.5)*.012,cz=(c.z0+c.z1)/2+(j%2)*.01;for(const f of roulStack(i,Math.min(6,n)))m.push(Object.assign({},f,{p:f.p.map(p=>[p[0]+cx,p[1]+RTOP+.002,p[2]+cz])}));j++}}}
    const cs=roulCells().find(c=>c.id=='ch'+r.chip);if(cs)m.push(...roulFrame(cs,[255,230,120]).map(f=>Object.assign({},f,{p:f.p.map(p=>[p[0],p[1]-.05+.03,p[2]])})));
    if(aim)m.push(...roulFrame(aim,aim.k=='bet'?[255,255,255]:[255,230,120]));
    if(r.win){const c=roulCells().find(c=>c.id==r.win);if(c){const cx=(c.x0+c.x1)/2,cz=(c.z0+c.z1)/2;m.push(...vmCyl(cx,RTOP,cz,.014,.03,[236,236,240],{ax:'y',n:8}),...vmCyl(cx,RTOP+.03,cz,.02,.006,[255,220,120],{ax:'y',n:8,e:1}))}}
@@ -830,7 +877,7 @@ function roulList(L){const W=WEST,r=W.roul;if(!r||!r.bets)return;if((r.x-P.x)**2
  if(r.mv.length)L.push({q:14,wo:'rlo',mesh:r.mv,x:r.x,y:r.y,yaw:RYAW,k:1,z:0});
  if(r.st&&r.st!='idle'){const [wx,wy]=rlW(0,-.24),bx=wx+Math.cos(r.bA)*r.bR,by=wy+Math.sin(r.bA)*r.bR,bz=r.st=='roll'?.513:r.st=='drop'?.505+.03*Math.abs(Math.sin(r.t*12)):.497;L.push({q:14,wo:'rlb',mesh:roulBall(),x:bx,y:by,yaw:0,k:1,z:bz})}}
 /* on the screen: the numbers on the boxes (the felt is too small for painted ones), what a click would do */
-function roulHud(c){const W=WEST,r=W.roul,cm=W.cam;if(!r||!r.bets||DM||!cm||T-cm.t>.2||Math.hypot(r.x-P.x,r.y-P.y)>2.2)return;const base=roulBase(),sx=LW/cm.W,sy=LH/cm.H;
+function roulHud(c){const W=WEST,r=W.roul,cm=W.cam;if(!r||!r.bets||(DM&&!CO())||!cm||T-cm.t>.2||Math.hypot(r.x-P.x,r.y-P.y)>2.2)return;const base=roulBase(),sx=LW/cm.W,sy=LH/cm.H;
  const pr=(x,z,h)=>{const[X,Y]=rlW(x,z),dx=X-P.x,dy=Y-P.y,tx=cm.inv*(cm.dY*dx-cm.dX*dy),ty=cm.inv*(-cm.plY*dx+cm.plX*dy);if(ty<.12)return null;return[cm.W/2*(1+tx/ty)*sx,(cm.hH+(EZ-(base+h))*cm.H/ty)*sy,ty]};
  c.save();c.textAlign='center';
  const a=roulAim(),tot=roulTotal();c.font='8px "DotGothic16",monospace';c.textBaseline='alphabetic';let l1='',l2='CHIP $'+RCHIPS[r.chip]+'   ON THE TABLE $'+tot+(tot&&!roulBusy()?'   -   [CLICK THE LEVER] SPIN':'');
@@ -866,6 +913,9 @@ function pnoStep(dt){const W=WEST;PNO.last=performance.now();const e=W&&W.pianis
  if(!PNO.on||now-PNO.t0>192*PNO_E){PNO.on=1;PNO.t0=now+.08;PNO.i=0;PNO.lap=0}
  const ev=pnoTune(),L=96*PNO_E;while(true){const q=ev[PNO.i],t=PNO.t0+q.e*PNO_E+(q.h?(Math.random()-.5)*.008:0);if(t>now+.3)break;if(t>now-.05&&!(q.x&&!(PNO.lap&1)))pnoNote(q.m,Math.max(now,t),q.l*PNO_E,q.v);if(++PNO.i>=ev.length){PNO.i=0;PNO.t0+=L;PNO.lap++}}
  PNO.beat=Math.floor((now-PNO.t0)/PNO_E);
+ /* co-op: the host says where in the tune he is every few seconds, so everyone hears the same bar */
+ if(typeof HOSTCO=='function'&&HOSTCO()){PNO.st=(PNO.st||0)-dt;if(PNO.st<=0){PNO.st=3;wNet('wpn',{p:+((now-PNO.t0)/PNO_E+PNO.lap*96).toFixed(3)})}}
+ else if(PNO.sync){const q=PNO.sync;PNO.sync=null;const pos=q.p+(now-q.at)/PNO_E,lap=Math.floor(pos/96),t0=now-(pos-lap*96)*PNO_E;if(Math.abs(t0-PNO.t0)>.05||lap!==PNO.lap){PNO.t0=t0;PNO.lap=lap;const ev=pnoTune(),cur=pos-lap*96+.3/PNO_E;let i=0;while(i<ev.length&&ev[i].e<cur)i++;if(i>=ev.length){i=0;PNO.t0+=96*PNO_E;PNO.lap++}PNO.i=i}}
  /* how loud it is where you stand, which way it comes from, the music stepping back */
  const k=(inS?.55:.22)/(1+(d/4)*(d/4)),tg=Math.max(0,k);PNO.g.gain.setTargetAtTime(tg,now,.08);PNO.lp.frequency.setTargetAtTime(inS?3400:900,now,.1);
  if(PNO.pn){const dx=px-P.x,dy=py-P.y,dd=Math.hypot(dx,dy)||1;PNO.pn.pan.setTargetAtTime(dd>.5?Math.max(-.8,Math.min(.8,(-dx*Math.sin(P.a)+dy*Math.cos(P.a))/dd*Math.min(1,dd/3))):0,now,.05)}

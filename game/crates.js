@@ -10,12 +10,15 @@ const CR_MAXP=160;
 const CRK={
   crate:{n:'crate',k:[.44,.52],hx:.5,hh:1,hp:55,th:6.5,w:30,pc:'wood'},
   box:{n:'box',k:[.34,.44],hx:.5,hh:1,hp:28,th:9,w:22,pc:'card'},
-  plank:{n:'plank',k:[.8,1.05],hx:.24,hh:.08,hp:16,th:10,w:16,pc:'wood'},
+  plank:{n:'plank',k:[.8,1.05],hx:.4,/* 0.9.337: twice as long */hh:.08,hp:16,th:10,w:16,pc:'wood'},
   barrel:{n:'barrel',k:[.46,.54],hx:.5,hh:1.15,hp:70,th:5.5,w:12,pc:'wood'},
   bucket:{n:'bucket',k:[.38,.46],hx:.5,hh:.85,hp:40,th:9,w:8,pc:'metal'},
   stool:{n:'stool',k:[.46,.54],hx:.5,hh:.9,hp:30,th:8,w:6,pc:'wood'},
   pot:{n:'clay pot',k:[.4,.5],hx:.46,hh:1,hp:14,th:9,w:6,pc:'clay'}};
-function crOn(){try{return !!(SW&&SW.g3d&&!SHOPF&&!INTRO&&((!NET&&!DM&&!(GR&&(GR.cq||GR.br)))||(typeof BRON=='function'&&BRON())))}catch(e){return false}}
+function crOn(){try{return !!(SW&&SW.g3d&&!SHOPF&&!INTRO&&(((!NET&&!DM||crCo())&&!(GR&&(GR.cq||GR.br)))||(typeof BRON=='function'&&BRON())))}catch(e){return false}}
+/* 0.9.338: co-op has them too. Every player's game lays out the same ones (the same seeded dice), each with a number; from then on they work like the
+   battle royale boxes: whoever last moved one (carried, threw, shoved or shot it) works out where it goes and tells the others, hits and breaks go to everyone */
+function crCo(){return typeof CO=='function'&&CO()}
 function crClear(){CRT=[];CRP=[];CRC=null;CRA=null}
 function crNew(kind,x,y,z){const K=CRK[kind],k=K.k[0]+Math.random()*(K.k[1]-K.k[0]);
   return{x,y,z,vx:0,vy:0,vz:0,yaw:Math.random()*6.283,vyaw:0,kind,k,r:K.hx*k,h:K.hh*k,hp:K.hp,mhp:K.hp,rest:0,gr:0,flash:0,rt:0}}
@@ -28,7 +31,7 @@ function crMesh(){if(CRM)return CRM;const W=[214,150,80],D=[104,62,28],L=[240,18
   const box=[...vmBox(0,.5,0,.98,.98,.98,C),...vmBox(0,.5,0,1.0,1.0,.16,TP),...vmBox(0,.985,0,.98,.02,.98,Cd),...vmBox(0,.5,0,.16,1.0,1.0,TP)];
   /* a rough plank: two boards' worth of colour, a nail head at each end, a darker edge */
   const PL=[196,146,86],PD=[142,98,52],NL=[70,66,64];
-  const plank=[...vmBox(0,.04,0,1,.08,.2,PL),...vmBox(0,.082,0,.98,.012,.18,[222,172,108]),...vmBox(0,.04,.096,1,.07,.012,PD),...vmBox(-.43,.085,0,.04,.02,.04,NL),...vmBox(.43,.085,0,.04,.02,.04,NL),...vmBox(.18,.04,0,.012,.081,.2,PD)];
+  const plank=[...vmBox(0,.04,0,2,.08,.2,PL),...vmBox(0,.082,0,1.96,.012,.18,[222,172,108]),...vmBox(0,.04,.096,2,.07,.012,PD),...vmBox(-.93,.085,0,.04,.02,.04,NL),...vmBox(.93,.085,0,.04,.02,.04,NL),...vmBox(-.05,.085,0,.04,.02,.04,NL),...vmBox(.36,.04,0,.012,.081,.2,PD),...vmBox(-.5,.04,0,.012,.081,.2,PD)];
   /* barrel: eight-sided body that bulges a little in the middle, dark metal hoops */
   const BW=[168,112,56],BH=[58,52,50];
   const barrel=[...oct(.14,.28,.82,BW),...oct(.575,.6,.98,BW),...oct(1.01,.28,.82,BW),...oct(.2,.07,.86,BH),...oct(.575,.07,1.02,BH),...oct(.95,.07,.86,BH),...oct(1.145,.02,.7,[120,84,44])];
@@ -48,7 +51,7 @@ function crMesh(){if(CRM)return CRM;const W=[214,150,80],D=[104,62,28],L=[240,18
   CRM={crate,box,plank,barrel,bucket,stool,pot,
     chips:{wood:mk([[158,112,62],[120,84,46],[190,146,90]]),card:mk([[200,172,126],[226,210,170]]),metal:mk([[120,128,138],[84,90,100],[150,156,166]]),clay:mk([[196,98,58],[150,68,40],[222,128,84]])}};return CRM}
 function crPick(){let t=0;for(const k in CRK)t+=CRK[k].w;let r=Math.random()*t;for(const k in CRK){r-=CRK[k].w;if(r<=0)return k}return'crate'}
-function crSpawn(){crClear();if(!crOn()||bossFl||fl==15||(typeof BRV!='undefined'&&BRV))return;try{
+function crSpawn(){crClear();if(!crOn()||bossFl||fl==15||(typeof BRV!='undefined'&&BRV))return;const co=crCo(),MR=Math.random;if(co){let s_=((seed|0)+fl*7919)>>>0||1;Math.random=()=>(s_=(Math.imul(s_,1103515245)+12345)>>>0)/4294967296}try{
   const used=[];const ok=(x,y)=>{const i=y*N+x;if(x<1||y<1||x>=N-1||y>=N-1)return false;if(g[i]||blk[i]||pit[i]||(CZ[i]<.99)||brg[i])return false;if(GR&&GR.city&&(ct[i]==1||ct[i]==4||ct[i]==5))return false;/* never out on the roads of a city */
     /* never in a hallway or doorway: the cell and all eight around it must be open floor, so a corridor one or two cells wide can never be plugged */
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const j=(y+dy)*N+x+dx;if(g[j]||blk[j]||pit[j]||CZ[j]<.99)return false}
@@ -67,7 +70,8 @@ function crSpawn(){crClear();if(!crOn()||bossFl||fl==15||(typeof BRV!='undefined
     CRT.length=n}
   /* now and then something small on top of a crate or barrel */
   for(const c of CRT.slice())if(CRT.length<cap&&(c.kind=='crate'||c.kind=='barrel')&&Math.random()<.25){const t=crNew(['box','bucket','pot','plank'][(Math.random()*4)|0],c.x+(Math.random()-.5)*.08,c.y+(Math.random()-.5)*.08,c.z+c.h+.02);CRT.push(t)}
-  }catch(e){CRT=[];console.error('crates',e)}}
+  if(co)CRT.forEach((c,i)=>{c.id=900000+i;c.own=typeof hostId!='undefined'?hostId:0;c.sentRest=1})
+  }catch(e){CRT=[];console.error('crates',e)}finally{Math.random=MR}}
 /* ---- damage and breaking ---- */
 function crHurt(c,dmg,dx,dy,rem){if(!c||c.dead)return;if(!rem&&c.id!==undefined){c.own=bxMe();bxSend({t:'bxh',b:c.id,d:Math.round(dmg),vx:+(dx||0).toFixed(2),vy:+(dy||0).toFixed(2)})}c.hp-=dmg;c.flash=.12;const m=Math.hypot(dx||0,dy||0)||1;if(c!==CRC){c.rest=0;const k=Math.min(2.2,dmg*.03);c.vx+=(dx||0)/m*k;c.vy+=(dy||0)/m*k;c.vyaw+=(Math.random()-.5)*4}
   try{const mt=CRK[c.kind].pc=='metal';snd(c.hp<=0?(mt?520:150):(mt?640:230),.07,mt?'triangle':'square',.05,-110,c)}catch(e){}
@@ -84,8 +88,8 @@ function crBul(b){if(!CRT.length||b.z===undefined)return false;for(const c of CR
 function crMelee(dmg,range,c0,s0){if(!CRT.length)return;for(const c of CRT.slice()){if(c===CRC)continue;const dx=c.x-P.x,dy=c.y-P.y,d=Math.hypot(dx,dy)||.01;if(d-c.r>range+.1)continue;if((dx*c0+dy*s0)/d<.45&&d>c.r*2)continue;if(EZ<c.z-.6||EZ>c.z+c.h+.8)continue;crHurt(c,dmg,dx,dy)}}
 /* ---- picking up, carrying, throwing ---- */
 function crAim(){let best=null,bs=1e9;const fx=Math.cos(P.a),fy=Math.sin(P.a);for(const c of CRT){const dx=c.x-P.x,dy=c.y-P.y,d=Math.hypot(dx,dy);if(d>2.0+c.r)continue;const dot=d<.05?1:(dx*fx+dy*fy)/d;if(dot<.82&&d>c.r*1.6)continue;const zr=EZ+(P.pt||0)*d;if(zr<c.z-.45||zr>c.z+c.h+.45)continue;const sc=d*(2.2-dot);if(sc<bs){bs=sc;best=c}}return best}
-function crUse(){if(!crOn()||state!='play'||P.deadT>0)return false;if(CRC){crDrop(false);return true}const c=crAim();if(!c)return false;CRC=c;c.rest=0;c.vx=c.vy=c.vz=0;try{snd(300,.06,'triangle',.05,120)}catch(e){}return true}
-function crDrop(thr){const c=CRC;if(!c)return;CRC=null;c.rest=0;const fx=Math.cos(P.a),fy=Math.sin(P.a),sp=CRK[c.kind].th;
+function crUse(){if(!crOn()||state!='play'||P.deadT>0)return false;if(CRC){crDrop(false);return true}const c=crAim();if(!c)return false;if(c.id!==undefined&&c.own!==bxMe()&&T-(c.netT||-9)<.6){try{snd(180,.08,'square',.05,-60)}catch(e){}return true}if(c.id!==undefined){c.own=bxMe();c.sentRest=0}CRC=c;c.rest=0;c.vx=c.vy=c.vz=0;try{snd(300,.06,'triangle',.05,120)}catch(e){}return true}
+function crDrop(thr){const c=CRC;if(!c)return;CRC=null;c.rest=0;if(c.id!==undefined){c.own=bxMe();c.sentRest=0}const fx=Math.cos(P.a),fy=Math.sin(P.a),sp=CRK[c.kind].th;
   if(thr){c.thr=1;c.ox=c.x;c.oy=c.y;c.vx=fx*sp+(P.mvx||0)*.4;c.vy=fy*sp+(P.mvy||0)*.4;c.vz=1.4+(P.pt||0)*8;c.vyaw=(Math.random()-.5)*14;try{snd(400,.12,'sawtooth',.05,-250)}catch(e){}}
   else{c.vx=(P.mvx||0)*.5;c.vy=(P.mvy||0)*.5;c.vz=0}}
 function crThrow(){crDrop(true)}
@@ -120,7 +124,7 @@ function crStep(dt){if(!crOn()){if(CRT.length||CRP.length||CRC)crClear();return}
   bxSync(dt);
   /* a thrown prop that smacks an enemy hurts it: 20 to 200 damage, more the faster it is going and the further it has flown */
   for(const c of CRT){if(!c.thr)continue;const spd=Math.hypot(c.vx,c.vy,c.vz);if(c.rest||c===CRC||spd<3){c.thr=0;continue}
-    for(const e of E){if(e.dead||e.tur||e.pup||e.rp||e.rtu||e.dsp||e.fell)continue;const dx=e.x-c.x,dy=e.y-c.y,rad=c.r+Math.min(.4,(e.r||.3));if(dx*dx+dy*dy>=rad*rad)continue;const oz=swEZ(e);if(oz>=c.z+c.h||oz+SW.HH<=c.z)continue;
+    for(const e of E){if(e.dead||e.tur||(e.pup&&!crCo())||e.rp||e.rtu||e.dsp||e.fell)continue;const dx=e.x-c.x,dy=e.y-c.y,rad=c.r+Math.min(.4,(e.r||.3));if(dx*dx+dy*dy>=rad*rad)continue;const oz=swEZ(e);if(oz>=c.z+c.h||oz+SW.HH<=c.z)continue;
       const dist=Math.hypot(c.x-(c.ox||c.x),c.y-(c.oy||c.y)),sn=Math.max(0,Math.min(1,(spd-2)/8)),dn=Math.min(1,dist/10),dmg=Math.round(20+180*Math.min(1,.6*sn+.4*dn));
       c.thr=0;hit(e,dmg,{k:'Prop',name:'a thrown '+CRK[c.kind].n,perk:''});try{snd(170,.09,'square',.08,-90,e)}catch(_){}
       const m=Math.hypot(dx,dy)||1;c.vx=-dx/m*1.4;c.vy=-dy/m*1.4;c.vz=Math.max(c.vz,1.2);c.vyaw+=(Math.random()-.5)*8;c.rest=0;crHurt(c,8+dmg*.06,dx,dy);break}}
@@ -133,14 +137,14 @@ function crStep(dt){if(!crOn()){if(CRT.length||CRP.length||CRC)crClear();return}
     else if(ox<oy){const s=a.x<b.x?-1:1;a.x+=s*ox/2;b.x-=s*ox/2;const t=a.vx;a.vx=b.vx*.6;b.vx=t*.6;a.rest=b.rest=0}
     else{const s=a.y<b.y?-1:1;a.y+=s*oy/2;b.y-=s*oy/2;const t=a.vy;a.vy=b.vy*.6;b.vy=t*.6;a.rest=b.rest=0}}}
   /* you and the monsters shove things out of the way */
-  const push=(o,rad,hh,isP)=>{for(const c of L){if(c===CRC||c.id!==undefined)continue;const oz=o===P?P.z:swEZ(o);if(oz>c.z+c.h-.02||oz+hh<c.z+.04)continue;const dx=c.x-o.x,dy=c.y-o.y,d=Math.hypot(dx,dy)||.001,mn=rad+c.r;if(d>=mn)continue;
-      const nx=dx/d,ny=dy/d,pen=mn-d,x0=c.x,y0=c.y;c.rest=0;if(isP&&c.id!==undefined)c.own=bxMe();bwMoveAxis(c,0,nx*pen,c.r,c.h);bwMoveAxis(c,1,ny*pen,c.r,c.h);c.vx+=nx*pen*4;c.vy+=ny*pen*4;
+  const push=(o,rad,hh,isP)=>{for(const c of L){if(c===CRC||(c.id!==undefined&&!crCo()))continue;if(c.id!==undefined&&c.own!==bxMe()&&T-(c.netT||-9)<.6)continue;const oz=o===P?P.z:swEZ(o);if(oz>c.z+c.h-.02||oz+hh<c.z+.04)continue;const dx=c.x-o.x,dy=c.y-o.y,d=Math.hypot(dx,dy)||.001,mn=rad+c.r;if(d>=mn)continue;
+      const nx=dx/d,ny=dy/d,pen=mn-d,x0=c.x,y0=c.y;c.rest=0;if(c.id!==undefined&&(isP||bxMe()===(typeof hostId!='undefined'?hostId:-1))){c.own=bxMe();c.sentRest=0}bwMoveAxis(c,0,nx*pen,c.r,c.h);bwMoveAxis(c,1,ny*pen,c.r,c.h);c.vx+=nx*pen*4;c.vy+=ny*pen*4;
       if(isP){const rx=pen-((c.x-x0)*nx+(c.y-y0)*ny);if(rx>.01){bwMoveAxis(P,0,-nx*rx,SW.PR,SW.HH);bwMoveAxis(P,1,-ny*rx,SW.PR,SW.HH)}}}};
-  if(L.length){push(P,SW.PR,SW.HH,true);for(const e of E){if(e.dead||e.fly)continue;const dx=e.x-P.x,dy=e.y-P.y;if(dx*dx+dy*dy>400)continue;push(e,Math.min(.35,(e.r||.3)*.9),SW.HH,false)}}}
+  if(L.length){push(P,SW.PR,SW.HH,true);for(const e of E){if(e.dead||e.fly||e.pup)continue;const dx=e.x-P.x,dy=e.y-P.y;if(dx*dx+dy*dy>400)continue;push(e,Math.min(.35,(e.r||.3)*.9),SW.HH,false)}}}
 /* ---- drawing ---- */
 /* the thin white outline on the thing you are looking at: the same shape pushed outwards a hair and turned inside out, so only a rim of it shows behind the real one */
 function crHull(kind){if(CRHL[kind])return CRHL[kind];const W=[255,255,255],e=.05,B=(x,y,z,w,h,d,o)=>vmBox(x,y,z,w+e,h+e,d+e,W,o),O=(y,h,w)=>[...B(0,y,0,w,h,w),...B(0,y,0,w,h,w,{ry:.7854})];let b;
-  if(kind=='crate'||kind=='box')b=B(0,.5,0,1,1,1);else if(kind=='plank')b=B(0,.045,0,1,.09,.2);
+  if(kind=='crate'||kind=='box')b=B(0,.5,0,1,1,1);else if(kind=='plank')b=B(0,.045,0,2,.09,.2);
   else if(kind=='barrel')b=[...O(.14,.28,.82),...O(.575,.6,.98),...O(1.01,.28,.82)];else if(kind=='bucket')b=[...O(.15,.3,.7),...O(.45,.3,.84),...O(.72,.26,.96)];
   else if(kind=='pot')b=[...O(.1,.2,.5),...O(.34,.3,.86),...O(.6,.28,.92),...O(.82,.2,.6),...O(.95,.1,.72)];
   else{b=B(0,.82,0,1,.14,1);for(const sx of[-1,1])for(const sz of[-1,1])b.push(...B(sx*.36,.38,sz*.36,.13,.76,.13))}
@@ -169,7 +173,7 @@ function bxFind(id){for(const c of CRT)if(c.id===id)return c;return null}
 function bxSpawnMine(x,y,z,yaw,vx,vy,vz){const id=bxMe()*100000+(++BXN);const c=bxNew(id,x,y,z,yaw,bxMe());c.vx=vx||0;c.vy=vy||0;c.vz=vz||0;c.rest=0;
   bxSend({t:'bxn',b:id,x:+x.toFixed(3),y:+y.toFixed(3),z:+z.toFixed(3),yw:+(yaw||0).toFixed(2),vx:+c.vx.toFixed(2),vy:+c.vy.toFixed(2),vz:+c.vz.toFixed(2)});return c}
 /* the boxes this player is moving: where they are, ten times a second, and once more when they come to rest */
-function bxSync(dt){if(!bxNet()||!BRON())return;BXQ-=dt;if(BXQ>0)return;BXQ=.1;const me=bxMe();
+function bxSync(dt){if(!bxNet()||!(BRON()||crCo()))return;BXQ-=dt;if(BXQ>0)return;BXQ=.1;const me=bxMe();
   for(const c of CRT){if(c.id===undefined||c.own!==me)continue;const mv=!c.rest;if(mv||!c.sentRest){bxSend({t:'bx',b:c.id,x:+c.x.toFixed(3),y:+c.y.toFixed(3),z:+c.z.toFixed(3),yw:+c.yaw.toFixed(2)});c.sentRest=!mv}}}
 /* the use key in battle royale: the box you are looking at goes in your pocket */
 function bxPick(){if(!BRON()||state!='play'||P.deadT>0||P.hp<=0)return false;const c=crAim();if(!c||c.id===undefined)return false;
@@ -190,7 +194,7 @@ function bxHud(){if(!BRON()||state!='play'||!P||SPEC)return;const n=P.bx|0,x=LW-
   ctx.font='9px "DotGothic16",monospace';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillStyle=AN?'#1a1424':(n?'#ffe9a0':'#9a92b0');ctx.fillText(n+'/'+BX_MAX,x+21,y+9.5);
   ctx.font='6px "DotGothic16",monospace';ctx.fillStyle=AN?'#5b4f78':'#9a92b0';ctx.textAlign='right';ctx.fillText('['+(typeof kbName=='function'?kbName(KBC('boxp')):'P')+']',x+50,y+14);ctx.restore()}
 /* everything another player's game says about boxes and trees */
-function bxMsg(o){if(!BRON())return;const me=bxMe();switch(o.t){
+function bxMsg(o){if(!BRON()&&!crCo())return;const me=bxMe();switch(o.t){
   case'bxn':{if(bxFind(o.b))return;const c=bxNew(o.b,o.x,o.y,o.z,o.yw,o.id);c.vx=o.vx||0;c.vy=o.vy||0;c.vz=o.vz||0;c.rest=0;break}
   case'bx':{const c=bxFind(o.b);if(!c)return;c.own=o.id;c.netT=T;c.tx=o.x;c.ty=o.y;c.tz=o.z;c.tyaw=o.yw;break}
   case'bxd':{const c=bxFind(o.b);if(c){c.dead=1;CRT=CRT.filter(q=>q!==c)}if(o.by===me&&P)bxGot();break}
