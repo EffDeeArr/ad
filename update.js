@@ -6,10 +6,17 @@ const norm = v => /^0\.\d+\.0$/.test(v) ? v.slice(0, -2) : v;
 const sha1 = b => crypto.createHash('sha1').update(b).digest('hex');
 const safe = n => typeof n === 'string' && n && !n.includes('..') && !n.startsWith('/') && !n.includes('\\') && !n.includes(':');
 
-async function getBuf(f, url, limit, accept) {
+// onProg (optional): called with (bytes so far, total bytes or 0 when the server does not say) while the file comes in
+async function getBuf(f, url, limit, accept, onProg) {
   const r = await f(url, { headers: { 'User-Agent': 'ArberiaDeathmatch', Accept: accept || 'application/vnd.github+json' }, signal: AbortSignal.timeout(300000) });
   if (!r.ok) { const e = new Error(url + ' answered ' + r.status); e.status = r.status; throw e; }
-  const b = Buffer.from(await r.arrayBuffer());
+  let b;
+  if (onProg && r.body && r.body.getReader) {
+    const total = +(r.headers.get('content-length') || 0), rd = r.body.getReader(), parts = []; let got = 0;
+    onProg(0, total);
+    for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(Buffer.from(value)); got += value.length; if (got > limit) throw new Error('download too large'); onProg(got, total); }
+    b = Buffer.concat(parts);
+  } else b = Buffer.from(await r.arrayBuffer());
   if (b.length > limit) throw new Error('download too large');
   return b;
 }
@@ -19,12 +26,12 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 // each download is tried several times with a pause in between, over two routes to the same file: the normal release download link and GitHub's API
 // download link. Only a missing file (404) gives up early.
 const bust = (u, k) => u + (u.includes('?') ? '&' : '?') + 'arbt=' + Date.now().toString(36) + k;
-async function getRetry(f, routes, limit, onTry) {
+async function getRetry(f, routes, limit, onTry, onProg) {
   let last;
   for (let t = 0; t < 4; t++) {
     for (const [url, accept] of routes) {
       if (!url) continue;
-      try { if (onTry) onTry(t, url); return await getBuf(f, accept === 'application/octet-stream' ? bust(url, t) : url, limit, accept); }
+      try { if (onTry) onTry(t, url); return await getBuf(f, accept === 'application/octet-stream' ? bust(url, t) : url, limit, accept, onProg); }
       catch (e) { last = e; if (e.status === 404 || e.status === 401 || e.status === 403) continue; }
     }
     if (t < 3) await sleep([2000, 5000, 12000][t]);
@@ -93,7 +100,8 @@ function put(dst, data) {
 // removes leftovers of renamed-aside files from earlier updates
 function sweep(dir) { try { for (const e of fs.readdirSync(dir, { withFileTypes: true })) { const f = path.join(dir, e.name); if (e.isDirectory()) { if (e.name !== 'node_modules') sweep(f); } else if (/\.old-\d+$/.test(e.name)) { try { fs.unlinkSync(f); } catch (x) {} } } } catch (e) {} }
 // downloads the release and installs it into appDir; throws before touching anything if the download is not valid
-async function download(f, rel) { const buf = await getRetry(f, [[rel.url, 'application/octet-stream'], [rel.api, 'application/octet-stream']], 200 << 20); verify(buf, rel); return buf; }
+// prog (optional): { onTry(attempt, url), onProg(got, total), onCheck() } for an updating screen
+async function download(f, rel, prog) { prog = prog || {}; const buf = await getRetry(f, [[rel.url, 'application/octet-stream'], [rel.api, 'application/octet-stream']], 200 << 20, prog.onTry, prog.onProg); if (prog.onCheck) prog.onCheck(); verify(buf, rel); return buf; }
 function verify(buf, rel) {
   const files = unzip(buf);
   const m = JSON.parse((files.get('patch.json') || Buffer.from('{}')).toString('utf8'));

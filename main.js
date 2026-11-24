@@ -730,17 +730,24 @@ async function checkForUpdate() {
     const r = await dialog.showMessageBox(win, { type: 'question', buttons: ['Update and restart', 'Later'], defaultId: 0, cancelId: 1, title: 'Update available',
       message: 'Arberia Deathmatch ' + rel.version + ' is available (you have ' + cur + ').', detail: 'The new files are downloaded from github.com/EffDeeArr/ad and checked now. The game then closes, installs them once it is fully closed (your old files are backed up), and opens again.' });
     if (r.response !== 0) return;
+    // the updating screen in the game window (game/index.html updScreen): what is happening, and how far the download has got
+    let lastUi = 0;
+    const ui = (o, force) => { const n = Date.now(); if (!force && n - lastUi < 100) return; lastUi = n; try { if (win && !win.isDestroyed()) win.webContents.executeJavaScript('window.updScreen&&updScreen(' + JSON.stringify(o) + ')').catch(() => {}); } catch (e) {} };
+    const prog = { onTry: (t, u) => ui({ st: t > 0 ? 'retry' : 'dl', v: rel.version, n: t + 1 }, true), onProg: (got, total) => ui({ st: 'dl', v: rel.version, got, total }), onCheck: () => ui({ st: 'check', v: rel.version }, true) };
     let buf;
     for (;;) {   // the download already retries several times; if it still fails, the player can try again or carry on playing
-      try { buf = await up.download(f, rel); break; }
-      catch (x) { let q = { response: 1 }; try { q = await dialog.showMessageBox(win, { type: 'error', buttons: ['Try again', 'Play without updating'], defaultId: 0, cancelId: 1, title: 'Update failed', message: 'The update could not be downloaded.', detail: String(x && x.message || x) + '\n\nGitHub\'s download servers may be busy for a moment. Your game was left as it was.' }); } catch (e) {} if (q.response !== 0) return; }
+      ui({ st: 'dl', v: rel.version, got: 0, total: 0 }, true);
+      try { buf = await up.download(f, rel, prog); break; }
+      catch (x) { ui(null, true); let q = { response: 1 }; try { q = await dialog.showMessageBox(win, { type: 'error', buttons: ['Try again', 'Play without updating'], defaultId: 0, cancelId: 1, title: 'Update failed', message: 'The update could not be downloaded.', detail: String(x && x.message || x) + '\n\nGitHub\'s download servers may be busy for a moment. Your game was left as it was.' }); } catch (e) {} if (q.response !== 0) return; }
     }
     try {
       const tmp = os.tmpdir(), zip = path.join(tmp, 'arberia-update-' + rel.version + '.zip'), script = path.join(tmp, 'arberia-apply-update.js'), jobf = path.join(tmp, 'arberia-update-job.json');
       fs.writeFileSync(zip, buf); fs.copyFileSync(path.join(__dirname, 'update.js'), script);
       fs.writeFileSync(jobf, JSON.stringify({ pid: process.pid, zip, appDir, rel: { version: rel.version }, cur, exe: process.execPath, args: process.argv.slice(1).filter(a => a !== '--enable-gpu'), log: UPDATE_LOG }));
       require('child_process').spawn(process.execPath, [script, '--apply', jobf], { detached: true, stdio: 'ignore', env: Object.assign({}, process.env, { ELECTRON_RUN_AS_NODE: '1' }) }).unref();
-    } catch (x) { try { await dialog.showMessageBox(win, { type: 'error', buttons: ['OK'], title: 'Update failed', message: 'The update could not be prepared.', detail: String(x && x.message || x) + '\n\nYour game was left as it was.' }); } catch (e) {} return; }
+    } catch (x) { ui(null, true); try { await dialog.showMessageBox(win, { type: 'error', buttons: ['OK'], title: 'Update failed', message: 'The update could not be prepared.', detail: String(x && x.message || x) + '\n\nYour game was left as it was.' }); } catch (e) {} return; }
+    ui({ st: 'install', v: rel.version }, true);
+    await new Promise(res => setTimeout(res, 1600));   // long enough to read that the game is about to close and come back
     quitForUpdate();
   } catch (x) { /* offline or no release yet: stay quiet */ }
 }

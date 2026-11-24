@@ -9,6 +9,7 @@
    It steps aside for the boss music, a custom music link, the castle, the station and the cutscenes, falls quieter while paused, and it goes
    through the music volume (and the saloon's piano ducking). */
 const FMU={on:0,mode:'',bar:0,nt:0,g:null,dl:null,cx:null,nz:null,wind:null,fade:0,run:0,seed:1,iv:null};
+const FMU_HI=.65;/* 0.9.341: the high parts (arpeggio, lead, bells, hats) a further 35% down */
 const FMU_BAR=60/118*4;
 const FMU_P={
  /* chord tones as midi notes; bass root; the plucked line's notes */
@@ -44,7 +45,7 @@ function fmuPluck(t,m,v,bell){const A=AC,f=fmuF(m),g=A.createGain(),dec=bell?2.6
 function fmuKick(t,v,M){const A=AC,o=A.createOscillator(),g=A.createGain();o.type='sine';o.frequency.setValueAtTime(M.dr=='elec'?120:150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.28);o.connect(g);g.connect(FMU.g);o.start(t);o.stop(t+.3)}
 function fmuNoise(t,v,dur,type,f,q){const A=AC,s=A.createBufferSource(),bf=A.createBiquadFilter(),g=A.createGain();s.buffer=FMU.nb;bf.type=type;bf.frequency.value=f;bf.Q.value=q||.7;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(bf);bf.connect(g);g.connect(FMU.g);s.start(t,Math.random()*.3);s.stop(t+dur+.02)}
 function fmuSnare(t,v,M){fmuNoise(t,v,M.dr=='half'?.32:.18,'bandpass',M.dr=='half'?1400:1900,.8);const A=AC,o=A.createOscillator(),g=A.createGain();o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+.08);g.gain.setValueAtTime(v*.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g);g.connect(FMU.g);o.start(t);o.stop(t+.14)}
-function fmuHat(t,v,open){fmuNoise(t,v,open?.16:.035,'highpass',open?6500:8000,.5)}
+function fmuHat(t,v,open){fmuNoise(t,v*FMU_HI,open?.16:.035,'highpass',open?6500:8000,.5)}
 /* a bass note: a filtered saw (square on the alien world), short and punchy */
 function fmuBassN(t,m,d,v,M){const A=AC,o=A.createOscillator(),lp=A.createBiquadFilter(),g=A.createGain();o.type=M.bt;o.frequency.value=fmuF(m);lp.type='lowpass';lp.Q.value=4;lp.frequency.setValueAtTime(M.bl*2.2,t);lp.frequency.exponentialRampToValueAtTime(M.bl*.6,t+d);
  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.008);g.gain.setTargetAtTime(v*.6,t+.05,.08);g.gain.setTargetAtTime(0,t+d*.9,.03);o.connect(lp);lp.connect(g);g.connect(FMU.g);o.start(t);o.stop(t+d+.15)}
@@ -64,16 +65,16 @@ function fmuSchedBar(t){const M=FMU_P[FMU.mode]||FMU_P.reg,i=FMU.bar%4,ch=M.ch[i
  const r=M.bs[i];if(M.dr=='half'){fmuBassN(t,r,st*6,.16,M);fmuBassN(t+st*6,r,st*2,.12,M);fmuBassN(t+st*8,r+(fmuRnd()<.5?7:12),st*4,.14,M);fmuBassN(t+st*12,r,st*4,.14,M)}
  else for(let k=0;k<8;k++)fmuBassN(t+k*st*2,r+(k%2&&k!=7?12:0)+(k==7?7:0),st*1.8,k%2?.1:.15,M);
  /* the sixteenth arpeggio (sparser on the ruins) */
- const up=ch.map(m=>m+12),pat=[0,1,2,3,2,1,0,2];for(let k=0;k<16;k++){if(M.dr=='half'&&k%2)continue;if(fmuRnd()>M.pl+.3)continue;fmuPluck(t+k*st,up[pat[k%8]%up.length]+(k>=8&&sec%2?12:0),M.arv*.55*(k%4==0?1.2:.85),M.bell>=1||(M.bell&&fmuRnd()<M.bell))}
+ const up=ch.map(m=>m+12),pat=[0,1,2,3,2,1,0,2];for(let k=0;k<16;k++){if(M.dr=='half'&&k%2)continue;if(fmuRnd()>M.pl+.3)continue;fmuPluck(t+k*st,up[pat[k%8]%up.length]+(k>=8&&sec%2?12:0),M.arv*.55*FMU_HI*(k%4==0?1.2:.85),M.bell>=1||(M.bell&&fmuRnd()<M.bell))}
  /* the lead: the second and fourth eight bars */
- if(sec%2==1){if(!FMU.ph)FMU.ph=fmuPhrase(M);const half=(FMU.bar%8)>=4,b4=FMU.bar%4;for(const[e,m,l]of FMU.ph){if((e>>3)!==b4)continue;const mm=half&&b4==3&&e==FMU.ph[FMU.ph.length-1][0]?ch[0]+12:m;fmuLead(t+(e%8)*st*2,mm,l*st*2*.95,.06,M)}}
+ if(sec%2==1){if(!FMU.ph)FMU.ph=fmuPhrase(M);const half=(FMU.bar%8)>=4,b4=FMU.bar%4;for(const[e,m,l]of FMU.ph){if((e>>3)!==b4)continue;const mm=half&&b4==3&&e==FMU.ph[FMU.ph.length-1][0]?ch[0]+12:m;fmuLead(t+(e%8)*st*2,mm,l*st*2*.95,.06*FMU_HI,M)}}
  FMU.bar++}
 function fmuTick(){if(!AC){return}const want=fmuWanted();const now=AC.currentTime;
  if(!want){if(FMU.on){FMU.on=0;try{FMU.g.gain.cancelScheduledValues(now);FMU.g.gain.setTargetAtTime(0,now,.6);FMU.wind.gain.setTargetAtTime(0,now,.6)}catch(e){}}return}
  if(!fmuBus())return;const md=fmuMode();
  if(!FMU.on){FMU.on=1;FMU.nt=Math.max(FMU.nt,now+.15);if(FMU.mode!==md){FMU.mode=md;FMU.bar=0}fmuR=(FMU.seed*9301+49297)%233280+1}
  if(md!==FMU.mode){FMU.mode=md;FMU.bar=0;FMU.ph=null}
- const M=FMU_P[FMU.mode],paused=state!='play';FMU.g.gain.setTargetAtTime((paused?.4:.8)*(M.mv||1),now,.8);FMU.wind.gain.setTargetAtTime(M.wind?.05:0,now,1.2);if(M.wind)FMU.wbp.frequency.setTargetAtTime(300+200*Math.sin(now*.2),now,.5);
+ const M=FMU_P[FMU.mode],paused=state!='play';FMU.g.gain.setTargetAtTime((paused?.4:.8)*.75*(M.mv||1),now,.8);/* 0.9.341: everything 25% down */FMU.wind.gain.setTargetAtTime(M.wind?.05:0,now,1.2);if(M.wind)FMU.wbp.frequency.setTargetAtTime(300+200*Math.sin(now*.2),now,.5);
  while(FMU.nt<now+.6){if(FMU.nt<now-.2)FMU.nt=now+.05;fmuSchedBar(FMU.nt);FMU.nt+=FMU_BAR}}
 /* a run is on from its first floor until the title screen; each floor reshuffles the plucked line */
 (function(){const sf=typeof startFloor=='function'?startFloor:null;if(sf){startFloor=function(){const r=sf.apply(this,arguments);try{FMU.run=1;FMU.seed=((typeof fl=='number'?fl:1)*7919+(typeof seed=='number'?seed:0))%100000+1;fmuR=FMU.seed;FMU.ph=null;FMU.bar=0}catch(e){}return r}}
