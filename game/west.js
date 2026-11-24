@@ -10,7 +10,7 @@
      and dust storms blow in.
    Everything for the floor lives here; index.html calls genWest / westTex / westSpawn / westProps / westStep / westList / westHud / westFire / westUse.
    The layout and the people come from the seed (every co-op player gets the same town); the duel and the heist are single player only. */
-let WEST=null;
+let WEST=null;const WTN=52,RQ0=0,RQN=52;/* 0.9.351: the town is 52x52; the race track is a place of its own (like a city shop), the same size, swapped in while you race */
 /* the buildings: [name, x0, x1, side (n: north of the street, s: south), siding colour, trim colour, wallpaper, floor, doors (x), back door x]; fixed, so their textures can be made ahead of time */
 const WBD=[
   {k:'sheriff',nm:'SHERIFF',x0:4,x1:11,sd:'n',sc:[184,150,104],tc:[110,62,40],wp:'plaster',fl:7,dr:[8],bk:null},
@@ -27,19 +27,19 @@ const WNAMES_TOWN=['Dry Gulch','Coyote Springs','Tumbleweed','Redrock','Dead Hor
 function wHash(x,y,k){let h=(Math.imul(x+1,73856093)^Math.imul(y+1,19349663)^Math.imul(k+1,83492791)^Math.imul(((seed|0)+(fl|0)*131)|0,-1640531535))>>>0;h=Math.imul(h^(h>>>15),-2048144777)>>>0;return((h^(h>>>13))>>>0)%10007/10007}
 
 /* ---------------- the layout ---------------- */
-function genWest(){const n=N,at=(x,y)=>y*n+x;
- g=new Uint8Array(n*n).fill(1);ct.fill(0);FH.fill(0);rooms=[];
- CMASK=new Uint8Array(n*n);WHM=new Float32Array(n*n);RFH=new Float32Array(n*n);
+function genWest(){const n=WTN,at=(x,y)=>y*N+x;
+ g=new Uint8Array(N*N).fill(1);ct.fill(0);FH.fill(0);rooms=[];
+ CMASK=new Uint8Array(N*N);WHM=new Float32Array(N*N);RFH=new Float32Array(N*N);
  const W=WEST={td:[],tdk:{},b:[],T0:T,town:pk(WNAMES_TOWN),out:{name:wNm(pk(WNAMES_OUT)),reward:25+5*ri(0,3)},jack:null,coach:null,tw:[],storm:{t:0,next:rr(35,55),on:0,k:0},msg:null,
   doors:[],brk:[],duel:null,heist:null,gold:0,inter:null,pac:[],vault:null,saloon:null,hotel:null,smith:null,rooms:{},props:[],seats:[],posts:[]};
  /* texture ids: a wall cell's id picks its texture (TX), the part above the first storey (TU) and the side that faces into a building (TIN) */
  const tid=(d)=>{const k=JSON.stringify(d);if(W.tdk[k])return W.tdk[k];W.td.push(d);return W.tdk[k]=W.td.length};
- const MESA=tid({k:'mesa'}),FENCE=tid({k:'fence'});
+ const MESA=tid({k:'mesa'}),FENCE=tid({k:'fence'});W.MESA=MESA;
  /* the mesas all round, a little ragged */
  /* smooth value noise, stepped into flat terraces so the rock reads as mesas and buttes rather than a row of blocks */
  const vn=(x,y,k)=>{const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy),h=(a,b)=>wHash(a,b,k);return(h(x0,y0)*(1-sx)+h(x0+1,y0)*sx)*(1-sy)+(h(x0,y0+1)*(1-sx)+h(x0+1,y0+1)*sx)*sy};
- for(let i=0;i<n*n;i++){const x=i%n,y=(i/n)|0;g[i]=MESA;const v=vn(x/7,y/7,1)*.7+vn(x/3,y/3,4)*.3;WHM[i]=2.6+Math.round(v*5)*.55}
- const open=(x0,y0,x1,y1,c,fh)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=n||y>=n)continue;const i=at(x,y);g[i]=0;ct[i]=c;FH[i]=fh||0;CMASK[i]=0;WHM[i]=0;RFH[i]=0}};
+ for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;g[i]=MESA;const v=vn(x/7,y/7,1)*.7+vn(x/3,y/3,4)*.3;WHM[i]=2.6+Math.round(v*5)*.55}
+ const open=(x0,y0,x1,y1,c,fh)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){if(x<0||y<0||x>=N||y>=N)continue;const i=at(x,y);g[i]=0;ct[i]=c;FH[i]=fh||0;CMASK[i]=0;WHM[i]=0;RFH[i]=0}};
  const wall=(x,y,id,h)=>{const i=at(x,y);g[i]=id;WHM[i]=h;CMASK[i]=0;RFH[i]=0;ct[i]=0;FH[i]=0};
  /* the desert inside the mesas */
  for(let y=4;y<=n-5;y++){const a=1+(wHash(0,y,2)*2|0),b=n-2-(wHash(1,y,2)*2|0);open(a,y,b,y,2)}
@@ -84,7 +84,7 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
   W.caveSet=new Set();for(const[x,y]of path.concat(cham)){const i=at(x,y);g[i]=0;ct[i]=13;FH[i]=0;CMASK[i]=1;RFH[i]=3.4+wHash(x,y,42)*.8;WHM[i]=0;W.caveSet.add(i)}
   W.cave={path,cham,ent:[44,40],traps:[[44,41,'w','y'],[46,43,'p','x'],[47,45,'w','y'],[45,46,'p','x'],[43,46,'w','x'],[42,46,'p','x'],[41,46,'w','x']],chests:[[37,43],[37,45],[37,47]]}}
  /* the alleys between the buildings stay dirt; the desert behind them is sand */
- for(let i=0;i<n*n;i++){if(g[i]||ct[i]!=2)continue;const x=i%n,y=(i/n)|0;if(y>=SY0-1&&y<=SY1+1)ct[i]=1;else if(wHash(x,y,9)<.08)ct[i]=11}
+ for(let i=0;i<N*N;i++){if(g[i]||ct[i]!=2)continue;const x=i%N,y=(i/N)|0;if(y>=SY0-1&&y<=SY1+1)ct[i]=1;else if(wHash(x,y,9)<.08)ct[i]=11}
  /* rooms for the game's general use: the start (west end of the street), the street in pieces, the buildings, the exit (east end) */
  const rc=(x,y,w,h,o)=>Object.assign({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1),gap:0,ch:0,fc:[]},o||{});
  rooms.push(rc(0,SY0,4,SY1-SY0+1));for(let x=5;x<n-6;x+=8)rooms.push(rc(x,SY0,7,SY1-SY0+1,{street:1}));
@@ -92,8 +92,65 @@ function genWest(){const n=N,at=(x,y)=>y*n+x;
  rooms.push(rc(n-5,SY0,4,SY1-SY0+1));
  W.start={x:1.6,y:(SY0+SY1)/2+.5,a:0};W.exit={x:n-2.4,y:SY0+.9};
  /* the map */
- mg.fillStyle='#14121c';mg.fillRect(0,0,n,n);for(let i=0;i<n*n;i++){if(g[i]){if(g[i]==FENCE){mg.fillStyle='#6a4a2c';mg.fillRect(i%n,i/n|0,1,1)}continue}
-  const c=ct[i];mg.fillStyle=CMASK[i]?'#7a5a3a':c==1?'#b89a6a':c==3?'#8a6440':'#d2b47c';mg.fillRect(i%n,i/n|0,1,1)}}
+ mg.fillStyle='#14121c';mg.fillRect(0,0,N,N);for(let i=0;i<N*N;i++){if(g[i]){if(g[i]==FENCE){mg.fillStyle='#6a4a2c';mg.fillRect(i%N,i/N|0,1,1)}continue}
+  const c=ct[i];mg.fillStyle=CMASK[i]?'#7a5a3a':c==1?'#b89a6a':c==3?'#8a6440':'#d2b47c';mg.fillRect(i%N,i/N|0,1,1)}}
+
+/* ---------------- the race track (0.9.350) ----------------
+   A loop of dirt road round a big butte in the bottom-right square of the map (RQ0..RQ0+RQN). The east side climbs over a hill, the south side crosses
+   a chasm on a plank bridge. Nobody can walk there: mesas close it off from the town. The racer is put on the start line and brought back after. */
+function westRaceGen(W){const Q=RQ0,S=RQN,at=(x,y)=>y*N+x,h=(u,v,k)=>wHash(Q+u,Q+v,k)
+ const open=(x,y,c)=>{const i=at(x,y);g[i]=0;ct[i]=c;FH[i]=0;CMASK[i]=0;WHM[i]=0;RFH[i]=0};
+ /* mesas all round, in terraces */const vn=(x,y,k)=>{const x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy),q=(a,b)=>wHash(a+300,b+300,k);return(q(x0,y0)*(1-sx)+q(x0+1,y0)*sx)*(1-sy)+(q(x0,y0+1)*(1-sx)+q(x0+1,y0+1)*sx)*sy};
+ for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;g[i]=W.MESA;WHM[i]=2.6+Math.round((vn(x/7,y/7,1)*.7+vn(x/3,y/3,4)*.3)*5)*.55}
+ /* the centre of the road: a rounded square, clockwise (east along the top first) */
+ const a0=9.5,a1=S-9.5,r=7,pts=[],ln=(x0,y0,x1,y1)=>{const n=Math.max(1,Math.round(Math.hypot(x1-x0,y1-y0)/.5));for(let k=0;k<n;k++)pts.push([x0+(x1-x0)*k/n,y0+(y1-y0)*k/n])},
+  arc=(cx,cy,b0)=>{for(let k=0;k<22;k++){const b=b0+k/22*Math.PI/2;pts.push([cx+Math.cos(b)*r,cy+Math.sin(b)*r])}};
+ ln(a0+r,a0,a1-r,a0);arc(a1-r,a0+r,-Math.PI/2);ln(a1,a0+r,a1,a1-r);arc(a1-r,a1-r,0);ln(a1-r,a1,a0+r,a1);arc(a0+r,a1-r,Math.PI/2);ln(a0,a1-r,a0,a0+r);arc(a0+r,a0+r,Math.PI);
+ const P_=pts.map(q=>[q[0]+Q,q[1]+Q]),cum=[0];for(let k=1;k<=P_.length;k++){const A=P_[k-1],B=P_[k%P_.length];cum.push(cum[k-1]+Math.hypot(B[0]-A[0],B[1]-A[1]))}
+ const L=cum[P_.length],road=(x,y)=>{let b=1e9;for(const q of P_){const d=(q[0]-x)**2+(q[1]-y)**2;if(d<b)b=d}return Math.sqrt(b)};
+ const hill=new Set(),br=new Set(),pits=[],HH=1.8;
+ for(let v=1;v<S-1;v++)for(let u=1;u<S-1;u++){const ow=Math.min(u,v,S-1-u,S-1-v)<2+(h(u,v,71)<.35?1:0),j=h(u,v,72)<.4?1:0,bt=u>=17+j&&u<S-17-j&&v>=17+j&&v<S-17-j;if(ow||bt)continue;
+  const x=Q+u,y=Q+v,i=at(x,y);open(x,y,h(u,v,73)<.1?11:2);const d=road(x+.5,y+.5);if(d<=1.7)ct[i]=1;
+  if(u>=34&&v>=12&&v<=40){FH[i]=HH*Math.sin(Math.PI*(v-12)/28)**2;if(FH[i]>.004)hill.add(i);else FH[i]=0}
+  if(u>=24&&u<=28&&v>=33){if(v>=41&&v<=43){ct[i]=3;br.add(i)}else{FH[i]=-2.8;ct[i]=2;pits.push(i)}}}
+ W.rq={pts:P_,cum,L,s0:2.5,hill,br,pits,road,a0:a0+Q,a1:a1+Q};W.g3dx={fl:hill,br}}
+
+/* 0.9.351 the race track is a place of its own, like a city shop: going there puts the town away (its map, props, people, everything lying about) and
+   builds the track in its place; coming back puts the town back exactly as it was and rebuilds its 3D world */
+function raceCellIn(){const W=WEST;if(!W||W.inRace)return false;
+ const S={g,ct,pit,brg,fz,FH,blk,CZ,CW,CMASK,WHM,RFH,PRP,CH,E,B,K,SH,DSP,TUR,RTU,MK,WELL,SMK,PTC,DEC,BOLT,ET,AP,ACM,GN,CR,RK,FOXP,PET,ALLY,rooms,ex,open,
+  CRT:typeof CRT!='undefined'?CRT:null,RAG:RAG.slice(),SPU:SPU.slice(),POOLS:POOLS.slice(),BDQ:BDQ.slice(),PFQ:PFQ.slice(),doors:W.doors,caveSet:W.caveSet,sfe:P.sfe,
+  mm:mg.getImageData(0,0,N,N)};
+ const nn=N*N;g=new Uint8Array(nn);ct=new Uint8Array(nn);pit=new Uint8Array(nn);brg=new Uint8Array(nn);fz=new Uint8Array(nn);FH=new Float32Array(nn);blk=new Uint8Array(nn);CZ=new Float32Array(nn).fill(1);CW=new Uint8Array(nn);
+ CMASK=new Uint8Array(nn);WHM=new Float32Array(nn);RFH=new Float32Array(nn);
+ PRP=[];CH=[];E=[];B=[];K=[];SH=[];DSP=[];TUR=[];RTU=[];MK=[];WELL=[];SMK=[];PTC=[];DEC=[];BOLT=[];ET=[];AP=[];ACM=null;GN=[];CR=[];RK=[];FOXP=[];PET=null;ALLY=null;
+ if(typeof CRT!='undefined')CRT=[];RAG.length=0;SPU.length=0;POOLS.length=0;BDQ.length=0;PFQ.length=0;ex={x:-9,y:-9};open=false;P.sfe=[];
+ W.doors=[];W.caveSet=new Set();W.cell=S;W.inRace=1;
+ westRaceGen(W);rooms=[{x:3,y:3,w:4,h:4,cx:5,cy:5,gap:0,ch:0,fc:[]}];westRaceProps(W,(x,y)=>y*N+x);
+ /* the map card */mg.fillStyle='#14121c';mg.fillRect(0,0,N,N);for(let i=0;i<nn;i++){if(g[i]||pit[i])continue;const c=ct[i];mg.fillStyle=c==1?'#b89a6a':c==3?'#8a6440':'#d2b47c';mg.fillRect(i%N,i/N|0,1,1)}
+ try{g3dApply()}catch(er){window.__rg3d=er}try{LTK=null;ltBuild()}catch(er){}return true}
+function raceCellOut(){const W=WEST;if(!W||!W.inRace)return;const S=W.cell;W.inRace=0;W.cell=null;W.g3dx=null;W.rq=null;
+ ({g,ct,pit,brg,fz,FH,blk,CZ,CW,CMASK,WHM,RFH,PRP,CH,E,B,K,SH,DSP,TUR,RTU,MK,WELL,SMK,PTC,DEC,BOLT,ET,AP,ACM,GN,CR,RK,FOXP,PET,ALLY,rooms,ex,open}=S);
+ if(typeof CRT!='undefined'&&S.CRT)CRT=S.CRT;for(const[a,k]of[[RAG,'RAG'],[SPU,'SPU'],[POOLS,'POOLS'],[BDQ,'BDQ'],[PFQ,'PFQ']]){a.length=0;a.push(...S[k])}
+ W.doors=S.doors;W.caveSet=S.caveSet;P.sfe=S.sfe;mg.putImageData(S.mm,0,0);try{g3dApply()}catch(er){window.__rg3d=er}try{LTK=null;ltBuild()}catch(er){}}
+
+/* the track's props: cactus and boulders out on the sand, a couple of hay bales on the road, marker posts, the bridge rails, the start banner */
+function westRaceProps(W,at){const R_=W.rq;if(!R_)return;const Q=RQ0,S=RQN;for(const i of R_.pits)pit[i]=1;
+ const put=(x,y,m,o)=>{const ci=at(x|0,y|0);const p=Object.assign({x,y,t:PS[0],s:.62,fl:0,fb:0,cell:ci,m:3000+m,yaw:0,h:.6,pr:.35},o||{});if(!p.nb)blk[ci]=1;PRP.push(p);return p},
+  near=(x,y)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const j=at(x+dx,y+dy);if(pit[j]||R_.br.has(j))return true}return false};
+ for(let v=2;v<S-2;v++)for(let u=2;u<S-2;u++){const x=Q+u,y=Q+v,i=at(x,y);if(g[i]||pit[i]||R_.br.has(i)||blk[i])continue;const d=R_.road(x+.5,y+.5);if(d<2.6||near(x,y))continue;
+  const k=wHash(x,y,81);if(k<.05)put(x+.5,y+.5,6,{yaw:wHash(x,y,82)*6.28,h:1.3,pr:.3});else if(k<.075)put(x+.5,y+.5,20,{yaw:wHash(x,y,83)*6.28,h:.5,pr:.42})}
+ /* along the road: a post every few steps on both sides, and two hay bales in the way */
+ const at_=(s,off)=>{const p=raceAt(s);return[p.x-p.dy*off,p.y+p.dx*off]};
+ for(let s=6;s<R_.L-2;s+=5)for(const o of[-2.15,2.15]){const[x,y]=at_(s,o),i=at(x|0,y|0);if(g[i]||pit[i]||R_.br.has(i)||blk[i])continue;put(x,y,42,{nb:1,yaw:0,h:.7,pr:.08})}
+ R_.bales=[];for(const[f,o]of[[.2,.85],[.44,-.85],[.84,.85]]){const[x,y]=at_(R_.L*f,o),i=at(x|0,y|0);if(g[i]||pit[i]||R_.br.has(i))continue;R_.bales.push([R_.L*f,o]);put(x,y,7,{yaw:Math.atan2(raceAt(R_.L*f).dx,raceAt(R_.L*f).dy),h:.5,pr:.35})}
+ /* the bridge rails: along the north and south edges of the deck */
+ for(const i of R_.br){const x=i%N,y=(i/N)|0;if(pit[i-N])put(x+.5,y+.06,40,{nb:1,cell:i});if(pit[i+N])put(x+.5,y+.94,40,{nb:1,cell:i})}
+ /* the banner over the start (and finish) line */
+ {const p=raceAt(R_.s0);put(p.x,p.y,41,{nb:1,yaw:Math.PI/2,h:2.5,pr:.1})}}
+/* the point at distance s round the track (wrapping), with the way the road runs there */
+function raceAt(s){const R_=WEST.rq,L=R_.L,c=R_.cum,P_=R_.pts,n=P_.length;s=((s%L)+L)%L;let lo=0,hi=n;while(hi-lo>1){const m=(lo+hi)>>1;if(c[m]<=s)lo=m;else hi=m}
+ const A=P_[lo],B=P_[(lo+1)%n],l=c[lo+1]-c[lo]||1,t=(s-c[lo])/l,dx=(B[0]-A[0])/l,dy=(B[1]-A[1])/l;return{x:A[0]+(B[0]-A[0])*t,y:A[1]+(B[1]-A[1])*t,dx,dy}}
 
 /* ---------------- the textures (drawn on 64x64 canvases; with the anime look on they are painted and inked like every other surface) ---------------- */
 let TIN=null,WTXC=null;
@@ -216,6 +273,32 @@ function wFace(e){const sp=e.fr.spec,img=hmRender(sp,0,0);const S=Math.round(Mat
 
 /* ---------------- the props (numbered from 3000, drawn by drawProp; collision from their exact pieces like every other prop) ---------------- */
 let WESTM=null;
+/* 0.9.350: a saddled horse, head toward +z. fr -1 standing; 0..3 the four frames of a gallop */
+function wHorse(fr,fv){const K=1.15,HB=[128,78,44],HD=[84,48,28],BK=[34,30,30],RD=[150,40,36],F=[],sc=o=>o?Object.assign({},o,o.pv?{pv:o.pv.map(v=>v*K)}:{},o.r2!==undefined?{r2:o.r2*K}:{}):o,
+  B=(x,y,z,w,h,d,c,o)=>F.push(...vmBox(x*K,y*K,z*K,w*K,h*K,d*K,c,sc(o))),C=(x,y,z,r,l,c,o)=>F.push(...vmCyl(x*K,y*K,z*K,r*K,l*K,c,sc(o)));
+ const g=fr>=0,ph=fr*Math.PI/2,HP=[0,.84,.56];
+ if(!fv){C(0,.53,-.33,.15,.64,HB,{ax:'z',n:10});C(0,.55,.28,.13,.06,HB,{ax:'z',n:10,r2:.1})}
+ B(0,.7,.38,.11,.34,.15,HB,{rx:-.6});B(0,.72,.31,.03,.34,.06,BK,{rx:-.6,pv:[0,.7,.38]});B(0,.86,.38,.035,.05,.13,BK,{rx:-.6,pv:[0,.7,.38]});
+ B(0,.84,.56,.1,.12,.27,HB,{rx:-.35});B(0,.8,.68,.085,.09,.08,HD,{rx:-.35,pv:HP});
+ for(const sx of[-1,1]){B(sx*.052,.87,.52,.008,.026,.03,[20,16,14],{rx:-.35,pv:HP});B(sx*.035,.94,.47,.03,.08,.03,HD,{rx:-.35,pv:HP})}
+ if(fv){/* the rider's own view: only what is ahead of the saddle (reins too), nodding with the gallop, moved so the neck's base is at the origin */
+  const pv=[0,.6*K,.3*K],a=g?.07*Math.sin(ph):0;if(a)vmTurn(F,pv,a,0,0);for(const q of F){q.p=q.p.map(v=>[v[0],v[1],v[2]-.42*K]);delete q.vb}return F}
+ const LG=[[-.08,.22,.55,0],[.08,.18,.55,.6],[-.08,-.24,.5,Math.PI],[.08,-.2,.5,Math.PI+.6]];
+ for(const[x,z,A,o]of LG){const a=g?A*Math.sin(ph+o):0;B(x,.27,z,.065,.42,.065,HD,{rx:a,pv:[x,.48,z]});B(x,.075,z,.075,.05,.075,BK,{rx:a,pv:[x,.48,z]})}
+ B(0,.46,-.42,.05,.3,.05,BK,{rx:g?1.2:.7,pv:[0,.58,-.38]});
+ /* blanket, saddle, horn, stirrups, reins */
+ B(0,.68,-.04,.34,.02,.3,RD);B(0,.7,-.04,.22,.05,.22,[90,52,28]);B(0,.73,.08,.05,.07,.04,[70,40,22]);
+ for(const sx of[-1,1]){B(sx*.17,.52,-.04,.02,.2,.02,BK);B(sx*.17,.42,-.04,.06,.02,.06,[150,140,120]);B(sx*.09,.76,.42,.012,.012,.36,BK,{rx:-.3})}
+ return F}
+/* 0.9.350: the rider's own view of the horse: the neck running away from you with the mane down the middle, the head beyond it, two ears, the reins.
+   Built for that one camera (origin where the neck leaves the saddle, +z ahead); fr 0..3 nods it with the gallop, -1 holds it still */
+function wHorseView(fr){const HB=[128,78,44],HD=[96,56,30],BK=[30,26,26],F=[],B=(...a)=>F.push(...vmBox(...a)),C=(...a)=>F.push(...vmCyl(...a));
+ C(0,0,0,.12,.42,HB,{ax:'z',n:10,r2:.075});
+ B(0,.1,.2,.04,.04,.44,[58,38,28],{rx:.24,pv:[0,0,0]});for(let k=0;k<4;k++)B(k%2?.012:-.012,.11-k*.012,.1+k*.09,.025,.025,.04,[58,38,28],{rx:.24+(k%2?.3:-.2),pv:[0,0,0]});
+ B(0,.06,.6,.12,.13,.3,HB,{rx:.7,pv:[0,.06,.47]});B(0,.13,.58,.035,.01,.2,[236,226,206],{rx:.7,pv:[0,.06,.47]});
+ for(const sx of[-1,1])C(sx*.045,.1,.45,.02,.065,HD,{ax:'y',n:6,r2:.004});
+ for(const sx of[-1,1])B(sx*.11,-.06,.25,.012,.012,.5,BK,{ry:-sx*.12,rx:.25});
+ const a=fr>=0?.06*Math.sin(fr*Math.PI/2):0;if(a)vmTurn(F,[0,0,0],a,0,0);for(const q of F)delete q.vb;return F}
 function westMeshes(){const b=westMeshes0();return wAlien()?(WESTMA||(WESTMA=wAlienKit(wAlienMesh(b)))):b}
 function westMeshes0(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a);
  const WD=[112,70,42],WD2=[84,52,32],WD3=[150,104,66],WDL=[190,146,98],BR=[206,160,70],IR=[54,54,62],GR=[62,128,74],GR2=[48,100,58],CL=[226,214,186];
@@ -308,6 +391,15 @@ function westMeshes0(){if(WESTM)return WESTM;const M=[],B=(...a)=>vmBox(...a),C=
  M.push(roulTableMesh(false));
  /* 38 the piano stool: a round padded seat on a turned post */
  {const m=f();m.push(...C(0,0,0,.12,.02,WD3,{ax:'y',n:8}),...C(0,.02,0,.03,.2,WD2,{ax:'y',n:6}),...C(0,.21,0,.13,.04,[110,30,34],{ax:'y',n:10}),...C(0,.25,0,.125,.012,[140,44,46],{ax:'y',n:10}));M.push(m)}
+ /* 39 (0.9.349) a saddled horse standing, head toward +z: the race rider's and the spare one; 40 (0.9.350) a bridge rail one cell long (along x); 41 the start banner (across x) */
+ M.push(wHorse(-1));
+ {const m=f();for(const sx of[-1,1])m.push(...B(sx*.46,.42,0,.08,.84,.08,WD2));m.push(...B(0,.8,0,1.0,.06,.06,WD),...B(0,.46,0,1.0,.045,.045,WD));M.push(m)}
+ {const m=f(),BKC=[26,22,24],WH=[240,232,214];for(const sx of[-1,1])m.push(...B(sx*1.95,1.25,0,.09,2.5,.09,WD2));for(let c=0;c<10;c++)for(let r=0;r<2;r++)m.push(...B(-1.71+c*.38,2.3-r*.2,0,.38,.2,.03,(c+r)%2?BKC:WH));M.push(m)}
+ /* 42 a track post: red and white bands on top */
+ {const m=f();m.push(...B(0,.3,0,.08,.6,.08,WD2),...B(0,.5,0,.09,.07,.09,[236,228,214]),...B(0,.6,0,.09,.07,.09,[190,44,38]),...B(0,.66,0,.1,.03,.1,[236,228,214]));M.push(m)}
+ /* 43 (0.9.353) the undertaker's lectern with the ledger lying open on it (the book faces +z, the reader) */
+ {const m=f(),LW_=[70,44,28],LD=[52,32,20],PG=[236,224,196],CV=[96,26,28],PV=[0,.66,0],R={rx:.42,pv:PV};m.push(...B(0,.03,0,.34,.06,.3,LD),...B(0,.33,-.02,.09,.6,.09,LW_),...B(0,.66,0,.42,.035,.32,LW_,R),...B(0,.69,.15,.42,.03,.025,LD,R),...B(0,.684,.005,.37,.012,.27,CV,R));for(const sx of[-1,1]){m.push(...B(sx*.088,.696,.005,.165,.014,.25,PG,R));for(let k=0;k<6;k++)m.push(...B(sx*.088,.704,-.08+k*.033,.12,.003,.006,[90,70,60],R))}m.push(...B(0,.706,.005,.008,.008,.25,[150,120,90],R),...B(.07,.704,.08,.01,.003,.14,[150,30,30],R));
+  /* (0.9.354) built a head too tall: everything above the foot comes down, the post gets shorter */for(const q of m){q.p=q.p.map(v=>v[1]>.1?[v[0],v[1]-.22,v[2]]:v);delete q.vb}M.push(m)}
  return WESTM=M}
 /* the moving things: the stagecoach and its two horses, the tumbleweed (and a burning one) */
 let WESTMV=null;
@@ -325,9 +417,8 @@ function westMov0(){if(WESTMV)return WESTMV;const B=(...a)=>vmBox(...a),C=(...a)
  /* a tumbleweed: a loose ball of twigs */
  const tw=[],twf=[];const r=wRng(5);for(let k=0;k<22;k++){const a=r()*6.283,b=r()*3.14,c=r()*3.14,l=.26+r()*.16;const col=[150+r()*30|0,120+r()*24|0,74+r()*20|0];tw.push(...B(0,0,0,l,.018,.018,col,{rx:a,ry:b,rz:c}));twf.push(...B(0,0,0,l*.92,.024,.024,r()<.5?[255,170,60]:[255,96,40],{rx:a,ry:b,rz:c,e:1}))}
  /* the roulette wheel: a wooden bowl, a ring of red and black pockets (and the green zero), the silver turret in the middle */
- const rwh=[],RRD=[176,30,36],BKc=[26,24,28];rwh.push(...C(0,0,0,.22,.05,[96,60,36],{ax:'y',n:18}),...C(0,.05,0,.2,.012,[150,104,62],{ax:'y',n:18}));for(let k=0;k<37;k++){const a=k/37*6.2832,n=WSEQ[k];rwh.push(...B(Math.cos(a)*.15,.064,Math.sin(a)*.15,.024,.006,.05,n==0?[40,150,70]:WR_RED.has(n)?RRD:BKc,{ry:-a}),...B(Math.cos(a+.085)*.15,.07,Math.sin(a+.085)*.15,.004,.012,.05,[200,190,170],{ry:-a-.085}))}
- rwh.push(...C(0,.06,0,.09,.01,[120,80,50],{ax:'y',n:12}),...C(0,.07,0,.02,.06,[210,214,224],{ax:'y',n:6}));for(let k=0;k<4;k++)rwh.push(...B(0,.12,0,.12,.012,.012,[210,214,224],{ry:k*.785}));
- return WESTMV={coach,horse,tw,twf,wheel:rwh}}
+ const rwh=roulWheelMesh(false);
+ return WESTMV={coach,horse,tw,twf,wheel:rwh,rh0:wHorse(0),rh1:wHorse(1),rh2:wHorse(2),rh3:wHorse(3),rhv0:wHorseView(0),rhv1:wHorseView(1),rhv2:wHorseView(2),rhv3:wHorseView(3),rhvs:wHorseView(-1)}}
 
 /* ---------------- the people ---------------- */
 const WSHIRT=[[176,58,48],[60,90,140],[206,186,146],[96,116,72],[150,116,84],[226,214,190],[120,60,96],[70,70,80]],WPANTS=[[70,88,126],[104,82,60],[44,42,48],[120,104,80]],WHATC=[[166,112,62],[96,72,52],[44,38,36],[206,184,150],[120,96,80]];
@@ -347,7 +438,7 @@ function westHuman(x,y,o){o=o||{};const e=genHuman(x,y,fl);const gun=o.gun||pk([
  if(wAlien())e.name=wNm(e.name);return e}
 /* a seated version of someone's figure (the same look, sitting, hands on the table) */
 function westSitFr(fr){const sp=Object.assign({},fr.spec,{sit:1,gm:null,m3:null,c:{},av:null}),f=[];for(let ph=0;ph<4;ph++){let v=null;Object.defineProperty(f,ph,{get:()=>v||(v=hmRender(sp,ph,0)),enumerable:true})}f.spec=sp;return f}
-function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x|0)]&&!(W.caveSet&&W.caveSet.has((y|0)*n+(x|0)));
+function westSpawn(){const W=WEST;if(!W)return;const n=WTN,ok=(x,y)=>!g[(y|0)*N+(x|0)]&&!(W.caveSet&&W.caveSet.has((y|0)*N+(x|0)));
  /* hostile gunmen round the town: on the street behind cover, in the alleys, the back lots, the sheriff's office, the store, the livery and the undertaker's */
  const SP=[[13,23.5],[24.5,26.6],[29,22.8],[36.5,25.3],[44.5,23.4],[12.6,17],[28.6,15],[23.6,33],[36.6,35],[8,8.5],[22,7.5],[38,8],[20,42],[32,43],[44,41],[6.5,18.5],[10.4,18.6],[6.5,33.6],[48,33],[39.6,34.5],[44.8,16.5],[2.6,40.5],[14,10]];
  const sh=SP.slice();for(let i=sh.length-1;i>0;i--){const j=ri(0,i);[sh[i],sh[j]]=[sh[j],sh[i]]}
@@ -361,11 +452,12 @@ function westSpawn(){const W=WEST;if(!W)return;const n=N,ok=(x,y)=>!g[(y|0)*n+(x
   s.bar={x:X+8,y0:Y,y1:Y+3};s.piano=[X,Y];
   const pas=(e,grp)=>{e.pac=1;e.grp=grp;e.aggro=0;W.pac.push(e);E.push(e);return e};
   for(const[tx,ty,chs]of s.tb)for(const[cx,cy,sit]of chs){if(!sit)continue;const e=westHuman(cx+.5,cy+.5,{vest:R()<.6,pas:1});e.fa=Math.atan2(ty-cy,tx-cx);e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;pas(e,'saloon')}
-  {const e=westHuman(X+.5,Y+PNO_Y,{hat:102,hatc:[40,36,34],cl:[236,230,214],pn:[40,38,44],nm:'Piano Player'});e.fa=-Math.PI/2;e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;e.piano=1;pas(e,'saloon');W.pianist=e}
+  {const e=westHuman(X+.5,Y+PNO_Y,{hat:102,hatc:[40,36,34],cl:[236,230,214],pn:[40,38,44],nm:'Piano Player'});e.fa=-Math.PI/2;e.frS=e.fr;e.fr=westSitFr(e.fr);e.sit=1;e.piano=1;pas(e,'saloon');W.pianist=e;/* 0.9.348: just his shirt sleeves at the keys, no vest */{const sp=e.fr.spec;if(sp.vest){delete sp.vest;sp.gm=null;sp.m3=null;sp.c={}}}}
   {const e=westHuman(s.bar.x+1.5,Y+2.5,{gun:'shotgun',hat:0,cl:[236,232,220],pn:[40,40,46],nm:'Bartender'});e.fa=Math.PI;pas(e,'saloon')}
   {const e=westHuman(s.bar.x-.45,Y+1.2,{gun:'pistol',hat:101,hatc:[30,28,30],cl:[60,46,40],pn:[52,50,58],band:[176,36,40],ponch:[[178,64,40],[236,190,90],[60,90,120]],nm:'McCassidy'});e.fa=0;e.jack=1;e.hp*=2.2;e.mhp=e.hp;e.dmg*=1.3;e.sc=.9;pas(e,'saloon');W.jack=e}
   /* the dart player in the front corner by the bar: for hire */
-  {const bx=s.ix1,by=s.iy1-1,e=westHuman(bx-2.4,by+.5,{gun:'rifle',hat:3,hatc:[120,84,56],cl:[90,110,140],pn:[70,62,54],nm:ALLY_NAME});e.fa=0;e.darts=1;e.shd=0;e.fr.spec.pw=[];e.fr.spec.ng=1;e.traits=['rifle','shooter'];e.dT=rr(1,2.5);pas(e,'saloon');W.darts=e;W.dboard={x:bx,y:by}}}
+  {const bx=s.ix1,by=s.iy1-1,e=westHuman(bx-2.4,by+.5,{gun:'rifle',hat:3,hatc:[120,84,56],cl:[90,110,140],pn:[70,62,54],nm:ALLY_NAME});e.fa=0;e.darts=1;e.shd=0;e.fr.spec.pw=[];e.fr.spec.ng=1;e.traits=['rifle','shooter'];e.dT=rr(1,2.5);pas(e,'saloon');W.darts=e;W.dboard={x:bx,y:by}}
+  westRider()}
  /* the gunsmith behind his counter */
  {const s=W.smith,e=westHuman(s.ix0+2.5,s.iy0+4.5,{gun:'rifle',hat:0,cl:[150,120,90],pn:[60,54,50],nm:'Gunsmith'});e.fa=-Math.PI/2;e.pac=1;e.grp='smith';e.aggro=0;W.pac.push(e);E.push(e);W.smithE=e}
  /* the storekeeper behind his counter */
@@ -380,6 +472,24 @@ function westPas(e,dt){if(!e.pac)return false;e.af=0;if(e.darts){westDarts(e,dt)
 function westWake(e,quiet){const W=WEST;if(!W||!e||!e.pac)return;const grp=e.grp;let any=0;for(const o of W.pac){if(!o.pac||o.dead||o.grp!==grp)continue;o.pac=0;o.aggro=1;if(o.sit){o.sit=0;if(o.frS)o.fr=o.frS}o.cd=rr(.4,1.1);any=1}
  if(any&&!quiet){if(grp=='saloon'){wMsg('SALOON BRAWL!',2.4);snd(220,.5,'sawtooth',.06,-120);for(let i=0;i<3;i++)setTimeout(()=>snd(600+Math.random()*400,.08,'square',.04,-300),i*90)}else if(grp=='store')wMsg('The storekeeper reaches for his scattergun!',2.2);else wMsg('The gunsmith pulls a rifle!',2.2)}
  if(!W.netIn&&typeof CO=='function'&&CO())try{netSend({t:'wwk',fl,g:grp})}catch(er){}}
+
+/* ---------------- the horse race (0.9.349) ----------------
+   A rider waits on his horse in the south-west corner of town, a saddled spare beside him. Talk to him and he offers a race (race.js);
+   beat him and you get another Light Boots (or $50 if you cannot hold more). Lose and you can ask again. */
+const RIDER_NM='Rio Vance',RIDE_DZ=.68;
+function westRider(){const W=WEST;let at0=null;for(let y=46;y>=39&&!at0;y--)for(let x=2;x<=8&&!at0;x++){if(![0,1,2].every(d=>!g[y*N+x+d]&&!blk[y*N+x+d]))continue;if(g[(y-1)*N+x]&&g[(y-1)*N+x+2])continue;at0=[x,y]}
+ if(!at0)return;const[x,y]=at0;W.horses=[{x:x+.5,y:y+.5,nb:1},{x:x+2.5,y:y+.5}];
+ const e=riderMk(x+.5,y+.5);e.grp='stable';W.pac.push(e);E.push(e);W.rider=e}
+/* the rider on horseback (also the one you race against: a copy of him of your own, so in co-op nobody else's game moves or removes him) */
+function riderMk(x,y){const e=westHuman(x,y,{gun:'rifle',hat:3,hatc:[60,44,30],cl:[176,64,48],pn:[64,58,70],band:[230,200,90],nm:RIDER_NM});e.fa=0;e.frS=e.fr;e.fr=westSitFr(e.fr);e.fr.spec.ride=1;e.fr.spec.gm=null;e.fr.spec.m3=null;e.fr.spec.c={};e.sit=1;e.rider=1;e.pac=1;e.aggro=0;delete e.nid;return e}
+/* the rider and both horses away (on) or back (off) */
+function riderAway(on){const W=WEST,e=W.rider;if(!W.horses)return;W.raceOn=on?1:0;if(on){if(W.rdAway)return;W.rdAway={pr:PRP.filter(q=>q.m===3039)};PRP=PRP.filter(q=>q.m!==3039);for(const h of W.horses)blk[(h.y|0)*N+(h.x|0)]=0;if(e){E=E.filter(q=>q!==e);W.pac=W.pac.filter(q=>q!==e)}}
+ else{const a=W.rdAway;if(!a)return;W.rdAway=null;PRP.push(...a.pr);for(const h of W.horses)if(!h.nb)blk[(h.y|0)*N+(h.x|0)]=1;if(e&&!e.dead&&!E.includes(e)){E.push(e);W.pac.push(e)}}}
+function raceTalk(){const W=WEST,rd=W.rider;if(!rd||W.raceOn)return;W.live=1;
+ choose(wNm(RIDER_NM),'"Race me across the desert. Win, and you\'ll ride faster."',[{n:'Race',d:'Saddle up on the spare.'},{n:'Not now',d:'Maybe later.'}],i=>{state='play';W.live=0;if(i!==0){wMsg('"Suit yourself."',1.8);return}
+  if(W.raceOn)return;riderAway(1);wNet('wrc',{st:'go'});
+  const ok=raceStart({done:win=>{if(!WEST)return;riderAway(0);wNet('wrc',{st:win?'won':'end'});if(!win){wMsg('"Ha! Better luck next time."',2.4);return}WEST.raceWon=1;const p=POW.find(q=>q.id=='spd');
+   if(!p||owned1(p)){P.money=Math.min(MAXM(),(P.money|0)+50);try{moneySync()}catch(er){}wMsg('"Fair and square. Here\'s $50."',2.6)}else{const rp=rollP(p);give(rp);wMsg('"Fair and square." +1 LIGHT BOOTS',2.6)}snd(660,.2,'triangle',.08,200)}});if(!ok){riderAway(0);wNet('wrc',{st:'end'})}})}
 
 /* ---------------- co-op (0.9.338) ----------------
    Everyone's game builds the same town (the same seeded dice). The host's game owns the people in it, like every other monster; on top of that:
@@ -401,6 +511,7 @@ function westNet(o){const W=WEST;if(!W||o.fl!==fl)return;W.netIn=1;try{const H=t
  case'wbh':{if(H)break;const b=W.brk[o.i|0];if(!b||b.done)break;b.hp=Math.min(b.hp,o.hp);b.t=T;if(b.hp<=0){b.hp=0;b.done=1;b.on()}break}
  case'wtp':{const t=W.traps&&W.traps[o.i|0];if(t)trapFire(t,o.f,1);break}
  case'wgd':{const p=W.gb&&W.gb[o.i|0];if(p&&!p.taken){p.taken=1;PRP=PRP.filter(q=>q!==p)}break}
+ case'wrc':{if(o.st=='go')riderAway(1);else riderAway(0);break}
  case'wof':{if(!W.outFree){W.outFree=1;const ol=W.outlaw;if(ol&&!ol.dead)ol.aggro=1}break}
  case'wcg':{if(H){W.netIn=0;coachGo('spooked')}break}
  case'wco':{const c=W.coach;if(!c)break;if(o.st=='rear'){if(c.st=='park')coachGo('',1)}else if(o.st=='park'&&c.st!='park'){c.st='park';c.t=0;c.wait=1e9}break}
@@ -414,7 +525,10 @@ function westDeputy(x,y){const e=westHuman(x+rr(-.3,.3),y+rr(-.3,.3),{gun:pk(['r
 function dynWest(a,sd,x,y){a.nid=NID++;a.pup=0;NIDMAP[a.nid]=a;const d={n:a.nid,x:+x.toFixed(2),y:+y.toFixed(2),z:SW&&a.z!==undefined?+a.z.toFixed(2):0,sd,f:fl,k:0,p:-1,hp:Math.round(a.hp),sc:a.sc,w:1};DYN.push(d);sendDyn([d])}
 
 /* ---------------- the props ---------------- */
-function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[];
+function westProps(){const W=WEST;if(!W)return;const n=WTN,at=(x,y)=>y*N+x;W.gb=[];
+ /* the two horses first (the floor's props are cleared after westSpawn), so nothing else lands on them */
+ if(W.horses)for(const h of W.horses){PRP.push({x:h.x,y:h.y,t:PS[0],s:.62,fl:0,fb:0,cell:(h.y|0)*N+(h.x|0),m:3039,yaw:Math.PI/2,h:.95,pr:.45,nb:h.nb});if(!h.nb)blk[(h.y|0)*N+(h.x|0)]=1}/* his own horse blocks nothing (like the piano stool), or the cell would hide him */
+
  const put=(x,y,m,o)=>{const i=at(x|0,y|0);const p=Object.assign({x:(x|0)+.5,y:(y|0)+.5,t:PS[0],s:.62,fl:0,fb:0,cell:i,m:3000+m,yaw:0,h:.6,pr:.35},o||{});if(!(o&&o.nb))blk[i]=1;PRP.push(p);return p};
  const freeC=(x,y)=>{const i=at(x,y);return !g[i]&&!blk[i]&&Math.hypot(x+.5-P.x,y+.5-P.y)>1.5&&Math.hypot(x+.5-ex.x,y+.5-ex.y)>1.2&&!E.some(e=>Math.hypot(e.x-x-.5,e.y-y-.5)<.7)};
  /* porch roofs over the boardwalks; the north side slopes down toward the street (+y), the south side toward -y */
@@ -424,7 +538,7 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
   for(const[tx,ty,chs]of s.tb){put(tx,ty,0,{h:.32,pr:.32});for(const[cx,cy,sit]of chs){const yaw=Math.atan2(tx-cx,ty-cy);put(cx,cy,1,{nb:!!sit,yaw,h:.5,pr:.2})}}
   for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.bar.x,y,2,{yaw:-Math.PI/2,h:.48,pr:.5});for(let y=s.bar.y0;y<=s.bar.y1;y++)put(s.ix1,y,17,{yaw:-Math.PI/2,h:1.1,pr:.3});
   put(s.piano[0],s.piano[1],3,{yaw:0,h:.7,pr:.45,x:s.piano[0]+.5,y:s.piano[1]+.38});put(s.piano[0],s.piano[1],38,{nb:1,yaw:0,h:.3,pr:.15,x:s.piano[0]+.5,y:s.piano[1]+PNO_Y-.02});
-  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]];if(W.dboard)put(W.dboard.x,W.dboard.y,24,{yaw:-Math.PI/2,h:1.1,pr:.3,nb:1});{const rx=s.ix1-1,ry=s.iy1;put(rx,ry,37,{yaw:RYAW,h:.45,pr:.5});W.roul={x:rx+.5,y:ry+.5,a:0,v:0,bets:{},chip:1,st:'idle'}}}
+  W.lamps=[[s.ix0+4,s.iy0+3],[s.ix1-3,s.iy1-1]];if(W.dboard)put(W.dboard.x,W.dboard.y,24,{yaw:-Math.PI/2,h:1.1,pr:.3,nb:1});{const rx=s.ix1-1,ry=s.iy1;put(rx,ry,37,{yaw:RYAW,h:.35,pr:.5});W.roul={x:rx+.5,y:ry+.5,a:0,v:0,bets:{},chip:1,st:'idle'}}}
  {const b=W.rooms.sheriff;W.poster={x:b.dr[0]+2.5,y:b.fy+1.3}}
  /* the sheriff's office: the jail bars (one cell door left open), a desk */
  {const b=W.rooms.sheriff;for(const[x,y]of b.jail){if(g[at(x,y)])continue;if(x==b.ix0+1)continue;put(x,y,18,{h:1.5,pr:.5})}put(b.ix1-1,b.iy1-1,0,{h:.32,pr:.32});put(b.ix1,b.iy1-1,1,{yaw:-Math.PI/2,h:.5,pr:.2})}
@@ -439,7 +553,8 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
  /* the general store: shelves along the walls, sacks and barrels */
  {const b=W.rooms.store;for(let x=b.ix0;x<=b.ix1;x++)if(x!=b.bk)put(x,b.iy1,22,{yaw:Math.PI,h:1.2,pr:.4});for(let y=b.iy0+1;y<b.iy1;y+=2)if(y!=b.iy0+3)put(b.ix0,y,22,{yaw:Math.PI/2,h:1.2,pr:.4});for(let x=b.ix0+1;x<=b.ix0+4;x++)put(x,b.iy0+3,12,{yaw:Math.PI,h:.45,pr:.5});W.storeC={x:b.ix0+2.5,y:b.iy0+2.5}}
  /* the undertaker: coffins inside and stood up outside */
- {const b=W.rooms.under;for(let x=b.ix0;x<=b.ix1;x+=2)put(x,b.iy1-1,8,{yaw:Math.PI,h:.95,pr:.25});for(const x of[b.x0+1,b.x1-1])if(!blk[at(x,b.bwy)])put(x,b.bwy,8,{yaw:Math.PI,h:.95,pr:.25,y:b.bwy+.62})}
+ {const b=W.rooms.under;for(let x=b.ix0;x<=b.ix1;x+=2)put(x,b.iy1-1,8,{yaw:Math.PI,h:.95,pr:.25});
+  /* (0.9.353) the ledger on its lectern, by the side wall, the book toward the room */for(const[x,y,yw]of[[b.ix1,b.iy0+1,-Math.PI/2],[b.ix0,b.iy0+1,Math.PI/2],[b.ix1,b.iy0+2,-Math.PI/2]]){const i=at(x,y);if(g[i]||blk[i]||W.doors&&W.doors.some(d=>Math.abs(d.i%N-x)<=1&&Math.abs((d.i/N|0)-y)<=1))continue;put(x,y,43,{yaw:yw,h:.53,pr:.22});W.ledC={x:x+.5,y:y+.5};break}for(const x of[b.x0+1,b.x1-1])if(!blk[at(x,b.bwy)])put(x,b.bwy,8,{yaw:Math.PI,h:.95,pr:.25,y:b.bwy+.62})}
  /* the livery: hay */
  {const b=W.rooms.livery;for(const[x,y]of[[b.ix0,b.iy1],[b.ix0+1,b.iy1],[b.ix1,b.iy1-1],[b.ix1,b.iy0+3]])put(x,y,7,{yaw:rr(-.2,.2),h:.35,pr:.35})}
  /* the street: hitching rails and water troughs by the boardwalks, barrels, a lamp post or two */
@@ -462,7 +577,7 @@ function westProps(){const W=WEST;if(!W)return;const n=N,at=(x,y)=>y*n+x;W.gb=[]
  /* chests: one in the general store, one in the livery */
  for(const[x,y]of[[W.rooms.store.ix1,W.rooms.store.iy0],[W.rooms.livery.ix0,W.rooms.livery.iy1-1]]){const i=at(x,y);if(g[i]||blk[i])continue;blk[i]=1;CH.push({x:x+.5,y:y+.5})}
  /* the stagecoach waits at the east end of the street */
- open=true;W.coach={st:'park',x:N-3.4,y:W.SY0+2.5,t:0,wait:rr(30,45),hit:new Set(),a:1};W.storm={t:0,next:rr(30,50),on:0,k:0};W.tw=[];W.twT=rr(2,5)}
+ open=true;W.coach={st:'park',x:WTN-3.4,y:W.SY0+2.5,t:0,wait:rr(30,45),hit:new Set(),a:1};W.storm={t:0,next:rr(30,50),on:0,k:0};W.tw=[];W.twT=rr(2,5)}
 
 /* ---------------- the town at work: messages, prompts, the use key ---------------- */
 function wNm(s){return wAlien()&&typeof alnNm=='function'?alnNm(s):s}
@@ -471,36 +586,39 @@ const wIn=(b,x,y,pad)=>{pad=pad||0;return x>=b.ix0-pad&&x<b.ix1+1+pad&&y>=b.iy0-
 const wAng=(a,b)=>{let d=b-a;while(d>Math.PI)d-=6.2832;while(d<-Math.PI)d+=6.2832;return d};
 const W_PM_PRICE=100;
 /* what the use key would do here, if anything: {k, t (the prompt)} */
-function westNear(){const W=WEST;if(!W||state!='play'||W.duel)return null;const px=P.x,py=P.y;
+function westNear(){const W=WEST;if(!W||state!='play'||W.duel||W.inRace)return null;const px=P.x,py=P.y;
  const j=W.jack;if(j&&j.pac&&!j.dead&&!W.duelDone&&!W.duelOn&&!(DM&&!CO())&&Math.hypot(j.x-px,j.y-py)<1.7)return westDuelOk()?{k:'duel',t:'CHALLENGE '+wNm('MCCASSIDY')+' TO A DUEL'}:{k:'noduel',t:wNm('MCCASSIDY')+' ONLY DUELS SOMEONE WITH A GUN'};
  if(W.robbed){const near=(e,r)=>e&&!e.dead&&e.pac&&Math.hypot(e.x-px,e.y-py)<r;if(near(W.smithE,2.4)||near(W.storeE,2.4)||near(W.darts,1.8)||(W.roul&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.4))return{k:'robbed',t:'NOBODY IN THIS TOWN WILL DEAL WITH A BANK ROBBER'}}
  const sm=W.smithE;if(sm&&sm.pac&&!sm.dead&&W.smithC&&Math.hypot(W.smithC.x-px,W.smithC.y-py)<1.6)return{k:'smith',t:W.pmSold?'THE GUNSMITH: "ENJOY IT, PARTNER"':'BUY THE PEACEMAKER  -  $'+W_PM_PRICE};
  if(W.roul&&W.roul.bets&&Math.hypot(W.roul.x-px,W.roul.y-py)<1.6&&!(DM&&!CO())&&roulTotal()>0&&!roulBusy())return{k:'roul',t:'SPIN THE WHEEL'};
- const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!(DM&&!CO())&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+wNm(ALLY_NAME.toUpperCase())+'  -  $'+ALLY_PRICE};
+ const rd=W.rider;if(rd&&rd.pac&&!rd.dead&&!W.raceWon&&!W.raceOn&&Math.hypot(rd.x-px,rd.y-py)<2)return{k:'race',t:'TALK TO '+wNm(RIDER_NM.toUpperCase())};const dp=W.darts;if(dp&&dp.pac&&!dp.dead&&!(DM&&!CO())&&Math.hypot(dp.x-px,dp.y-py)<1.6)return{k:'hire',t:ALLY?'YOU ALREADY HAVE A PARTNER':'HIRE '+wNm(ALLY_NAME.toUpperCase())+'  -  $'+ALLY_PRICE};
  const st=W.storeE;if(st&&st.pac&&!st.dead&&W.storeC&&Math.hypot(W.storeC.x-px,W.storeC.y-py)<1.6)return{k:'store',t:'BROWSE THE GENERAL STORE'};
+ if(W.ledC&&Math.hypot(W.ledC.x-px,W.ledC.y-py)<1.3)return{k:'ledger',t:'READ THE LEDGER'};
  return null}
 /* the use key (called from chest()): true if the town took it */
 function westUse(){const W=WEST;if(!W||state!='play')return false;const q=westNear();if(!q)return false;keys={};
  if(q.k=='duel'){duelStart();return true}
+ if(q.k=='ledger'){try{ledOpen()}catch(er){console.error(er)}return true}
  if(q.k=='robbed'){wMsg('"We don\'t serve thieves here."',2.4);return true}
  if(q.k=='noduel'){wMsg('"Come back when you\'re carryin\' a real iron, partner."',2.6);return true}
  if(q.k=='smith'){if(W.pmSold){wMsg('"Take good care of her."',2);return true}
   const cur=Wp&&Wp.name||'your gun';snd(620,.12,'triangle',.06,200);
-  WEST.live=1;choose('Gunsmith','"A Peacemaker. Single action, six shots, and the hardest-hitting iron in the territory. Wait a moment between shots and she never misses." You have $'+(P.money|0)+'.',
-   [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Heavier hits than the Hand cannon. Dead Eye: the first shot after a short pause does 60% more damage and goes exactly where you aim. Replaces the '+cur+' you are holding.'},{n:'Leave',d:'Keep your money.'}],
+  WEST.live=1;choose('Gunsmith','"A Peacemaker. Hardest-hitting iron in the territory." You have $'+(P.money|0)+'.',
+   [{n:'Peacemaker  —  $'+W_PM_PRICE,d:'Hits harder than the Hand cannon. A shot after a short pause does 60% more and never misses. Replaces the '+cur+' you are holding.'},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<W_PM_PRICE){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
     P.money-=W_PM_PRICE;try{moneySync()}catch(er){}const w=westPeacemaker();Wp=w;P.ammo=MG();P.reload=0;P.cd=0;W.pmSold=1;wMsg('THE PEACEMAKER',2.6);snd(520,.12,'triangle',.08,300);setTimeout(()=>snd(180,.08,'square',.06,-60),180);setTimeout(()=>snd(240,.06,'square',.05,-60),300)});return true}
   if(q.k=='store'){westStore();return true}
  if(q.k=='roul'){roulSpin();return true}
+ if(q.k=='race'){raceTalk();return true}
  if(q.k=='hire'){if(ALLY){wMsg('"One partner\'s plenty, friend."',2);return true}snd(620,.12,'triangle',.06,200);
-  choose(wNm(ALLY_NAME),'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+wNm(ALLY_NAME)+'  —  $'+ALLY_PRICE,d:'A partner with a rifle who follows you from floor to floor and shoots what you are fighting. 200 health, back to full at the start of every floor. Monsters will go after them too, and if they die they are gone for good.'},{n:'Leave',d:'Keep your money.'}],
+  choose(wNm(ALLY_NAME),'"Tired of darts. For $'+ALLY_PRICE+' I\'ll ride with you, wherever you\'re headed." You have $'+(P.money|0)+'.',[{n:'Hire '+wNm(ALLY_NAME)+'  —  $'+ALLY_PRICE,d:'A rifleman who follows you floor to floor. 200 health, healed each floor. If he dies, he is gone.'},{n:'Leave',d:'Keep your money.'}],
    k=>{state='play';if(k!==0)return;if((P.money|0)<ALLY_PRICE){wMsg('"Money first, partner."',2.4);snd(160,.2,'square',.06,-60);return}P.money-=ALLY_PRICE;try{moneySync()}catch(er){}const dd=W.darts;allyHire(dd);wNet('wal',{});wMsg('"Let\'s ride."',2.4);snd(520,.12,'triangle',.08,300)});return true}
  return false}
 /* the general store's stock: frontier clothes (yours to keep) and Quickdraw */
 const W_QD_PRICE=90;
 function westStore(){const W=WEST,items=[];snd(620,.12,'triangle',.06,200);
  for(const[id,pr]of WSTORE_COS()){const c=COS[id],has=LOOT.o.includes(id);items.push({n:c.n+'  —  '+(has?'owned':'$'+pr),d:(c.k=='hat'?'Hat. ':c.k=='cape'?'Cape. ':'Title. ')+c.d+(has?' You already have it.':' Yours to keep.'),buy:has?null:()=>{secretGive(id);HATNEW=id;wMsg(c.n.toUpperCase()+' BOUGHT. WEAR IT FROM COSMETICS',3)},pr})}
- const qd=P.pw.qdraw|0,qdOk=qd<2&&!W.qdSold;items.push({n:'Quickdraw  —  '+(qdOk?'$'+W_QD_PRICE:qd>=2?'maxed':'sold out'),d:'Power: +20% fire and swing rate. One per Frontier Town, stacks up to 2 times. You have '+qd+'.',buy:qdOk?()=>{give(POW.find(p=>p.id=='qdraw'));W.qdSold=1;wMsg('QUICKDRAW x'+(P.pw.qdraw|0),2.6)}:null,pr:W_QD_PRICE});
+ const qd=P.pw.qdraw|0,qdOk=qd<2&&!W.qdSold;items.push({n:'Quickdraw  —  '+(qdOk?'$'+W_QD_PRICE:qd>=2?'maxed':'sold out'),d:'Power: +20% fire and swing rate. One per Frontier Town. Max: 2. You have '+qd+'.',buy:qdOk?()=>{give(POW.find(p=>p.id=='qdraw'));W.qdSold=1;wMsg('QUICKDRAW x'+(P.pw.qdraw|0),2.6)}:null,pr:W_QD_PRICE});
  items.push({n:'Leave',d:'Keep your money.'});
  WEST.live=1;choose('General Store','"Howdy! Finest goods west of the river." You have $'+(P.money|0)+'.',items,k=>{state='play';const it=items[k];if(!it||!it.buy)return;
   if((P.money|0)<it.pr){wMsg('"Come back when you have the money."',2.4);snd(160,.2,'square',.06,-60);return}
@@ -529,10 +647,10 @@ function westKill(e){const W=WEST;if(!W)return;
 function coachGo(why,net){const c=WEST.coach;if(!c||c.st!='park')return;if(!net&&typeof CLI=='function'&&CLI()){wNet('wcg',{});return}if(!net)wNet('wco',{st:'rear'});c.st='rear';c.t=0;c.hit=new Set();
  snd(700,.35,'sawtooth',.06,600,{x:c.x,y:c.y});setTimeout(()=>snd(900,.3,'sawtooth',.05,-500,{x:c.x,y:c.y}),120);}
 function coachStep(dt){const W=WEST,c=W.coach;if(!c)return;c.t+=dt;const L=W.SY0+2.5;
- if(c.st=='park'){c.x=N-3.4;c.y=L;c.v=0;if(!W.duel&&c.t>c.wait&&!(typeof CLI=='function'&&CLI()))coachGo();
+ if(c.st=='park'){c.x=WTN-3.4;c.y=L;c.v=0;if(!W.duel&&c.t>c.wait&&!(typeof CLI=='function'&&CLI()))coachGo();
   /* a parked coach is solid: push the player out of it */const dx=P.x-(c.x-.9),dy=P.y-c.y;if(Math.abs(dx)<1.9&&Math.abs(dy)<.75){P.y=c.y+(dy<0?-.76:.76)}return}
  if(c.st=='rear'){if(c.t>.9){c.st='run';c.t=0;c.v=2}return}
- if(c.st=='gone'){if(c.t>c.wait&&!(typeof CLI=='function'&&CLI())){wNet('wco',{st:'park'});c.st='park';c.t=0;c.wait=rr(32,48);for(let i=0;i<10;i++)ptcPush({x:N-3.4+rr(-1,1),y:L+rr(-.6,.6),z:.1,vx:rr(-.5,.5),vy:rr(-.5,.5),vz:.4,life:1,l0:1,t:S.dust,s:.5,g:0},0)}return}
+ if(c.st=='gone'){if(c.t>c.wait&&!(typeof CLI=='function'&&CLI())){wNet('wco',{st:'park'});c.st='park';c.t=0;c.wait=rr(32,48);for(let i=0;i<10;i++)ptcPush({x:WTN-3.4+rr(-1,1),y:L+rr(-.6,.6),z:.1,vx:rr(-.5,.5),vy:rr(-.5,.5),vz:.4,life:1,l0:1,t:S.dust,s:.5,g:0},0)}return}
  /* running: speeds up to 10 tiles a second, westward down the middle of the street */
  c.v=Math.min(10,c.v+dt*9);c.x-=c.v*dt;c.y=L+Math.sin(c.t*3)*.08;
  if(Math.random()<dt*30)ptcPush({x:c.x+rr(.2,1.2),y:c.y+rr(-.5,.5),z:.05,vx:rr(.5,2),vy:rr(-.4,.4),vz:rr(.2,.6),life:.9,l0:.9,t:S.dust,s:rr(.3,.55),g:0},0);
@@ -546,10 +664,10 @@ function coachStep(dt){const W=WEST,c=W.coach;if(!c)return;c.t+=dt;const L=W.SY0
 /* ---------------- tumbleweeds ---------------- */
 let WFLS=null;
 function twStep(dt){const W=WEST;W.wind=W.wind||(wHash(3,3,3)<.5?-1:1);const st=W.storm,sk=st?st.k:0;
- W.twT-=dt*(1+sk*3);if(W.twT<=0&&W.tw.length<(6+sk*6|0)){W.twT=rr(2.5,6);const x=W.wind>0?1.4:N-2.4,y=rr(W.SY0+.4,W.SY1+.6);W.tw.push({x,y,v:rr(1.2,2.4),vy:rr(-.25,.25),r:rr(.85,1.15),ph:0,b:Math.random()*6,burn:0,life:0})}
+ W.twT-=dt*(1+sk*3);if(W.twT<=0&&W.tw.length<(6+sk*6|0)){W.twT=rr(2.5,6);const x=W.wind>0?1.4:WTN-2.4,y=rr(W.SY0+.4,W.SY1+.6);W.tw.push({x,y,v:rr(1.2,2.4),vy:rr(-.25,.25),r:rr(.85,1.15),ph:0,b:Math.random()*6,burn:0,life:0})}
  if(!WFLS&&S.fl)WFLS=new Set(S.fl);
  for(const t of W.tw){if(t.dead)continue;t.life+=dt;const sp=t.v*(1+sk*1.4)*(t.burn>0?.8:1);t.x+=W.wind*sp*dt;t.y+=t.vy*dt+Math.sin(t.life*1.3+t.b)*.25*dt;t.ph+=sp*dt/(.27*t.r);t.z=Math.abs(Math.sin(t.life*3.1+t.b))*.18*(1+sk);
-  const ci=(t.y|0)*N+(t.x|0);if(t.x<.5||t.x>N-.5||g[ci]||(blk[ci]&&(t.y%1)>.25&&(t.y%1)<.75&&(t.x%1)>.25&&(t.x%1)<.75)){if(blk[ci]&&!g[ci]){t.vy=-t.vy;t.x-=W.wind*sp*dt*2;t.y+=t.vy*.2;if(Math.random()<.02)t.dead=1}else{t.dead=1;continue}}
+  const ci=(t.y|0)*N+(t.x|0);if(t.x<.5||t.x>WTN-.5||g[ci]||(blk[ci]&&(t.y%1)>.25&&(t.y%1)<.75&&(t.x%1)>.25&&(t.x%1)<.75)){if(blk[ci]&&!g[ci]){t.vy=-t.vy;t.x-=W.wind*sp*dt*2;t.y+=t.vy*.2;if(Math.random()<.02)t.dead=1}else{t.dead=1;continue}}
   if(t.y<W.SY0-1.6||t.y>W.SY1+1.6)t.vy=-t.vy;
   /* catching fire: fire on the ground, a burning person, flames in the air, an explosion */
   if(!t.burn){let hot=false;for(const f of FP)if(Math.hypot(f.x-t.x,f.y-t.y)<.9){hot=true;break}
@@ -582,23 +700,23 @@ function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;
  if(!j||j.dead&&D.st!='won'){W.duel=null;return}
  if(D.st=='fade'){D.fd=Math.min(1,D.t/.7);if(D.t>=.8){/* out in the street: the player at one end, Jack at the other; everything else waits */
    P.x=PX;P.y=L;P.a=0;P.pt=0;P.vx=0;P.vy=0;j.x=JX;j.y=L;j.fa=Math.PI;j.z=SW?0:j.z;B.length=0;W.coach.st='park';W.coach.t=0;W.tw=W.tw.filter(t=>!t.burn);
-   W.tw.push({x:W.wind>0?1.4:N-2.4,y:L+rr(-.3,.3),v:2.2,vy:0,r:1,ph:0,b:0,burn:0,life:0});
+   W.tw.push({x:W.wind>0?1.4:WTN-2.4,y:L+rr(-.3,.3),v:2.2,vy:0,r:1,ph:0,b:0,burn:0,life:0});
    D.st='wait';D.t=0;D.toll=0;D.cue=rr(1.4,3.2);D.rt=Math.max(.3,.62-fl*.006)+rr(0,.08)}return}
  D.fd=Math.max(0,D.fd-dt*2);
  if(D.st=='wait'){const k=Math.floor(D.t/1.1);if(k>D.toll&&D.toll<3){D.toll=k;snd(330,1.4,'triangle',.08,-4);snd(660,.9,'sine',.03,-4)}if(D.t>3.7){D.st='cue';D.t=0}return}
  if(D.st=='cue'){if(D.t>D.cue){D.st='draw';D.t=0;snd(1200,.12,'square',.06,-200)}return}
- if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,-1);W.duelDone=1;wNet('wdl',{st:'lost'});setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
+ if(D.st=='draw'){if(D.t>D.rt){/* Jack is faster */D.st='lost';D.t=0;jackShoots(j,-1);W.duelDone=1;wNet('wdl',{st:'lost'});try{typeof ledMg=='function'&&ledMg('duel',0)}catch(er){}setTimeout(()=>wMsg('"Reckon you\'re a mite slow, partner."',3),700)}return}
  if(D.st=='won'||D.st=='lost'||D.st=='foul'){if(D.t>2.6){D.st='out';D.t=0}return}
  if(D.st=='out'){D.fd=Math.min(1,D.t/.5);if(D.t>.6){if(j&&!j.dead&&j.pac){const s=W.saloon;j.x=s.bar.x-.45;j.y=s.iy0+1.2;j.fa=0}W.duel=null;wNet('wdl',{st:'end'})}}}
 function jackShoots(j,k){snd(260,.14,'sawtooth',.1,-120,j);snd(90,.2,'square',.08,-40,j);try{ltPush(j.x,j.y,.7,3,[1,.8,.5],.12)}catch(er){}for(let i=0;i<6;i++)ptcPush({x:j.x+Math.cos(j.fa)*.35,y:j.y+Math.sin(j.fa)*.35,z:.62,vx:Math.cos(j.fa)*rr(1,3),vy:Math.sin(j.fa)*rr(1,3)+rr(-.5,.5),vz:rr(-.2,.4),life:.2,l0:.2,t:S.spark,s:.12,g:0},0);
  P.inv=0;hb(j);cause=wNm('McCassidy');if(k<0){/* outdrawn: the shot is fatal (shields, overheal and the Aegis don't stop it) */P.shd=0;P.oh=0;if(P.pw.aegis)P.ag=Math.max(P.ag||0,.01);hurt(P.mhp*100)}else hurt(P.mhp*k);P.hurt=.6}
 function duelFire(){const W=WEST,D=W.duel,j=W.jack;if(!D)return;
- if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1;wNet('wdl',{st:'foul'})}},800);W.duelDone=1}}
+ if(D.st=='wait'||D.st=='cue'){/* drew early */D.st='foul';D.t=0;try{typeof ledMg=='function'&&ledMg('duel',0)}catch(er){}wMsg('"Justice don\'t wait for cheats."',2.6);jackFlash(j);for(let i=0;i<3;i++)setTimeout(()=>{if(j&&!j.dead&&state=='play')jackShoots(j,.17)},450+i*110);setTimeout(()=>{if(j&&!j.dead){j.pac=0;j.grp='jack';j.aggro=1;wNet('wdl',{st:'foul'})}},800);W.duelDone=1}}
 /* a flashbang: a bang, a white-out, and your hands shake for a moment */
 function jackFlash(j){const W=WEST;W.flash=1;snd(1800,.25,'square',.08,-1600,j);snd(80,.3,'sawtooth',.1,-40,j);P.cd=Math.max(P.cd||0,.7);for(let i=0;i<14;i++){const a=Math.random()*6.28,v=rr(1,3);ptcPush({x:j.x+Math.cos(j.fa)*.6,y:j.y+Math.sin(j.fa)*.6,z:.5,vx:Math.cos(a)*v,vy:Math.sin(a)*v,vz:rr(0,1),life:.3,l0:.3,t:S.spark,s:.2,g:0},0)}}
 /* Jack in a straight fight: every few seconds he rolls to one side and comes up with a fresh cylinder */
 function westJackAI(e,dt){if(e.pac||e.dead||!e.aggro)return;e.rlT=(e.rlT===undefined?rr(2,4):e.rlT)-dt;if(e.rlT>0)return;e.rlT=rr(3.5,5.5);const a=Math.atan2(P.y-e.y,P.x-e.x)+(Math.random()<.5?1:-1)*Math.PI/2;let d=0;for(let k=0;k<10;k++){const nx=e.x+Math.cos(a)*.15,ny=e.y+Math.sin(a)*.15,ci=(ny|0)*N+(nx|0);if(g[ci]||blk[ci])break;e.x=nx;e.y=ny;d++}if(d){e.cd=Math.min(e.cd||0,.25);snd(160,.15,'triangle',.05,-60,e);for(let i=0;i<6;i++)ptcPush({x:e.x,y:e.y,z:.05,vx:rr(-.6,.6),vy:rr(-.6,.6),vz:.3,life:.6,l0:.6,t:S.dust,s:.3,g:0},0)}}
-function duelHitJack(j){const W=WEST,D=W.duel;if(D.st=='draw'){D.st='won';D.t=0;j.pac=0;j.hp=Math.min(j.hp,1);W.duelDone=1;wNet('wdl',{st:'won'});
+function duelHitJack(j){const W=WEST,D=W.duel;if(D.st=='draw'){D.st='won';D.t=0;j.pac=0;j.hp=Math.min(j.hp,1);W.duelDone=1;wNet('wdl',{st:'won'});try{typeof ledMg=='function'&&ledMg('duel',1)}catch(er){}
   const v=80;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}let hat=0;try{hat=secretGive(HAT_JACK);if(hat)HATNEW=HAT_JACK}catch(er){}wMsg('"Huh. Didn\'t see that comin\'."',2.4);setTimeout(()=>wMsg('YOU WIN THE DUEL  +$'+v,3.5),2400);if(hat)setTimeout(()=>wMsg("MCCASSIDY'S BANDANA UNLOCKED",4),5600);setTimeout(()=>snd(523,.2,'triangle',.08,0),200);setTimeout(()=>snd(784,.4,'triangle',.08,0),380)}
  else if(D.st=='foul'){j.pac=0;j.aggro=1}}
 /* Jack during the duel: stands his ground facing you */
@@ -612,7 +730,7 @@ function heistStep(dt){const W=WEST,H=W.heist,v=W.vault;H.t+=dt;
   return}
  if(H.st=='alarm'){H.bt=(H.bt||0)-dt;if(H.bt<=0&&H.t<50){H.bt=.5;snd(880,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5});setTimeout(()=>snd(660,.18,'square',.04,0,{x:v.x+.5,y:v.y+.5}),200)}
   const WV=[3,20,40];while(H.w<WV.length&&H.t>=WV[H.w]){heistPosse(H.w);H.w++}}}
-function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[N-3,L-1.5],[N-3,L+1.5],[10.5,42],[40.5,42],[22,8],[47,10]];const n=k==2?5:3+(fl>12?1:0);
+function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[WTN-3,L-1.5],[WTN-3,L+1.5],[10.5,42],[40.5,42],[22,8],[47,10]];const n=k==2?5:3+(fl>12?1:0);
  if(k==0)wMsg('THE POSSE IS HERE!',2.6);else wMsg('MORE DEPUTIES!',2.2);snd(500,.25,'sawtooth',.05,300);if(typeof CLI=='function'&&CLI())return;/* co-op: the host's deputies come to everyone */
  for(let i=0;i<n;i++){const[x,y]=src[(k*3+i)%src.length];if(g[(y|0)*N+(x|0)])continue;
   if(typeof HOSTCO=='function'&&HOSTCO()){const sd=Math.random()*2e9|0,sv=R;R=mul(sd);let d0;try{d0=westDeputy(x,y)}finally{R=sv}dynWest(d0,sd,x,y);E.push(d0);continue}
@@ -623,14 +741,17 @@ function heistPosse(k){const W=WEST,L=W.SY0+2.5;const src=[[2.2,L-1],[2.2,L+1],[
 function goldStep(dt){const W=WEST;if(!W.gb)return;
  for(const p of W.gb){if(p.taken)continue;if(Math.hypot(p.x-P.x,p.y-P.y)<.6&&!W.vd){p.taken=1;PRP=PRP.filter(q=>q!==p);wNet('wgd',{i:W.gb.indexOf(p)});const v=14+(fl>>2);W.gold=(W.gold|0)+1;P.money=Math.min(MAXM(),(P.money|0)+v);try{moneySync()}catch(er){}snd(880,.08,'triangle',.06,200);setTimeout(()=>snd(1320,.12,'triangle',.06,100),70);wMsg('GOLD  +$'+v,1.8)}}}
 /* nobody moves in a duel */
+/* the minimap shows the town, or the track while you race on it: [x0, y0, size] */
+function westMmc(){return null}
 function westSpd(){const W=WEST;if(!W)return 1;return W.duel?0:1}
 
 /* ---------------- every frame ---------------- */
-function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;if(W.msgT>0)W.msgT-=dt;if(SW&&W.fk0===undefined)W.fk0=SW.FKS;
+function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;if(W.msgT>0)W.msgT-=dt;
+ /* 0.9.351: out on the race track the town is somewhere else; only the race runs */if(W.inRace){try{raceStep(dt)}catch(er){window.__rserr=er}return}if(SW&&W.fk0===undefined)W.fk0=SW.FKS;
  if(W.duel)duelStep(dt);
  if(!W.duel||W.duel.st=='fade'||W.duel.st=='out')coachStep(dt);twStep(dt);stormStep(dt);
  if(W.roul)roulStep(dt);try{pnoStep(dt)}catch(er){}
- {const pz=W.pianist;if(pz&&!pz.dead&&!pz.pup){if(pz.sit&&pz.pac){if(pz.z0===undefined)pz.z0=pz.z||0;pz.z=pz.z0+PNO_DZ}else if(pz.z0!==undefined){pz.z=pz.z0;pz.z0=undefined}}}/* up on his stool while he plays */
+ {for(const pz of[W.pianist,typeof RACE!='undefined'&&RACE?null:W.rider]){if(pz&&!pz.dead&&!pz.pup){const dz=pz===W.rider?RIDE_DZ:PNO_DZ;if(pz.sit&&pz.pac){if(pz.z0===undefined)pz.z0=pz.z||0;pz.z=pz.z0+dz}else if(pz.z0!==undefined){pz.z=pz.z0;pz.z0=undefined}}}}/* up on his stool while he plays */
  if(wAlien()&&!westIndoors()&&PTC.length<600&&Math.random()<dt*14){const a=Math.random()*6.28,r=rr(1.5,7);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.6),vx:rr(-.2,.2),vy:rr(-.2,.2),vz:rr(.05,.25),life:3,l0:3,t:S.plasma||S.spark,s:rr(.05,.1),g:0},0)}
  if(W.heist)heistStep(dt);goldStep(dt);if(W.traps)trapStep(dt);
  /* the jail's open cell, the hotel's guard: nothing to do; the wanted man reacts if you come into his room */
@@ -641,14 +762,14 @@ function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;i
 let WTWF=null;
 function twFrames(){const al=wAlien();if(WTWF&&WTWF.al===al)return WTWF;const M=westMov(),cp=F=>F.map(q=>Object.assign({},q,{p:q.p.map(p=>p.slice())})),out={tw:[],twf:[],al};
  for(const k of['tw','twf'])for(let i=0;i<8;i++){const F=cp(M[k]);vmTurn(F,[0,0,0],i/8*6.2832,0,0);out[k].push(F)}return WTWF=out}
-function westList(L){const W=WEST;if(!W)return;const c=W.coach;if(wAlien()){if(!W.roofK)W.roofK=wRoofKit();for(const r of W.roofK){if((r.x-P.x)**2+(r.y-P.y)**2>900)continue;if(r.wo=='beacon'&&((T*1.5+r.x)%2)<.6)continue;L.push({q:14,wo:r.wo,x:r.x,y:r.y,yaw:r.yaw,k:r.k||1,z:r.z,abs:1})}
+function westList(L){const W=WEST;if(!W)return;if(W.inRace){try{raceList(L)}catch(er){}return}const c=W.coach;if(wAlien()){if(!W.roofK)W.roofK=wRoofKit();for(const r of W.roofK){if((r.x-P.x)**2+(r.y-P.y)**2>900)continue;if(r.wo=='beacon'&&((T*1.5+r.x)%2)<.6)continue;L.push({q:14,wo:r.wo,x:r.x,y:r.y,yaw:r.yaw,k:r.k||1,z:r.z,abs:1})}
  /* a great saucer hangs over the middle of town, turning slowly, and two small ones circle */L.push({q:14,wo:'ufo',x:26,y:W.SY0+2.5,yaw:T*.15,k:3.2,z:4.4+.15*Math.sin(T*.7),abs:1});for(let i=0;i<2;i++){const a=T*(.25+i*.1)+i*3;L.push({q:14,wo:'ufo',x:26+Math.cos(a)*(14+i*6),y:W.SY0+2.5+Math.sin(a)*(10+i*5),yaw:-T,k:1.1,z:3.2+i*.8,abs:1})}}
  if(c&&c.st!='gone'){const rear=c.st=='rear'?Math.sin(c.t*7)*.08:0;L.push({q:14,wo:'coach',x:c.x+.15,y:c.y,yaw:-Math.PI/2,k:1.25,z:rear*.3});for(const s of[-1,1])L.push({q:14,wo:'horse',x:c.x-1.25,y:c.y+s*.24,yaw:-Math.PI/2,k:1.2,z:c.st=='run'?Math.abs(Math.sin(c.t*9+s))*.06:rear})}
- if(W.roul){const[wx,wy]=rlW(0,-.24);L.push({q:14,wo:'wheel',x:wx,y:wy,yaw:W.roul.a,k:1,z:.45});roulList(L)}
+ if(W.roul){const[wx,wy]=rlW(0,-.24);L.push({q:14,wo:'wheel',x:wx,y:wy,yaw:W.roul.a,k:1,z:roulBase()+RTOP-.003,abs:1});roulList(L)}
  for(const t of W.tw)L.push({q:14,wo:t.burn>0?'twf':'tw',x:t.x,y:t.y,yaw:W.wind>0?Math.PI/2:-Math.PI/2,k:t.r*1.5,z:(t.z||0)+.36*t.r,ph:t.ph})}
 function westDraw(s,dX,dY,plX,plY,inv,hH,Z){WEST.cam={dX,dY,plX,plY,inv,hH,W,H,t:T};const M=westMov();let F;if(s.mesh)F=s.mesh;else if(s.wo=='tw'||s.wo=='twf'){const fr=twFrames()[s.wo],i=((Math.floor(s.ph/6.2832*8)%8)+8)%8;F=fr[i]}else F=M[s.wo];if(!F)return;
  let base=0;if(SW){const f=swNearFloor(s.x,s.y,P.z+.5);base=f===f?f:0}else base=FHc(s.x,s.y);if(s.abs)base=0;else if(wAlien()&&(s.wo=='coach'||s.wo=='horse'))base+=.22+.04*Math.sin(T*3+s.x);drawMesh(F,s.x,s.y,base+(s.z||0),s.k||1,s.yaw||0,null,0,dX,dY,plX,plY,inv,hH,Z)}
-function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;try{roulHud(c)}catch(er){}c.save();c.textAlign='center';c.textBaseline='alphabetic';
+function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;if(W.inRace){try{raceHud(c)}catch(er){window.__rherr=er}return}try{roulHud(c)}catch(er){}c.save();c.textAlign='center';c.textBaseline='alphabetic';
  /* the dust storm: a sandy wash over everything */
  const sk=W.stormV||0;if(sk>.02){c.globalAlpha=Math.min(.42,sk*.42);c.fillStyle='#c89a5c';c.fillRect(0,0,LW,LH);c.globalAlpha=1}
  const D=W.duel;if(D){/* letterbox bars, the title, the cue */const bh=Math.round(LH*.11);c.fillStyle='#000';c.fillRect(0,0,LW,bh);c.fillRect(0,LH-bh,LW,bh);
@@ -667,6 +788,7 @@ function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;try{roul
  if(W.msgT>0&&W.msg){c.save();c.textAlign='center';c.font='bold 13px "DotGothic16",monospace';c.globalAlpha=Math.min(1,W.msgT*1.2);c.fillStyle='#000';c.fillText(W.msg,LW/2+1,61);c.fillStyle='#ffe9b0';c.fillText(W.msg,LW/2,60);c.restore()}}
 /* the lights: a high noon sun, oil lamps inside every building, the street lamps */
 function westLights(){const W=WEST,AL=wAlien(),RU=wRuin();const az=-1.1,el=1.18,D=70,c0=N/2;LT.push({x:c0+Math.cos(az)*D*Math.cos(el),y:c0+Math.sin(az)*D*Math.cos(el),z:D*Math.sin(el),r:2000,c:AL?[.8,.72,1]:RU?[1,.62,.46]:[1,.92,.78],k:RU?.55:.7,dx:0,dy:0,fk:0,ph:0,sun:1});
+ if(W.inRace)return;/* out on the race track there is only the sun */
  const dx4=[1,-1,0,0],dy4=[0,0,1,-1];for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const i=y*N+x;if(g[i]||!CMASK[i])continue;
   for(let d=0;d<4;d++){const dx=dx4[d],dy=dy4[d];if(!g[(y+dy)*N+x+dx]||blk[i])continue;const lx=x+.5+dx*.34,ly=y+.5+dy*.34;let ok=LT.length<34;for(const l of LAMPS)if(Math.hypot(l.x-lx,l.y-ly)<4.2){ok=false;break}if(!ok)continue;
    LAMPS.push({x:x+.5+dx*.46,y:y+.5+dy*.46,yaw:Math.atan2(-dx,-dy),cool:AL?1:0,hi:0});LT.push({x:lx,y:ly,z:1.05,r:5.5,c:AL?[.4,.9,1]:[1,.66,.34],k:1.15,dx:-dx,dy:-dy,fk:.08,ph:wHash(x,y,d)*30})}}
@@ -675,12 +797,37 @@ function westLights(){const W=WEST,AL=wAlien(),RU=wRuin();const az=-1.1,el=1.18,
 
 /* the lintel over every street door (called from g3dBuild): the false front with its sign over the doorway, wallpaper on the inside, a solid block */
 const W_DH=1.02;
-function westG3d(o){const W=WEST;if(!W||!W.doors)return;const DH=W_DH,top=o.top;
+function westG3d(o){const W=WEST;if(!W||!W.doors)return;if(W.inRace){try{raceG3d(o)}catch(er){window.__rg3d=er}return}const DH=W_DH,top=o.top;
  for(const d of W.doors){const x=d.i%N,y=(d.i/N)|0,k=d.id-1,ds=d.sd=='n'?3:2,di=d.sd=='n'?2:3;
   let f=o.bnd(x,y,ds,DH,2,1-DH,-1,o.flipOf(ds));o.quad(f.p,f.u,o.mat(TU[k]),.72,[o.DX[ds],o.DY[ds],0]);
   f=o.bnd(x,y,di,DH,top,1-DH/top,0,o.flipOf(di));o.quad(f.p,f.u,o.mat(TIN[k]),.72,[o.DX[di],o.DY[di],0]);
   o.quad([[x,y,DH],[x+1,y,DH],[x+1,y+1,DH],[x,y+1,DH]],[[0,0],[1,0],[1,1],[0,1]],o.mat(RT),.55,[0,0,-1]);
-  o.box(x,y,DH,x+1,y+1,top)}}
+  o.box(x,y,DH,x+1,y+1,top)}
+}
+
+/* 0.9.350 the race track's own geometry: the hill as one smooth surface (its solid steps stay as they were), the bridge deck's edges, underside and
+   trestles down into the chasm, and the checkered start line painted on the road */
+let RC_CHK=null;
+function raceG3d(o){const W=WEST,R_=W&&W.rq;if(!R_)return;const{quad,mat,bnd,DX,DY}=o,op=i=>!g[i]&&!pit[i];
+ const vh=(vx,vy)=>{let s=0,n=0,fl=1e9;for(const[cx,cy]of[[vx-1,vy-1],[vx,vy-1],[vx-1,vy],[vx,vy]]){const i=cy*N+cx;if(op(i)){s+=FH[i];n++;if(!R_.hill.has(i))fl=Math.min(fl,FH[i])}}return fl<1e8?fl:n?s/n:0};/* where the hill meets flat ground its corners sit on that ground, so there is no seam */
+ for(const i of R_.hill){const x=i%N,y=(i/N)|0,h00=vh(x,y),h10=vh(x+1,y),h11=vh(x+1,y+1),h01=vh(x,y+1),tx=CT[ct[i]]||FT,sl=((h01+h11)-(h00+h10))*.5;
+  quad([[x,y,h00],[x+1,y,h10],[x+1,y+1,h11],[x,y+1,h01]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(tx),Math.max(.55,Math.min(1.12,1+sl*1.6)),[0,0,1]);
+  /* close the seams: against a wall, or against flat ground that is not part of the hill */
+  const E=[[h00,h01],[h10,h11],[h00,h10],[h01,h11]];
+  for(let d=0;d<4;d++){const j=(y+DY[d])*N+x+DX[d],[ha,hb]=E[d];if(g[j]){const f=bnd(x,y,d,Math.min(ha,hb)-.08,FH[i]+.02,1,0,o.flipOf(d));quad(f.p,f.u,mat(TX[g[j]-1]),.7,[-DX[d],-DY[d],0]);continue}
+   if(op(j)&&!R_.hill.has(j)&&Math.max(ha,hb)-FH[j]>.02){const z0=FH[j],f=bnd(x,y,d,z0,Math.max(ha,hb),1,0,o.flipOf(d));f.p[2][2]=hb;f.p[3][2]=ha;quad(f.p,f.u,mat(tx),.8,[-DX[d],-DY[d],0])}}}
+ /* the bridge */
+ const PL=CT[3]||FT,DK=.22,BT_=-2.8;
+ for(const i of R_.br){const x=i%N,y=(i/N)|0;
+  for(const d of[2,3]){const j=(y+DY[d])*N+x;if(!pit[j])continue;const f=bnd(x,y,d,-DK,0,0,DK,o.flipOf(d));quad(f.p,f.u,mat(PL),.75,[DX[d],DY[d],0])}
+  quad([[x,y,-DK],[x+1,y,-DK],[x+1,y+1,-DK],[x,y+1,-DK]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(PL),.45,[0,0,-1])}
+ {const xs=[...R_.br].map(i=>i%N),ys=[...R_.br].map(i=>(i/N)|0),x0=Math.min(...xs),x1=Math.max(...xs)+1,y0=Math.min(...ys),y1=Math.max(...ys)+1;
+  const post=(cx,cy,w,z0,z1)=>{const a=cx-w/2,b=cx+w/2,c=cy-w/2,e=cy+w/2,t=mat(PL);quad([[a,c,z0],[b,c,z0],[b,c,z1],[a,c,z1]],[[0,z0],[1,z0],[1,z1],[0,z1]],t,.6,[0,-1,0]);quad([[a,e,z0],[b,e,z0],[b,e,z1],[a,e,z1]],[[0,z0],[1,z0],[1,z1],[0,z1]],t,.6,[0,1,0]);quad([[a,c,z0],[a,e,z0],[a,e,z1],[a,c,z1]],[[0,z0],[1,z0],[1,z1],[0,z1]],t,.8,[-1,0,0]);quad([[b,c,z0],[b,e,z0],[b,e,z1],[b,c,z1]],[[0,z0],[1,z0],[1,z1],[0,z1]],t,.8,[1,0,0])};
+  for(let x=x0+1;x<x1;x+=1.5)for(const y of[y0+.15,y1-.15])post(x,y,.16,BT_,-DK);
+  /* a beam under the deck between the trestles */for(const y of[y0+.15,y1-.15]){const t=mat(PL),z0=-DK-.25,z1=-DK;quad([[x0,y-.08,z0],[x1,y-.08,z0],[x1,y-.08,z1],[x0,y-.08,z1]],[[0,0],[x1-x0,0],[x1-x0,.25],[0,.25]],t,.6,[0,-1,0]);quad([[x0,y+.08,z0],[x1,y+.08,z0],[x1,y+.08,z1],[x0,y+.08,z1]],[[0,0],[x1-x0,0],[x1-x0,.25],[0,.25]],t,.6,[0,1,0]);quad([[x0,y-.08,z0],[x1,y-.08,z0],[x1,y+.08,z0],[x0,y+.08,z0]],[[0,0],[1,0],[1,1],[0,1]],t,.4,[0,0,-1])}}
+ /* the start line */
+ if(!RC_CHK){RC_CHK=document.createElement('canvas');RC_CHK.width=RC_CHK.height=64;const q=RC_CHK.getContext('2d');for(let a=0;a<4;a++)for(let b=0;b<4;b++){q.fillStyle=(a+b)%2?'#1c1618':'#f0e8d4';q.fillRect(a*16,b*16,16,16)}}
+ {const p=raceAt(R_.s0),z=FH[(p.y|0)*N+(p.x|0)]+.012,w=.25,hw=1.75;quad([[p.x-w,p.y-hw,z],[p.x+w,p.y-hw,z],[p.x+w,p.y+hw,z],[p.x-w,p.y+hw,z]],[[0,0],[.5,0],[.5,3.5],[0,3.5]],mat(RC_CHK),1,[0,0,1])}}
 
 /* the wanted man stays in his room, facing the door, until you step in or put a bullet in him */
 function westOutlaw(e,dt){const W=WEST;if(!W||W.outFree||e!==W.outlaw)return false;e.aggro=0;e.af=0;const r=W.outRoom;if(r){const a=Math.atan2(r.door[1]+.5-e.y,r.door[0]+.5-e.x);e.fa=(e.fa||0)+wAng(e.fa||0,a)*Math.min(1,dt*3)}return true}
@@ -777,7 +924,7 @@ const WR_RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
    bets on the table are paid from that pocket. European wheel: one green zero, straight-up 35:1, dozens and columns 2:1, the even-money bets 1:1.
    Table-local coordinates: x across (-x on the player's left), z toward the player (+z the near edge), y up; the table is drawn at yaw -PI/2. */
 const WSEQ=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const RCHIPS=[5,10,25,50,100],RCHC=[[236,232,224],[200,40,44],[40,110,200],[40,150,70],[30,28,32]],RTOP=.424,RYAW=-Math.PI/2,RLIM=500;
+const RCHIPS=[5,10,25,50,100],RCHC=[[236,232,224],[200,40,44],[40,110,200],[40,150,70],[30,28,32]],RDROP=.1,RTOP=.424-RDROP,RYAW=-Math.PI/2,RLIM=500;
 let RCELLS=null;
 function roulCells(){if(RCELLS)return RCELLS;const C=[],add=(id,x0,x1,z0,z1,lab,pay,f,k)=>C.push({id,x0,x1,z0,z1,lab,pay,f,k:k||'bet'});
  add('n0',-.46,-.40,-.02,.28,'0',35,n=>n==0);
@@ -808,23 +955,49 @@ function roulFeltTex(al){if(RFT[al?1:0]!==undefined)return RFT[al?1:0];const S=2
  const L=typeof sknLayer=='function'?sknLayer(cv):-1;return RFT[al?1:0]=L}
 function roulTableMesh(al){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),m=[];
  const WD=al?[86,60,150]:[104,66,40],WD2=al?[237,230,250]:[80,50,30],FE=al?[30,22,70]:[24,96,52],E=al?{e:1}:{};
- m.push(...B(0,.2,0,.92,.4,.92,WD),...B(0,.41,0,.94,.02,.94,FE));for(const z of[-.485,.485])m.push(...B(0,.43,z,.98,.05,.03,WD2));for(const x of[-.485,.485])m.push(...B(x,.43,0,.03,.05,.98,WD2));
+ /* (0.9.352) no big flat top faces: the cloth below is laid in small tiles, so the wheel and the ball are never drawn under it */const noTop=a=>a.filter(f=>!(f.n&&f.n[1]>.9));
+ m.push(...noTop(B(0,.2,0,.92,.4,.92,WD)),...noTop(B(0,.41,0,.94,.02,.94,FE)));for(const z of[-.485,.485])m.push(...B(0,.43,z,.98,.05,.03,WD2));for(const x of[-.485,.485])m.push(...B(x,.43,0,.03,.05,.98,WD2));
  /* the painted cloth on top */
- const L=roulFeltTex(al),y=.4205,R=RFS;if(L>=0)m.push({p:[[-R,y,-R],[R,y,-R],[R,y,R],[-R,y,R]],n:[0,1,0],c:[255,255,255],e:al?1:0,uv:[[0,0],[1,0],[1,1],[0,1]],sk:L,g:0,vs:{}});
+ const L=roulFeltTex(al),y=.4205,R=RFS,NT=12;if(L>=0){for(let i=0;i<NT;i++)for(let j=0;j<NT;j++){const x0=-R+2*R*i/NT,x1=-R+2*R*(i+1)/NT,z0=-R+2*R*j/NT,z1=-R+2*R*(j+1)/NT;
+   /* none under the wheel */if(Math.hypot((x0+x1)/2,(z0+z1)/2+.24)<.2)continue;m.push({p:[[x0,y,z0],[x1,y,z0],[x1,y,z1],[x0,y,z1]],n:[0,1,0],c:[255,255,255],e:al?1:0,uv:[[i/NT,j/NT],[(i+1)/NT,j/NT],[(i+1)/NT,(j+1)/NT],[i/NT,(j+1)/NT]],sk:L,g:0,vs:{}})}}
  else for(const c of roulCells()){if(c.k!='bet')continue;const n=c.id[0]=='n'?+c.id.slice(1):null;if(n===null)continue;m.push(...B((c.x0+c.x1)/2,.4215,(c.z0+c.z1)/2,c.x1-c.x0-.008,.003,c.z1-c.z0-.008,n==0?[40,150,70]:WR_RED.has(n)?[176,30,36]:[26,24,28]))}
  /* the chips to pick the value: a short stack of each */
  RCHIPS.forEach((v,i)=>{const z=-.4+i*.072;for(let k=0;k<3;k++)m.push(...C(.34,.423+k*.008,z,.03,.007,RCHC[i],{ax:'y',n:10}));m.push(...C(.34,.447,z,.018,.002,[240,236,220],{ax:'y',n:8}))});
  /* the lever that sends the ball */
  m.push(...B(-.345,.43,-.25,.12,.02,.2,al?[40,28,84]:[60,40,26]),...B(-.345,.5,-.25,.02,.14,.02,al?[150,140,255]:[200,170,90],{rx:.35}),...C(-.345,.57,-.226,.025,.03,al?[250,128,200]:[176,30,36],{ax:'y',n:8,...E}));
+ /* 0.9.352: the table stands RDROP lower than it was built (everything above the floor comes down), so you look down onto it */
+ for(const f of m)f.p=f.p.map(v=>v[1]>.05?[v[0],v[1]-RDROP,v[2]]:v);for(const f of m)delete f.vb;
+ return m}
+/* 0.9.352 the wheel: a wooden bowl with a ball track round its rim, a ring of 37 numbered pockets (red, black and the green zero, in the real
+   European order, each with its number painted on), frets between them and the turret in the middle. Pocket k sits at angle k/37 of a turn
+   (mesh x = cos, z = sin), the same angle roulStep1 reads the ball's pocket from, so the ball stops in the pocket whose number is called. */
+const RW_PK=.168,RW_RIM=.208,RWT={};
+function roulWheelTex(al){if(RWT[al?1:0]!==undefined)return RWT[al?1:0];const S=256,cv=document.createElement('canvas');cv.width=cv.height=S;const g=cv.getContext('2d');
+ const RD=al?'#e0509c':'#b8222a',BK=al?'#1aa6b8':'#18161a',GR=al?'#e0b84a':'#24a04c',TX=al?'#ffffff':'#f6f0dc';g.fillStyle='#000';g.fillRect(0,0,S,S);
+ for(let k=0;k<37;k++){const n=WSEQ[k],cx=(k%7)*36,cy=Math.floor(k/7)*42;g.fillStyle=n==0?GR:WR_RED.has(n)?RD:BK;g.fillRect(cx,cy,36,42);
+  g.fillStyle=TX;g.font='bold 22px "DotGothic16",monospace';g.textAlign='center';g.textBaseline='middle';g.fillText(String(n),cx+18,cy+15)}
+ const L=typeof sknLayer=='function'?sknLayer(cv):-1;return RWT[al?1:0]=L}
+function roulWheelMesh(al){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),m=[],WD=al?[86,60,150]:[96,60,36],WL=al?[40,28,84]:[150,104,62],MT=al?[150,140,255]:[210,214,224],E=al?{e:1}:{};
+ m.push(...C(0,0,0,.235,.05,WD,{ax:'y',n:24}),...C(0,.05,0,.212,.012,al?[30,22,70]:[70,44,26],{ax:'y',n:24}));
+ /* the raised rim the ball runs round, inside it */for(let k=0;k<28;k++){const a=k/28*6.2832;m.push(...B(Math.cos(a)*.224,.062,Math.sin(a)*.224,.024,.024,.054,WL,{ry:-a}))}
+ const L=roulWheelTex(al),y=.064,r0=.128,r1=.2;
+ for(let k=0;k<37;k++){const a0=(k-.5)/37*6.2832,a1=(k+.5)/37*6.2832,n=WSEQ[k],u1=(k%7)*36/256,u0=((k%7)*36+36)/256,v1=Math.floor(k/7)*42/256,v0=(Math.floor(k/7)*42+42)/256;/* the top of each number toward the middle */
+  let P_=[[Math.cos(a0)*r1,y,Math.sin(a0)*r1],[Math.cos(a1)*r1,y,Math.sin(a1)*r1],[Math.cos(a1)*r0,y,Math.sin(a1)*r0],[Math.cos(a0)*r0,y,Math.sin(a0)*r0]],U=[[u0,v0],[u1,v0],[u1,v1],[u0,v1]];
+  /* the same turning sense as the felt (whose faces show) */const cr=(P_[1][0]-P_[0][0])*(P_[2][2]-P_[0][2])-(P_[1][2]-P_[0][2])*(P_[2][0]-P_[0][0]);if(cr<0){P_=P_.reverse();U=U.reverse()}
+  if(L>=0)m.push({p:P_,n:[0,1,0],c:[255,255,255],e:al?1:0,uv:U,sk:L,g:0,vs:{}});
+  else m.push(...B(Math.cos(k/37*6.2832)*.164,y-.002,Math.sin(k/37*6.2832)*.164,.026,.004,.07,n==0?[40,150,70]:WR_RED.has(n)?[176,30,36]:[26,24,28],{ry:-k/37*6.2832}));
+  /* the fret on the near side of the pocket */const fa=a0;m.push(...B(Math.cos(fa)*.164,y+.006,Math.sin(fa)*.164,.072,.012,.003,MT,{ry:-fa}))}
+ m.push(...C(0,.064,0,r0,.008,WL,{ax:'y',n:24}),...C(0,.07,0,.06,.012,al?[128,92,199]:[120,80,50],{ax:'y',n:12}),...C(0,.08,0,.016,.06,MT,{ax:'y',n:6,...E}));for(let k=0;k<4;k++)m.push(...B(0,.13,0,.1,.01,.01,MT,{ry:k*.785}));
  return m}
 /* a stack of chips (value index i, h chips high) and the frame round a box when it is aimed at */
 const RSTK={};function roulStack(i,h){const k=i+'_'+h;if(RSTK[k])return RSTK[k];const m=[];for(let j=0;j<h;j++)m.push(...vmCyl(0,j*.007,0,.019,.0065,RCHC[i],{ax:'y',n:10}));m.push(...vmCyl(0,h*.007,0,.011,.0015,[240,236,220],{ax:'y',n:8}));return RSTK[k]=m}
-function roulFrame(c,col){const B=(...a)=>vmBox(...a),m=[],w=c.x1-c.x0,d=c.z1-c.z0,cx=(c.x0+c.x1)/2,cz=(c.z0+c.z1)/2,t=.006,y=c.k=='bet'?RTOP+.003:.5;
+function roulFrame(c,col){const B=(...a)=>vmBox(...a),m=[],w=c.x1-c.x0,d=c.z1-c.z0,cx=(c.x0+c.x1)/2,cz=(c.z0+c.z1)/2,t=.006,y=c.k=='bet'?RTOP+.003:.5-RDROP;
  m.push(...B(cx,y,c.z0,w,.003,t,col,{e:1}),...B(cx,y,c.z1,w,.003,t,col,{e:1}),...B(c.x0,y,cz,t,.003,d,col,{e:1}),...B(c.x1,y,cz,t,.003,d,col,{e:1}));return m}
-let RBALL=null;const roulBall=()=>RBALL||(RBALL=[...vmCyl(0,-.011,0,.009,.022,[246,244,238],{ax:'y',n:8}),...vmBox(0,0,0,.016,.016,.016,[246,244,238],{ry:.785})]);
+let RBALL=null;const roulBall=()=>RBALL||(RBALL=[...vmCyl(0,-.012,0,.011,.024,[250,248,244],{ax:'y',n:8,e:1}),...vmBox(0,0,0,.019,.019,.019,[250,248,244],{ry:.785,e:1})]);
 /* table-local <-> world */
 const rlW=(x,z)=>{const r=WEST.roul;return[r.x-z,r.y+x]},rlL=(X,Y)=>{const r=WEST.roul;return[Y-r.y,r.x-X]};
-function roulBase(){const r=WEST.roul;if(SW){const f=swNearFloor(r.x,r.y,P.z+.5);return f===f?f:0}return FHc(r.x,r.y)}
+/* the saloon floor under the table (the floor itself, never the table's own top) */
+function roulBase(){const r=WEST.roul;return FH[(r.y|0)*N+(r.x|0)]||0}
 /* what the crosshair is on: the box, or null (the view of the last frame drawn) */
 function roulAim(){const W=WEST,r=W&&W.roul,cm=W&&W.cam;if(!r||!cm||T-cm.t>.2||(DM&&!CO()))return null;if(Math.hypot(r.x-P.x,r.y-P.y)>2.2)return null;
  const top=roulBase()+RTOP,den=cm.H/2-cm.hH;if(den<=1e-3)return null;const d=(EZ-top)*cm.H/den;if(!(d>0)||d>2.2)return null;
@@ -834,7 +1007,7 @@ function roulOthers(){const ob=WEST.roul.ob||{};for(const id in ob)for(const k i
 function roulBusy(){const r=WEST.roul;return r.st=='roll'||r.st=='drop'||r.st=='lock'}
 function roulTotal(){const r=WEST.roul;let s=0;for(const k in r.bets)s+=r.bets[k];return s}
 /* a click on the table: true if it was used (the gun does not fire) */
-function roulClick(btn){const W=WEST;if(!W||!W.roul||state!='play'||(DM&&!CO())||PZ)return false;const c=roulAim();if(!c)return false;const r=W.roul;
+function roulClick(btn){const W=WEST;if(!W||!W.roul||W.inRace||state!='play'||(DM&&!CO())||PZ)return false;const c=roulAim();if(!c)return false;const r=W.roul;
  if(W.robbed){wMsg('"We don\'t serve thieves here."',2.2);return true}
  if(btn==2){if(c.k=='bet'&&r.bets[c.id]&&!roulBusy()){P.money=Math.min(MAXM(),(P.money|0)+r.bets[c.id]);delete r.bets[c.id];r.mv=null;roulTell();try{moneySync()}catch(er){}snd(900,.05,'square',.03,-300)}return true}
  if(btn!==0)return false;
@@ -849,7 +1022,7 @@ function roulSpin(){const r=WEST.roul;if(roulBusy())return;if(!roulTotal()&&!rou
  const sp={a:+r.a.toFixed(3),v:+Math.max(r.v,2.2+Math.random()*.6).toFixed(3),ba:+(Math.random()*6.2832).toFixed(3),bw:+(-10-Math.random()*2.5).toFixed(3)};wNet('wrs',sp);roulGo(sp)}
 /* the ball is sent (by whoever pulled the lever; every game then rolls it the same way) */
 function roulGo(sp){const r=WEST.roul;if(!r||!r.bets)return;if(r.st=='done'){r.st='idle';r.win=null}
- r.a=sp.a;r.v=sp.v;r.bA=sp.ba;r.bW=sp.bw;r.acc=0;r.st='roll';r.bR=.196;r.t=0;r.win=null;r.mv=null;wMsg('"NO MORE BETS!"',1.4);snd(300,.25,'sawtooth',.03,600,{x:r.x,y:r.y})}
+ r.a=sp.a;r.v=sp.v;r.bA=sp.ba;r.bW=sp.bw;r.acc=0;r.st='roll';r.bR=RW_RIM;r.t=0;r.win=null;r.mv=null;wMsg('"NO MORE BETS!"',1.4);snd(300,.25,'sawtooth',.03,600,{x:r.x,y:r.y})}
 function roulStep(dt0){const W=WEST,r=W.roul;if(!r)return;if(!r.bets){r.bets={};r.chip=1;r.st='idle';r.ob={}}
  /* in steps of 1/120 s while the ball is out, so every player's game lands it in the same pocket */
  if(roulBusy()){r.acc=(r.acc||0)+dt0;let n=0;while(r.acc>=1/120&&n<60){r.acc-=1/120;n++;roulStep1(1/120)}return}roulStep1(dt0)}
@@ -857,15 +1030,16 @@ function roulStep1(dt){const r=WEST.roul;
  r.a+=r.v*dt;r.v=Math.max(roulBusy()?.5:0,r.v-dt*(roulBusy()?.16:.35));if(!r.st||r.st=='idle')return;r.t+=dt;
  if(r.st=='roll'){r.bA+=r.bW*dt;r.bW*=Math.exp(-.3*dt);/* the ball clicking round the rim */r.ck=(r.ck||0)+Math.abs(r.bW)*dt;if(r.ck>2.2){r.ck=0;snd(2600,.012,'square',.012,-900,{x:r.x,y:r.y,r:2})}
   if(Math.abs(r.bW+r.v)<2.6){r.st='drop';r.t=0}}
- else if(r.st=='drop'){const u=Math.min(1,r.t/.8);r.bW+=(r.v-r.bW)*Math.min(1,dt*3);r.bA+=r.bW*dt;r.bR=.15+.046*(1-u)*Math.abs(Math.cos(u*Math.PI*2.5));
+ else if(r.st=='drop'){const u=Math.min(1,r.t/.8);r.bW+=(r.v-r.bW)*Math.min(1,dt*3);r.bA+=r.bW*dt;r.bR=RW_PK+(RW_RIM-RW_PK)*(1-u)*Math.abs(Math.cos(u*Math.PI*2.5));
   if(r.t>.1&&((r.t*97)%1)<dt*9)snd(1800+Math.random()*900,.02,'square',.025,-1200,{x:r.x,y:r.y,r:2});
-  if(u>=1){const k=((Math.round((r.bA+r.a)/6.2832*37)%37)+37)%37;r.k=k;r.n=WSEQ[k];r.st='lock';r.t=0;r.bR=.15;snd(1300,.03,'square',.03,-700,{x:r.x,y:r.y,r:2})}}
+  if(u>=1){const k=((Math.round((r.bA+r.a)/6.2832*37)%37)+37)%37;r.k=k;r.n=WSEQ[k];r.st='lock';r.t=0;r.bR=RW_PK;snd(1300,.03,'square',.03,-700,{x:r.x,y:r.y,r:2})}}
  else if(r.st=='lock'){r.bA=r.k/37*6.2832-r.a;if(r.t>.9)roulPay()}
  else if(r.st=='done'){r.bA=r.k/37*6.2832-r.a}}
 function roulPay(){const r=WEST.roul,n=r.n,col=n==0?'GREEN':WR_RED.has(n)?'RED':'BLACK';let won=0,back=0;
  for(const c of roulCells()){const b=r.bets[c.id];if(!b||!c.f)continue;if(c.f(n)){won+=b*c.pay;back+=b*(c.pay+1)}}
  r.st='done';r.win='n'+n;const had=roulTotal()>0;r.bets={};r.ob={};r.mv=null;
  if(!had){wMsg(n+' '+col,2.4);return}
+ try{typeof ledMg=='function'&&ledMg('roul',back>0)}catch(er){}
  if(back){P.money=Math.min(MAXM(),(P.money|0)+back);try{moneySync()}catch(er){}wMsg(n+' '+col+'!  YOU WIN $'+won,3.2);snd(660,.15,'triangle',.08,200);setTimeout(()=>snd(990,.25,'triangle',.08,200),150)}
  else{wMsg(n+' '+col+'.  THE HOUSE WINS',2.8);snd(160,.25,'square',.05,-60)}}
 /* what is drawn on the table: chips on the bets, the frame round the aimed box, the marker on the last number, the ball */
@@ -877,7 +1051,7 @@ function roulList(L){const W=WEST,r=W.roul;if(!r||!r.bets)return;if((r.x-P.x)**2
    if(r.win){const c=roulCells().find(c=>c.id==r.win);if(c){const cx=(c.x0+c.x1)/2,cz=(c.z0+c.z1)/2;m.push(...vmCyl(cx,RTOP,cz,.014,.03,[236,236,240],{ax:'y',n:8}),...vmCyl(cx,RTOP+.03,cz,.02,.006,[255,220,120],{ax:'y',n:8,e:1}))}}
    r.mv=m;r.mvK=key}
  if(r.mv.length)L.push({q:14,wo:'rlo',mesh:r.mv,x:r.x,y:r.y,yaw:RYAW,k:1,z:0});
- if(r.st&&r.st!='idle'){const [wx,wy]=rlW(0,-.24),bx=wx+Math.cos(r.bA)*r.bR,by=wy+Math.sin(r.bA)*r.bR,bz=r.st=='roll'?.513:r.st=='drop'?.505+.03*Math.abs(Math.sin(r.t*12)):.497;L.push({q:14,wo:'rlb',mesh:roulBall(),x:bx,y:by,yaw:0,k:1,z:bz})}}
+ if(r.st&&r.st!='idle'){const [wx,wy]=rlW(0,-.24),bx=wx+Math.cos(r.bA)*r.bR,by=wy+Math.sin(r.bA)*r.bR,bz=RTOP-.003+(r.st=='roll'?.08:r.st=='drop'?.074+.03*Math.abs(Math.sin(r.t*12)):.07);L.push({q:14,wo:'rlb',mesh:roulBall(),x:bx,y:by,yaw:0,k:1,z:base+bz,abs:1})}}
 /* on the screen: the numbers on the boxes (the felt is too small for painted ones), what a click would do */
 function roulHud(c){const W=WEST,r=W.roul,cm=W.cam;if(!r||!r.bets||(DM&&!CO())||!cm||T-cm.t>.2||Math.hypot(r.x-P.x,r.y-P.y)>2.2)return;const base=roulBase(),sx=LW/cm.W,sy=LH/cm.H;
  const pr=(x,z,h)=>{const[X,Y]=rlW(x,z),dx=X-P.x,dy=Y-P.y,tx=cm.inv*(cm.dY*dx-cm.dX*dy),ty=cm.inv*(-cm.plY*dx+cm.plX*dy);if(ty<.12)return null;return[cm.W/2*(1+tx/ty)*sx,(cm.hH+(EZ-(base+h))*cm.H/ty)*sy,ty]};
@@ -1016,8 +1190,7 @@ function wAlienMov(){const B=(...a)=>vmBox(...a),C=(...a)=>vmCyl(...a),CY=[64,24
  /* a flying saucer: a wide disc, a domed cockpit, lights round the rim, a glow underneath */
  const ufo=[];ufo.push(...C(0,0,0,.6,.08,ST,{ax:'y',n:16,r2:.3}),...C(0,-.06,0,.62,.06,DK,{ax:'y',n:16,r2:.6}),...C(0,.08,0,.26,.18,[120,240,250],{ax:'y',n:12,r2:.08,e:1}),...C(0,-.1,0,.22,.04,[150,255,200],{ax:'y',n:10,e:1}));for(let k=0;k<10;k++){const a=k/10*6.283;ufo.push(...B(Math.cos(a)*.58,.0,Math.sin(a)*.58,.06,.05,.06,k%2?MG:CY,{e:1}))}
  /* the wheel of chance: a pearl dish, a ring of glowing pockets in three colours (a gold one for the zero), a crystal in the middle */
- const wheel=[];wheel.push(...C(0,0,0,.22,.05,[86,60,150],{ax:'y',n:18}),...C(0,.05,0,.2,.012,[40,28,84],{ax:'y',n:18}));for(let k=0;k<37;k++){const a=k/37*6.2832,n=WSEQ[k];wheel.push(...B(Math.cos(a)*.15,.064,Math.sin(a)*.15,.024,.006,.05,n==0?[255,220,120]:WR_RED.has(n)?MG:CY,{ry:-a,e:1}),...B(Math.cos(a+.085)*.15,.07,Math.sin(a+.085)*.15,.004,.012,.05,ST,{ry:-a-.085}))}
- wheel.push(...C(0,.05,0,.205,.02,ST,{ax:'y',n:18,r2:.215}),...C(0,.06,0,.08,.012,[128,92,199],{ax:'y',n:12}),...C(0,.07,0,.035,.1,[150,140,255],{ax:'y',n:5,r2:.004,e:1}));for(let k=0;k<3;k++)wheel.push(...B(0,.1,0,.11,.01,.01,ST,{ry:k*1.047}));
+ const wheel=roulWheelMesh(true);
  return{horse:drone,dish,ant,dome,beacon,ufo,wheel}}
 /* rooftop pieces for every building (the alien world only), from the fixed layout */
 function wRoofKit(){const W=WEST;const R=[];for(const b of W.b){const N0=b.sd=='n',yy=b.fy+(N0?-.75:1.75),kinds=['dish','ant','dome','beacon'];let k=b.k.length;

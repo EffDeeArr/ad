@@ -12,10 +12,10 @@ const crypto = require('crypto');
 const fs = require('fs');
 
 const MAPS = ['random', 'dungeon', 'cavern', 'lab', 'crypt', 'manor', 'foundry', 'city', 'mineshaft', 'coliseum', 'station', 'ctf', 'custom', 'royale'];
-const MODES = ['classic', 'team', 'brighton', 'ctf', 'coop', 'cash', 'defuse', 'gungame', 'arms', 'infection', 'oitc', 'airhockey', 'royale'];
+const MODES = ['dm', 'tdm', 'classic', 'team', 'brighton', 'ctf', 'coop', 'cash', 'defuse', 'gungame', 'arms', 'infection', 'oitc', 'airhockey', 'royale'];
 const MODE_ALIAS = { arsenal: 'brighton' };
-const MODE_NAMES = { classic: 'Classic Deathmatch', team: 'Team Deathmatch', brighton: 'Brighton Deathmatch', ctf: 'Capture the Flag', coop: 'Co-op', cash: 'Cash Deathmatch', defuse: 'Bomb Defusal', infection: 'Infection', gungame: 'Gun Game', arms: 'Arms Race', oitc: 'One in the Chamber' , airhockey: 'Air Hockey (1v1)', royale: 'Battle Royale'};
-const teamy = m => m === 'team' || m === 'ctf' || m === 'defuse';
+const MODE_NAMES = { dm: 'Deathmatch', tdm: 'Team Deathmatch', classic: 'Arberia Deathmatch', team: 'Arberia Team Deathmatch', brighton: 'Brighton Deathmatch', ctf: 'Capture the Flag', coop: 'Co-op', cash: 'Cash Deathmatch', defuse: 'Bomb Defusal', infection: 'Infection', gungame: 'Gun Game', arms: 'Arms Race', oitc: 'One in the Chamber' , airhockey: 'Air Hockey (1v1)', royale: 'Battle Royale'};
+const teamy = m => m === 'team' || m === 'tdm' || m === 'ctf' || m === 'defuse';
 // Capture the Flag: the CTF map is a fixed layout, so flag homes are constants shared with the game.
 const CTF_FLAGS = [{ x: 3.5, y: 16 }, { x: 28.5, y: 16 }];
 // the coliseum map (40x40 arena): one team defends the north end, the other the south end
@@ -26,7 +26,8 @@ const MAX_PLAYERS = 16;
 // Battle Royale: 30 s to pick a spawn point, then a storm that shrinks in stages (radius in tiles on the 256x256 map)
 const BR_PICK_MS = 30000, BR_R = [185, 120, 75, 42, 20, 6], BR_HOLD = [45, 30, 25, 20, 15], BR_SHRINK = [23, 20, 18, 15, 13], BR_CHESTS = 600;
 const BOT_MAX = 12;             // bots the host's game can add (each is a normal connection from the host's own machine)
-const PRE_ROUND = 20; // seconds of loadout picking in Brighton
+const BR_INTRO = 8; // (0.9.370) Brighton opens with 8 seconds of how-it-works before the picking
+const PRE_ROUND = 20, DM_PICK = 30; // DM_PICK: seconds to pick a gun and two powers in Deathmatch / Team Deathmatch // seconds of loadout picking in Brighton
 // Bomb Defusal (plant / defuse, best of 5): times in milliseconds
 // money: start CASH_START; round win / loss payouts (loss bonus grows with each loss in a row), kills, plant, defuse
 const DF_WIN_CASH = 1000, DF_LOSS_CASH = 700, DF_STREAK_CASH = 150, DF_KILL_CASH = 100, DF_OBJ_CASH = 200, DF_CASH_MAX = 3000, DF_WAIT = 6000;
@@ -88,7 +89,7 @@ const HELP = [
   '  banlist                       show banned IPs',
   '  map <name>                    load a map type (lobby: sets the next map; in a match: reloads the arena)',
   '  maps                          list map types',
-  '  mode <classic|team|brighton|ctf|coop|cash|defuse|gungame|arms|infection|oitc>  set the game mode (lobby only; ctf plays on the ctf map, or on an imported map that has flags)',
+  '  mode <dm|tdm|classic|team|brighton|ctf|coop|cash|defuse|gungame|arms|infection|oitc>  set the game mode (lobby only; ctf plays on the ctf map, or on an imported map that has flags)',
   '  limit <n>                     set kills (captures in ctf) needed to win',
   '  team <player> <red|blue|spec> move a player to a team, or make them a spectator (lobby only)',
   '  start                         start the match from the lobby',
@@ -152,7 +153,7 @@ function startServer(port, hostToken, opts) {
     } // coMoney: the co-op team's wallet, kept here so every player shows the same number
 
     const list = () => [...players.entries()].map(([id, p]) =>
-      ({ id, name: p.name, k: p.k, d: p.d, team: p.spec ? 2 : p.team, ping: p.ping, g: p.gl | 0, a: p.as | 0, pl: p.pl | 0, df: p.df | 0, cp: p.cp | 0, rt: p.rt | 0, inf: p.inf | 0, dg: p.dg | 0, lv: p.lv == null ? (cfg.mode === 'royale' ? 1 : 3) : p.lv, bot: p.bot ? 1 : 0 }));
+      ({ id, name: p.name, k: p.k, d: p.d, team: p.spec ? 2 : p.team, ping: p.ping, g: p.gl | 0, a: p.as | 0, pl: p.pl | 0, df: p.df | 0, cp: p.cp | 0, rt: p.rt | 0, inf: p.inf | 0, dg: p.dg | 0, sc: p.sc | 0, lv: p.lv == null ? (cfg.mode === 'royale' ? 1 : 3) : p.lv, bot: p.bot ? 1 : 0 }));
     const flagMsg = () => ({ t: 'flags', f: flags.map(f => ({ s: f.s, c: f.c, x: +f.x.toFixed(2), y: +f.y.toFixed(2), z: +(f.z || 0).toFixed(2) })), cap: caps });
     const send = (ws, o) => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
     const all = (o, except) => { for (const [id, p] of players) if (id !== except) send(p.ws, o); };
@@ -166,6 +167,7 @@ function startServer(port, hostToken, opts) {
       if (m === 'coop') for (const [bid, bp] of players) if (bp.bot) dropSocket(bp.ws, 'Bots are not available in co-op.');
       if (m === 'coop') { const h = players.get(hostId); if (h && h.spec) { h.spec = false; note('Co-op needs the host to play, so the host is no longer spectating.'); } } // the host runs the monsters
       if (teamy(m) && !teamy(was)) balance();
+      if (m === 'brighton') cfg.limit = 30; else if (was === 'brighton') cfg.limit = 20;
       if (m === 'ctf') { cfg.map = (custom && custom.ctf) ? 'custom' : (cfg.map === 'coliseum' ? 'coliseum' : 'ctf'); cfg.limit = 3; }
       else if (was === 'ctf') { if (cfg.map === 'ctf') cfg.map = 'random'; cfg.limit = 20; }
       if (m === 'coop' && (cfg.map === 'ctf' || cfg.map === 'station')) cfg.map = 'random';
@@ -239,9 +241,10 @@ function startServer(port, hostToken, opts) {
         const top = pl.filter(x => x.team !== 2).sort((a, b) => (b.lv - a.lv) || (b.k - a.k));
         winner = oiWin && players.has(oiWin) ? oiWin : (top.length && (top.length < 2 || top[0].lv > top[1].lv || (top[0].lv === top[1].lv && top[0].k > top[1].k)) ? top[0].id : 0);
       } else {
-        const top = pl.filter(x => x.team !== 2).sort((a, b) => isGG() ? (b.g - a.g || b.k - a.k) : b.k - a.k);
+        const bs = cfg.mode === 'brighton', sk = x => bs ? x.sc * 1000 + x.k : x.k;
+        const top = pl.filter(x => x.team !== 2).sort((a, b) => isGG() ? (b.g - a.g || b.k - a.k) : sk(b) - sk(a));
         if (isGG() && ggWin && players.has(ggWin)) winner = ggWin;
-        else if (top.length && (top.length < 2 || (isGG() ? (top[0].g > top[1].g || (top[0].g === top[1].g && top[0].k > top[1].k)) : top[0].k > top[1].k))) winner = top[0].id;
+        else if (top.length && (top.length < 2 || (isGG() ? (top[0].g > top[1].g || (top[0].g === top[1].g && top[0].k > top[1].k)) : sk(top[0]) > sk(top[1])))) winner = top[0].id;
       }
       if (cfg.mode !== 'coop' && cfg.mode !== 'defuse' && cfg.mode !== 'infection') statResult(p => teamy(cfg.mode) ? (team < 0 ? 0 : p.team === team ? 1 : -1) : (winner ? (players.get(winner) === p ? 1 : -1) : 0));
       else if (cfg.mode === 'defuse') statSave();
@@ -297,7 +300,7 @@ function startServer(port, hostToken, opts) {
       if (cfg.mode === 'ctf' && !(cfg.map === 'custom' && custom && custom.ctf) && cfg.map !== 'coliseum') cfg.map = 'ctf';
       if (cfg.map === 'custom' && !custom) cfg.map = 'random';
       seed = (Math.random() * 1e9) | 0;
-      for (const p of players.values()) { p.k = 0; p.d = 0; p.dg = 0; p.as = 0; p.pl = 0; p.df = 0; p.cp = 0; p.rt = 0; p.inf = 0; p.hitBy = {}; p.dead = 0; p.cash = CASH_START; p.per = {}; p.gl = 0; p.pg = []; p.lv = cfg.mode === 'royale' ? 1 : 3; p.omT = 0; p.ahEnd = 0; p.brOk = 0; }
+      for (const p of players.values()) { p.k = 0; p.sc = 0; p.d = 0; p.dg = 0; p.as = 0; p.pl = 0; p.df = 0; p.cp = 0; p.rt = 0; p.inf = 0; p.hitBy = {}; p.dead = 0; p.cash = CASH_START; p.per = {}; p.gl = 0; p.pg = []; p.lv = cfg.mode === 'royale' ? 1 : 3; p.omT = 0; p.ahEnd = 0; p.brOk = 0; }
       BR.ph = cfg.mode === 'royale' ? 'pick' : 'off'; BR.at = Date.now() + BR_PICK_MS; BR.pick = new Map(); BR.opened = new Set(); BR.felled = new Set(); BR.boxGone = new Set(); BR.n0 = [...players.values()].filter(p => !p.spec).length;
       potg = null;
       ggWin = 0; oiWin = 0; ggOrder = ggMake();
@@ -309,7 +312,7 @@ function startServer(port, hostToken, opts) {
         if (!only && cfg.mode === 'arms') arStart();
         if (only && isGG()) { const q = [...players.values()].find(x => x.ws === only); if (q) { const o2 = [...players.values()].filter(x => x !== q && !x.spec); q.gl = o2.length ? Math.min(...o2.map(x => x.gl | 0)) : 0; } }
         const mq = only && isGG() ? [...players.values()].find(x => x.ws === only) : null;
-        const m = { t: 'start', go: isGG() ? ggOrder : undefined, gl: mq ? mq.gl : 0, seed, cfg, map: cfg.map, pre: cfg.mode === 'brighton' ? PRE_ROUND : cfg.mode === 'cash' ? CASH_PRE : 0, fl: cfl, players: list() };
+        const m = { t: 'start', go: isGG() ? ggOrder : undefined, gl: mq ? mq.gl : 0, seed, cfg, map: cfg.map, pre: cfg.mode === 'brighton' ? PRE_ROUND + BR_INTRO : cfg.mode === 'dm' || cfg.mode === 'tdm' ? DM_PICK : cfg.mode === 'cash' ? CASH_PRE : 0, fl: cfl, players: list() };
         if (cfg.mode === 'cash') { for (const [pid, p] of players) if (!only || only === p.ws) send(p.ws, { t: 'cash', c: p.cash }); }
         if (only) send(only, m); else all(m);
         if (cfg.mode === 'ctf') (only ? send(only, flagMsg()) : all(flagMsg()));
@@ -899,8 +902,8 @@ function startServer(port, hostToken, opts) {
           case 's':   // position/state: rebuilt from validated fields only
             if (running && !(cfg.mode === 'royale' && BR.ph !== 'live')) {
               me.x = num(o.x, -1, 400); me.y = num(o.y, -1, 400); me.z = num(o.z, -400, 800); if (cfg.mode === 'oitc' || cfg.mode === 'royale') me.dead = (o.d || (me.lv != null && me.lv <= 0)) ? 1 : 0; else if (cfg.mode !== 'defuse' && cfg.mode !== 'arms') me.dead = o.d ? 1 : 0; if (typeof o.k === 'string' && STAT_W.includes(o.k)) me.wk = o.k;
-              me.sh = Math.round(num(o.sh, 0, 3)); // inside an enterable building (shop, library, arcade)
-              all({ t: 's', id, l: 0, ty: o.ty ? 1 : 0, sh: Math.round(num(o.sh, 0, 3)), cr: o.cr ? 1 : 0, zm: Math.round(num(o.zm, 0, 1) * 20) / 20, cs: Math.round(num(o.cs, 0, 9)), z: num(o.z, -400, 800), fz: cfg.mode === 'royale' ? Math.round(num(o.fz, -5, 30) * 100) / 100 : 0, x: me.x, y: me.y, a: num(o.a, -1e4, 1e4), pt: Math.round(num(o.pt, -1, 1) * 100) / 100, hp: num(o.hp, 0, 9999), k: txt(o.k, 24), hh: (n => (n >= 1 && n <= 9) || (n >= 16 && n <= 60) ? n : 0)(Math.round(num(o.hh, 0, 60))), hc: (n => (n >= 10 && n <= 15) || n === 42 ? n : 0)(Math.round(num(o.hc, 0, 60))), ht: (n => n >= 1 && n <= 200 ? n : 0)(Math.round(num(o.ht, 0, 200))), rl: Math.round(num(o.rl, 0, 1) * 50) / 50, d: me.dead, ...(Array.isArray(o.fl) && o.fl.length === 6 ? { fl: o.fl.map(v => Math.round(num(v, -400, 800) * 100) / 100) } : {}), ...(cfg.mode === 'coop' && o.mh !== undefined ? { dn: o.dn ? 1 : 0, mh: Math.round(num(o.mh, 1, 9999)), sd: Math.round(num(o.sd, 0, 9999)), dg: (me.dg = Math.round(num(o.dg, 0, 1e9))) } : {}) }, id);
+              me.sh = Math.round(num(o.sh, 0, 4)); // inside an enterable building (shop, library, arcade)
+              all({ t: 's', id, l: 0, ty: o.ty ? 1 : 0, sh: Math.round(num(o.sh, 0, 4)), cr: o.cr ? 1 : 0, zm: Math.round(num(o.zm, 0, 1) * 20) / 20, cs: Math.round(num(o.cs, 0, 9)), z: num(o.z, -400, 800), fz: cfg.mode === 'royale' ? Math.round(num(o.fz, -5, 30) * 100) / 100 : 0, x: me.x, y: me.y, a: num(o.a, -1e4, 1e4), pt: Math.round(num(o.pt, -1, 1) * 100) / 100, hp: num(o.hp, 0, 9999), k: txt(o.k, 24), hh: (n => (n >= 1 && n <= 9) || (n >= 16 && n <= 60) ? n : 0)(Math.round(num(o.hh, 0, 60))), hc: (n => (n >= 10 && n <= 15) || n === 42 ? n : 0)(Math.round(num(o.hc, 0, 60))), ht: (n => n >= 1 && n <= 200 ? n : 0)(Math.round(num(o.ht, 0, 200))), rl: Math.round(num(o.rl, 0, 1) * 50) / 50, d: me.dead, ...(Array.isArray(o.fl) && o.fl.length === 6 ? { fl: o.fl.map(v => Math.round(num(v, -400, 800) * 100) / 100) } : {}), ...(cfg.mode === 'coop' && o.mh !== undefined ? { dn: o.dn ? 1 : 0, mh: Math.round(num(o.mh, 1, 9999)), sd: Math.round(num(o.sd, 0, 9999)), dg: (me.dg = Math.round(num(o.dg, 0, 1e9))) } : {}) }, id);
               ctfTick(id, me); dfPos(id, me);
             }
             break;
@@ -1160,11 +1163,11 @@ function startServer(port, hostToken, opts) {
             all({ t: 'png', fl: num(o.fl, 0, 9999) | 0, k, x: +num(o.x, -50, 500).toFixed(2), y: +num(o.y, -50, 500).toFixed(2), z: +num(o.z, -60, 60).toFixed(2), n: num(o.n, -1, 999999) | 0, p: id }, id);
             break;
           }
-          case 'wwk': case 'wbd': case 'wbh': case 'wtp': case 'wgd': case 'wof': case 'wcg': case 'wco': case 'wdl': { // co-op (0.9.338): the Frontier Town
+          case 'wwk': case 'wbd': case 'wbh': case 'wtp': case 'wgd': case 'wof': case 'wcg': case 'wco': case 'wdl': case 'wrc': { // co-op (0.9.338): the Frontier Town
             if (!running || cfg.mode !== 'coop') break;
             if ((o.t === 'wbh' || o.t === 'wco') && id !== hostId) break; // the host's word only
             if (now - (me.wW || 0) > 1000) { me.wW = now; me.wC = 0 } if (++me.wC > 120) break;
-            const ST = { wco: ['rear', 'park'], wdl: ['go', 'won', 'lost', 'foul', 'end'] };
+            const ST = { wco: ['rear', 'park'], wdl: ['go', 'won', 'lost', 'foul', 'end'], wrc: ['go', 'won', 'end'] };
             const m = { t: o.t, fl: num(o.fl, 0, 9999) | 0 };
             if (o.t === 'wwk') m.g = txt(o.g, 12);
             if (o.t === 'wbd' || o.t === 'wbh' || o.t === 'wtp' || o.t === 'wgd') m.i = num(o.i, 0, 500) | 0;
@@ -1340,13 +1343,16 @@ function startServer(port, hostToken, opts) {
             else if (killer) for (const hid in me.hitBy) { const ap = players.get(+hid); if (ap && ap !== killer && ap !== me && now - me.hitBy[hid] < CREDIT_MS && !(teamy(cfg.mode) && ap.team === me.team)) ap.as++; } // assist: hurt them recently but did not get the kill
             me.hitBy = {};
             if (statOn()) { if (me.wk) { ST[me.wk].d++; stDirty = true; } const kw = STAT_W.includes(hitW) ? hitW : killer && killer.wk; if (killer && kw) ST[kw].k++; }
+            // Brighton (0.9.369): the popularity tax. A kill is worth 3 points with a weapon nobody else is using, 2 if one other player has it, 1 if more do
+            let bpts = 0, bw = '';
+            if (killer && cfg.mode === 'brighton') { bw = STAT_W.includes(hitW) ? hitW : killer.wk; const n = bw ? [...players.values()].filter(q => !q.spec && q.wk === bw).length : 3; bpts = n <= 1 ? 3 : n === 2 ? 2 : 1; killer.sc = (killer.sc | 0) + bpts; }
             if (killer) { killer.k++; if (cfg.mode === 'cash') { killer.cash += CASH_KILL; send(killer.ws, { t: 'cash', c: killer.cash }); } else if (cfg.mode === 'defuse') addCash(killer, DF_KILL_CASH); }
             const kid = killer ? [...players.entries()].find(([, p]) => p === killer)[0] : 0;
             if (killer) pgAdd(killer, kid, 'k', 1, now);
             if (isGG() && killer) { killer.gl = (killer.gl | 0) + 1; if (killer.gl < ggOrder.length) send(killer.ws, { t: 'gg', l: killer.gl }); }
             if (cfg.mode === 'oitc') { me.lv = Math.max(0, (me.lv == null ? 3 : me.lv) - 1); if (me.lv <= 0) me.dead = 1; send(me.ws, { t: 'lv', l: me.lv }); }
             if (cfg.mode === 'royale') { me.lv = 0; me.dead = 1; send(me.ws, { t: 'lv', l: 0 }); }
-            all(Object.assign({ t: 'feed', k: kid, v: id, players: list() }, cfg.mode === 'coop' && !kid && typeof o.cn === 'string' && txt(o.cn, 40) ? { cn: txt(o.cn, 40) } : {}));
+            all(Object.assign({ t: 'feed', k: kid, v: id, players: list() }, bpts ? { pt: bpts, w: bw } : {}, cfg.mode === 'coop' && !kid && typeof o.cn === 'string' && txt(o.cn, 40) ? { cn: txt(o.cn, 40) } : {}));
             if (cfg.mode === 'ctf') { me.dead = 1; dropCarried(id, me.x, me.y, me.z); }
             if (cfg.mode === 'defuse') { me.dead = 1; dfDrop(id, me); if (DF.act && DF.act.id === id) DF.act = null; dfCheck(); }
             if (cfg.mode === 'infection' && INF.ph === 'live' && !INF.z.has(id)) infInfect(id, 0);
@@ -1355,7 +1361,7 @@ function startServer(port, hostToken, opts) {
             else if (cfg.mode === 'royale') brCheck();
             else if (isGG()) { if (killer && killer.gl >= ggOrder.length) { ggWin = kid; endMatch(); } else if (cfg.mode === 'arms') { me.dead = 1; arCheck(); } }
             else if (killer && cfg.mode !== 'ctf' && cfg.mode !== 'defuse' && cfg.mode !== 'infection' && cfg.mode !== 'royale') {
-              const score = teamy(cfg.mode) ? teamTotals()[killer.team] : killer.k;
+              const score = teamy(cfg.mode) ? teamTotals()[killer.team] : cfg.mode === 'brighton' ? killer.sc | 0 : killer.k;
               if (score >= cfg.limit) endMatch();
             }
             break;

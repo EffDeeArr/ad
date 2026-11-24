@@ -52,11 +52,13 @@ function g3dBuild(){
     return out.length?out:null};
   const CG=typeof GR!='undefined'&&GR&&GR.cq&&typeof COLG!='undefined'&&COLG?COLG:[],CRS=new Set((typeof CR!='undefined'&&CR?CR:[]).map(c=>c.i).concat(CG)),MOV=[],MVB=new Set();
   const lo=[];let zlo=1e9,zhi=-1e9;
+  /* 0.9.350: cells whose floor another file draws (the race track's smooth hill), and the bridge deck (no solid riser under it) */
+  const GX=WST&&typeof WEST!='undefined'&&WEST&&WEST.g3dx||null,GXs=i=>!!(GX&&GX.fl.has(i));
   /* ---- floors (merged along x) and the slabs under them ---- */
   for(let y=0;y<n;y++){let x=0;while(x<n){const i=y*n+x;if(g[i]){x++;continue}
     const fh=FH[i],tx=ct[i]&&CT[ct[i]]?CT[ct[i]]:brg[i]?BT:FT,pf=pit[i]?(fh<-1?.1:.28):1,tm=mat(tx);let x1=x+1;
-    while(x1<n){const j=y*n+x1;if(g[j]||FH[j]!==fh||pf!==(pit[j]?(FH[j]<-1?.1:.28):1)||(ct[j]&&CT[ct[j]]?CT[ct[j]]:brg[j]?BT:FT)!==tx||CZ[j]<.99!==CZ[i]<.99)break;x1++}
-    quad([[x,y,fh],[x1,y,fh],[x1,y+1,fh],[x,y+1,fh]],[[x,y],[x1,y],[x1,y+1],[x,y+1]],tm,pf,[0,0,1]);
+    while(x1<n){const j=y*n+x1;if(g[j]||GXs(j)!==GXs(i)||FH[j]!==fh||pf!==(pit[j]?(FH[j]<-1?.1:.28):1)||(ct[j]&&CT[ct[j]]?CT[ct[j]]:brg[j]?BT:FT)!==tx||CZ[j]<.99!==CZ[i]<.99)break;x1++}
+    if(!GXs(i))quad([[x,y,fh],[x1,y,fh],[x1,y+1,fh],[x,y+1,fh]],[[x,y],[x1,y],[x1,y+1],[x,y+1]],tm,pf,[0,0,1]);
     box(x,y,ZB,x1,y+1,fh);zlo=Math.min(zlo,fh);zhi=Math.max(zhi,fh);x=x1}}
   /* ---- ceiling of the ordinary floors: a textured slab over every open cell (and solid, so you cannot jump through it) ---- */
   if((RLM||typeof CEILON!='undefined'&&CEILON)&&typeof CEIL!='undefined'&&CEIL&&top>1&&top<2){
@@ -72,7 +74,7 @@ function g3dBuild(){
         quad([[x,y,tp],[x+1,y,tp],[x+1,y+1,tp],[x,y+1,tp]],[[x,y],[x+1,y],[x+1,y+1],[x,y+1]],mat(PT||RT),1,[0,0,1]);
         box(x,y,cz,x+1,y+1,ZT)}
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(G(nx,ny))continue;const fn=FH[ny*n+nx];
-        if(fn>fh+.001){const f=bnd(x,y,d,fh,fn,1-fh,1-fn,!flipOf(d));const rt=(RTS&&RTS[Math.round(fn*100)])||RT;quad(f.p,f.u,mat(rt),sideX(d)?.85:.6,[-DX[d],-DY[d],0])}}
+        if(fn>fh+.001&&!(GX&&(GX.fl.has(ny*n+nx)||GX.br.has(ny*n+nx)))){const f=bnd(x,y,d,fh,fn,1-fh,1-fn,!flipOf(d));const rt=(RTS&&RTS[Math.round(fn*100)])||RT;quad(f.p,f.u,mat(rt),sideX(d)?.85:.6,[-DX[d],-DY[d],0])}}
     }else{
       const t0=TX[g[i]-1],t1=TU?TU[g[i]-1]:t0,tw=RLM?WHM[i]:top;let open=0;
       for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(G(nx,ny))continue;open=1;const z0=FH[ny*n+nx],tq=RLM&&CMASK[ny*n+nx]?top:tw;

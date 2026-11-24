@@ -1,7 +1,7 @@
 {
   "name": "arberia-deathmatch",
   "productName": "Arberia Deathmatch",
-  "version": "0.9.346",
+  "version": "0.9.370",
   "description": "Procedurally generated FPS",
   "main": "main.js",
   "author": "EffDeeArr",

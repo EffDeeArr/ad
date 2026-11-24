@@ -52,7 +52,7 @@ function crMesh(){if(CRM)return CRM;const W=[214,150,80],D=[104,62,28],L=[240,18
     chips:{wood:mk([[158,112,62],[120,84,46],[190,146,90]]),card:mk([[200,172,126],[226,210,170]]),metal:mk([[120,128,138],[84,90,100],[150,156,166]]),clay:mk([[196,98,58],[150,68,40],[222,128,84]])}};return CRM}
 function crPick(){let t=0;for(const k in CRK)t+=CRK[k].w;let r=Math.random()*t;for(const k in CRK){r-=CRK[k].w;if(r<=0)return k}return'crate'}
 function crSpawn(){crClear();if(!crOn()||bossFl||fl==15||(typeof BRV!='undefined'&&BRV))return;const co=crCo(),MR=Math.random;if(co){let s_=((seed|0)+fl*7919)>>>0||1;Math.random=()=>(s_=(Math.imul(s_,1103515245)+12345)>>>0)/4294967296}try{
-  const used=[];const ok=(x,y)=>{const i=y*N+x;if(x<1||y<1||x>=N-1||y>=N-1)return false;if(g[i]||blk[i]||pit[i]||(CZ[i]<.99)||brg[i])return false;if(GR&&GR.city&&(ct[i]==1||ct[i]==4||ct[i]==5))return false;/* never out on the roads of a city */
+  const used=[];const ok=(x,y)=>{const i=y*N+x;if(x<1||y<1||x>=N-1||y>=N-1)return false;if(typeof WEST!='undefined'&&WEST&&(x>=WTN||y>=WTN))return false;/* not out on the race track */if(g[i]||blk[i]||pit[i]||(CZ[i]<.99)||brg[i])return false;if(GR&&GR.city&&(ct[i]==1||ct[i]==4||ct[i]==5))return false;/* never out on the roads of a city */
     /* never in a hallway or doorway: the cell and all eight around it must be open floor, so a corridor one or two cells wide can never be plugged */
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const j=(y+dy)*N+x+dx;if(g[j]||blk[j]||pit[j]||CZ[j]<.99)return false}
     if(Math.hypot(x+.5-P.x,y+.5-P.y)<3)return false;if(ex&&Math.hypot(x+.5-ex.x,y+.5-ex.y)<2.5)return false;for(const c of CH)if(Math.hypot(c.x-x-.5,c.y-y-.5)<1.6)return false;

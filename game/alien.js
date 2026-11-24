@@ -80,7 +80,7 @@ function alnProps(){const PE=[238,238,252],PS_=[170,160,210],IN=[40,28,78],VI=[1
 return M}
 /* extra crystal clusters and halo rings scattered about (never blocks the way to the exit) */
 function alnScatter(){const put=[],free=(x,y)=>x>0&&y>0&&x<N-1&&y<N-1&&!g[y*N+x]&&!spcNear(x,y)&&!blk[y*N+x]&&!pit[y*N+x]&&(!brg[y*N+x]||TH.mine)&&Math.hypot(x+.5-P.x,y+.5-P.y)>3&&Math.hypot(x+.5-ex.x,y+.5-ex.y)>2&&!E.some(e=>Math.hypot(x+.5-e.x,y+.5-e.y)<1.2);
-for(let k=N>>1,tr=0;k>0&&tr<400;tr++){const x=ri(2,N-3),y=ri(2,N-3);if(!free(x,y))continue;const m=14+(R()<.5?1:0);blk[y*N+x]=1;put.push({x:x+.5+rr(-.1,.1),y:y+.5+rr(-.1,.1),t:PS[0],s:.62,fl:0,fb:0,cell:y*N+x,m,yaw:rr(0,6.283),h:PROP_H[m],pr:PROP_R[m]});k--}
+for(let k=N>>1,tr=0;k>0&&tr<400;tr++){const x=ri(2,N-3),y=ri(2,N-3);if(!free(x,y)||(typeof WEST!='undefined'&&WEST&&(x>=WTN||y>=WTN)))continue;const m=14+(R()<.5?1:0);blk[y*N+x]=1;put.push({x:x+.5+rr(-.1,.1),y:y+.5+rr(-.1,.1),t:PS[0],s:.62,fl:0,fb:0,cell:y*N+x,m,yaw:rr(0,6.283),h:PROP_H[m],pr:PROP_R[m]});k--}
 while(put.length&&!pathOk()){const p=put.pop();blk[p.cell]=0}for(const p of put)PRP.push(p)}
 /* ===== the cutscene: through the prototype teleporter to the alien home world ===== */
 const ALC_D=26,ALC_SUB=[[2.6,6.4,'Beyond the ring: a world that has never known a human.'],[7.2,11.2,'Its cities do not stand on the ground. They float.'],[12,16,'Pearl towers, grown rather than built, joined by bridges of light.'],[17,21.6,'This is where Vhaloru’s people came from.'],[22,25.4,'Welcome to the home world.']];
