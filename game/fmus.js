@@ -18,7 +18,9 @@ const FMU_P={
  aln:{ch:[[48,55,59,66],[50,57,61,64],[46,53,57,64],[45,52,56,61]],bs:[36,38,34,33],ar:[71,74,76,78,79,83,86],lp:2400,pad:.025,pl:.6,arv:.026,wob:.4,wind:0,bell:1,mv:.75,dr:'elec',bt:'square',bl:900,ld:'sine'}};
 function fmuMode(){try{if(typeof alienOn=='function'&&alienOn())return'aln';if(typeof apocOn=='function'&&apocOn())return'ruin'}catch(e){}return'reg'}
 function fmuWanted(){try{if(!AC||typeof P=='undefined'||!P||!FMU.run)return false;if(BN&&BN.on)return false;if(DM&&!(typeof CO=='function'&&CO()))return false;
- if(!['play','menu','pick','paused','pre'].includes(state))return false;if(BM&&BM.on)return false;if(typeof musWant=='function'&&musWant())return false;
+ if(!['play','pick','paused','pre'].includes(state))return false;if(window.CVV)return false;/* 0.9.344: not in the menus, not in the cutscene viewer */if(BM&&BM.on)return false;
+ /* 0.9.343: not on the boss floors (the intro cutscenes and after the fight included), not on floors 15, 20 and 25, not in the Frontier Town, not in any cutscene */
+ if(typeof bossFl!='undefined'&&bossFl)return false;if(typeof fl=='number'&&(fl==15||fl==20||fl==25))return false;if(typeof WEST!='undefined'&&WEST)return false;if(typeof INTRO!='undefined'&&INTRO)return false;if(typeof ELVF!='undefined'&&ELVF)return false;if(typeof musWant=='function'&&musWant())return false;
  if(typeof CAS!='undefined'&&CAS)return false;if(typeof SPC!='undefined'&&SPC)return false;if(typeof SPCF!='undefined'&&SPCF)return false;if(typeof APC!='undefined'&&APC)return false;if(typeof ALC!='undefined'&&ALC)return false;if(typeof ELV!='undefined'&&ELV)return false;if(typeof SPEC!='undefined'&&SPEC)return false;
  return true}catch(e){return false}}
 function fmuBus(){if(FMU.g&&FMU.cx===AC)return true;try{const A=AC,g=A.createGain(),dl=A.createDelay(1),fb=A.createGain(),dw=A.createGain();g.gain.value=0;dl.delayTime.value=FMU_BAR/8*1.5;fb.gain.value=.34;dw.gain.value=.5;
@@ -47,7 +49,7 @@ function fmuNoise(t,v,dur,type,f,q){const A=AC,s=A.createBufferSource(),bf=A.cre
 function fmuSnare(t,v,M){fmuNoise(t,v,M.dr=='half'?.32:.18,'bandpass',M.dr=='half'?1400:1900,.8);const A=AC,o=A.createOscillator(),g=A.createGain();o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+.08);g.gain.setValueAtTime(v*.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);o.connect(g);g.connect(FMU.g);o.start(t);o.stop(t+.14)}
 function fmuHat(t,v,open){fmuNoise(t,v*FMU_HI,open?.16:.035,'highpass',open?6500:8000,.5)}
 /* a bass note: a filtered saw (square on the alien world), short and punchy */
-function fmuBassN(t,m,d,v,M){const A=AC,o=A.createOscillator(),lp=A.createBiquadFilter(),g=A.createGain();o.type=M.bt;o.frequency.value=fmuF(m);lp.type='lowpass';lp.Q.value=4;lp.frequency.setValueAtTime(M.bl*2.2,t);lp.frequency.exponentialRampToValueAtTime(M.bl*.6,t+d);
+function fmuBassN(t,m,d,v,M){v*=.6;/* 0.9.342: 40% softer, rounder (less resonance, less bite) so it sits back */const A=AC,o=A.createOscillator(),lp=A.createBiquadFilter(),g=A.createGain();o.type=M.bt;o.frequency.value=fmuF(m);lp.type='lowpass';lp.Q.value=1.4;lp.frequency.setValueAtTime(M.bl*1.5,t);lp.frequency.exponentialRampToValueAtTime(M.bl*.6,t+d);
  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.008);g.gain.setTargetAtTime(v*.6,t+.05,.08);g.gain.setTargetAtTime(0,t+d*.9,.03);o.connect(lp);lp.connect(g);g.connect(FMU.g);o.start(t);o.stop(t+d+.15)}
 /* a lead note: a soft square (a saw on the ruins, a sine bell on the alien world) with a little vibrato, into the echo */
 function fmuLead(t,m,d,v,M){if(M.bell>=1){fmuPluck(t,m,v*1.4,1);return}const A=AC,o=A.createOscillator(),lf=A.createOscillator(),lg=A.createGain(),lp=A.createBiquadFilter(),g=A.createGain();o.type=M.ld;o.frequency.value=fmuF(m);lf.frequency.value=5.5;lg.gain.setValueAtTime(0,t);lg.gain.linearRampToValueAtTime(fmuF(m)*.012,t+Math.min(d,.4));lf.connect(lg);lg.connect(o.frequency);
@@ -74,8 +76,8 @@ function fmuTick(){if(!AC){return}const want=fmuWanted();const now=AC.currentTim
  if(!fmuBus())return;const md=fmuMode();
  if(!FMU.on){FMU.on=1;FMU.nt=Math.max(FMU.nt,now+.15);if(FMU.mode!==md){FMU.mode=md;FMU.bar=0}fmuR=(FMU.seed*9301+49297)%233280+1}
  if(md!==FMU.mode){FMU.mode=md;FMU.bar=0;FMU.ph=null}
- const M=FMU_P[FMU.mode],paused=state!='play';FMU.g.gain.setTargetAtTime((paused?.4:.8)*.75*(M.mv||1),now,.8);/* 0.9.341: everything 25% down */FMU.wind.gain.setTargetAtTime(M.wind?.05:0,now,1.2);if(M.wind)FMU.wbp.frequency.setTargetAtTime(300+200*Math.sin(now*.2),now,.5);
+ const M=FMU_P[FMU.mode],paused=state!='play';FMU.g.gain.setTargetAtTime((paused?.4:.8)*.75*.8*(M.mv||1),now,.8);/* 0.9.341: everything 25% down, 0.9.344: another 20% */FMU.wind.gain.setTargetAtTime(M.wind?.05:0,now,1.2);if(M.wind)FMU.wbp.frequency.setTargetAtTime(300+200*Math.sin(now*.2),now,.5);
  while(FMU.nt<now+.6){if(FMU.nt<now-.2)FMU.nt=now+.05;fmuSchedBar(FMU.nt);FMU.nt+=FMU_BAR}}
 /* a run is on from its first floor until the title screen; each floor reshuffles the plucked line */
-(function(){const sf=typeof startFloor=='function'?startFloor:null;if(sf){startFloor=function(){const r=sf.apply(this,arguments);try{FMU.run=1;FMU.seed=((typeof fl=='number'?fl:1)*7919+(typeof seed=='number'?seed:0))%100000+1;fmuR=FMU.seed;FMU.ph=null;FMU.bar=0}catch(e){}return r}}
+(function(){const sf=typeof startFloor=='function'?startFloor:null;if(sf){startFloor=function(){const r=sf.apply(this,arguments);try{FMU.run=window.CVV?0:1;FMU.seed=((typeof fl=='number'?fl:1)*7919+(typeof seed=='number'?seed:0))%100000+1;fmuR=FMU.seed;FMU.ph=null;FMU.bar=0}catch(e){}return r}}
  setInterval(()=>{try{if(typeof state!='undefined'&&(state=='title'||state=='dead'||state=='ended'||state=='failed'))FMU.run=0;fmuTick()}catch(e){}},100)})();
