@@ -576,8 +576,9 @@ function stormStep(dt){const W=WEST,st=W.storm;st.t+=dt;
   if(PTC.length<700&&Math.random()<dt*40*ko){const a=P.a+rr(-1,1),r=rr(1,5);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.4),vx:W.wind*rr(3,6),vy:rr(-.5,.5),vz:rr(-.2,.2),life:.8,l0:.8,t:S.dust,s:rr(.25,.55),g:0},0)}}}
 
 /* ---------------- the duel ---------------- */
-function duelStart(){const W=WEST,j=W.jack;if(!j||W.duel||W.duelOn)return;W.duel={st:'fade',t:0,fd:0};wNet('wdl',{st:'go'});snd(300,.3,'triangle',.06,-100);wMsg("\"Well, it's high noon somewhere.\"",2.6)}
-function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;D.t+=dt;const L=W.SY0+2.5,PX=16.5,JX=28.5;
+function duelStart(){const W=WEST,j=W.jack;if(!j||W.duel||W.duelOn)return;W.duel={st:'fade',t:0,fd:0};wNet('wdl',{st:'go'});snd(300,.3,'triangle',.06,-100)}
+function duelStep(dt){const W=WEST,D=W.duel,j=W.jack;
+ D.t+=dt;const L=W.SY0+2.5,PX=16.5,JX=28.5;
  if(!j||j.dead&&D.st!='won'){W.duel=null;return}
  if(D.st=='fade'){D.fd=Math.min(1,D.t/.7);if(D.t>=.8){/* out in the street: the player at one end, Jack at the other; everything else waits */
    P.x=PX;P.y=L;P.a=0;P.pt=0;P.vx=0;P.vy=0;j.x=JX;j.y=L;j.fa=Math.PI;j.z=SW?0:j.z;B.length=0;W.coach.st='park';W.coach.t=0;W.tw=W.tw.filter(t=>!t.burn);
@@ -629,6 +630,7 @@ function westStep(dt){const W=WEST;if(!W||state!='play')return;W.t=(W.t||0)+dt;i
  if(W.duel)duelStep(dt);
  if(!W.duel||W.duel.st=='fade'||W.duel.st=='out')coachStep(dt);twStep(dt);stormStep(dt);
  if(W.roul)roulStep(dt);try{pnoStep(dt)}catch(er){}
+ {const pz=W.pianist;if(pz&&!pz.dead&&!pz.pup){if(pz.sit&&pz.pac){if(pz.z0===undefined)pz.z0=pz.z||0;pz.z=pz.z0+PNO_DZ}else if(pz.z0!==undefined){pz.z=pz.z0;pz.z0=undefined}}}/* up on his stool while he plays */
  if(wAlien()&&!westIndoors()&&PTC.length<600&&Math.random()<dt*14){const a=Math.random()*6.28,r=rr(1.5,7);ptcPush({x:P.x+Math.cos(a)*r,y:P.y+Math.sin(a)*r,z:rr(.1,1.6),vx:rr(-.2,.2),vy:rr(-.2,.2),vz:rr(.05,.25),life:3,l0:3,t:S.plasma||S.spark,s:rr(.05,.1),g:0},0)}
  if(W.heist)heistStep(dt);goldStep(dt);if(W.traps)trapStep(dt);
  /* the jail's open cell, the hotel's guard: nothing to do; the wanted man reacts if you come into his room */
@@ -652,7 +654,7 @@ function westHud(){const W=WEST;if(!W||state!='play')return;const c=ctx;try{roul
  const D=W.duel;if(D){/* letterbox bars, the title, the cue */const bh=Math.round(LH*.11);c.fillStyle='#000';c.fillRect(0,0,LW,bh);c.fillRect(0,LH-bh,LW,bh);
   c.font='bold 16px "DotGothic16",monospace';const T_=D.st=='wait'?"IT'S HIGH NOON":D.st=='cue'?'...':D.st=='draw'?'DRAW!':D.st=='won'?'YOU WIN':D.st=='lost'?'TOO SLOW':D.st=='foul'?'FOUL!':'';
   if(T_){c.fillStyle='#000';c.fillText(T_,LW/2+1,bh+25);c.fillStyle=D.st=='draw'?'#ff5a3a':'#ffe9b0';c.fillText(T_,LW/2,bh+24)}
-  if(D.st=='wait'){c.font='8px "DotGothic16",monospace';c.fillStyle='#ffe9b0';c.fillText('WAIT FOR THE SIGNAL. FIRE TOO SOON AND IT IS A FOUL.',LW/2,LH-bh-6)}
+  if(D.st=='wait'){/* 0.9.346: shorter, and outlined so it reads against the street */c.font='bold 9px "DotGothic16",monospace';const tw='WAIT FOR THE SIGNAL, THEN SHOOT';c.lineJoin='round';c.lineWidth=3;c.strokeStyle='#000';c.strokeText(tw,LW/2,LH-bh-8);c.fillStyle='#fff3cf';c.fillText(tw,LW/2,LH-bh-8)}
   if(D.fd>0){c.globalAlpha=D.fd;c.fillStyle='#000';c.fillRect(0,0,LW,LH);c.globalAlpha=1}}
  c.font='8px "DotGothic16",monospace';
  const q=W.near;if(q&&!D){const t='['+kbName(KBC('use'))+'] '+q.t;c.fillStyle='#000';c.fillText(t,LW/2+1,LH*.3+1);c.fillStyle='#ffe9b0';c.fillText(t,LW/2,LH*.3)}
@@ -890,7 +892,7 @@ addEventListener('mousedown',e=>{try{if(typeof WEST!='undefined'&&WEST&&roulClic
    upright. It comes from the piano: loud inside the saloon, faint and dull from the street, panned to where he sits; the floor music steps back
    while you are in the saloon. It stops when he stops (shot, or up and fighting). His hands move with the notes. */
 const PNO={on:0,ev:null,i:0,t0:0,beat:0,g:null,lp:null,pn:null,cx:null,duck:1,last:0,seen:0};
-const PNO_E=.21,PNO_Y=.86;/* PNO_Y: how far from the piano's cell edge the player sits (the keys end at .64) *//* one eighth note, seconds */
+const PNO_E=.21,PNO_Y=.86,PNO_DZ=.075;/* PNO_DZ (0.9.345): the stool is taller than a chair, so he sits that much higher *//* PNO_Y: how far from the piano's cell edge the player sits (the keys end at .64) *//* one eighth note, seconds */
 function pnoTune(){if(PNO.ev)return PNO.ev;const ev=[],_=0;
  /* "Oh! Susanna" (Stephen Foster, 1848; public domain), the way a saloon player would bang it out: two verses and the chorus, a two-four
     oom-pah in the left hand (bass, chord, other bass, chord), a little grace note before the long ones. Each bar: four eighths, _ holds. */
